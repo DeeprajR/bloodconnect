@@ -1,0 +1,7 @@
+# One line ending everywhere. Migrations and shell-ish files are executed by
+# Linux containers and CI; a CRLF in an SQL file that is piped into psql is a
+# confusing failure to debug.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary

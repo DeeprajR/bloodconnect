@@ -1,0 +1,132 @@
+{
+  "district": {
+    "id": "KL_KKD",
+    "name": "Kozhikode",
+    "state": "Kerala",
+    "taluks": [
+      {
+        "id": "KKD_T1",
+        "name": "Kozhikode",
+        "lsg_units": [
+          {
+            "id": "KKD_T1_C01",
+            "name": "Kozhikode Municipal Corporation",
+            "type": "corporation",
+            "zones": [
+              { "id": "KKD_T1_C01_Z1", "name": "City Centre (Palayam / Mananchira / Nadakkavu)" },
+              { "id": "KKD_T1_C01_Z2", "name": "Medical College / Chevayur / Kovoor" },
+              { "id": "KKD_T1_C01_Z3", "name": "Elathur / West Hill / Vengeri" },
+              { "id": "KKD_T1_C01_Z4", "name": "Beypore / Marad" },
+              { "id": "KKD_T1_C01_Z5", "name": "Cheruvannur / Nallalam / Meenchanda" },
+              { "id": "KKD_T1_C01_Z6", "name": "Kallai / Panniyankara / Azhchavattom" }
+            ]
+          },
+          { "id": "KKD_T1_M01", "name": "Feroke", "type": "municipality" },
+          { "id": "KKD_T1_M02", "name": "Ramanattukara", "type": "municipality" },
+          { "id": "KKD_T1_P01", "name": "Kadalundy", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P02", "name": "Olavanna", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P03", "name": "Perumanna", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P04", "name": "Peruvayal", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P05", "name": "Kunnamangalam", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P06", "name": "Chathamangalam", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P07", "name": "Mavoor", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P08", "name": "Kakkodi", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P09", "name": "Chelannur", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P10", "name": "Kakkur", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P11", "name": "Kuruvattur", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P12", "name": "Nanminda", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P13", "name": "Narikkuni", "type": "grama_panchayat" },
+          { "id": "KKD_T1_P14", "name": "Thalakkulathur", "type": "grama_panchayat" }
+        ]
+      },
+      {
+        "id": "KKD_T2",
+        "name": "Thamarassery",
+        "lsg_units": [
+          { "id": "KKD_T2_M01", "name": "Koduvally", "type": "municipality" },
+          { "id": "KKD_T2_M02", "name": "Mukkam", "type": "municipality" },
+          { "id": "KKD_T2_P01", "name": "Thamarassery", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P02", "name": "Kizhakkoth", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P03", "name": "Madavoor", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P04", "name": "Omassery", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P05", "name": "Kattippara", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P06", "name": "Puthuppadi", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P07", "name": "Kodenchery", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P08", "name": "Thiruvambady", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P09", "name": "Koodaranji", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P10", "name": "Karassery", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P11", "name": "Kodiyathur", "type": "grama_panchayat" },
+          { "id": "KKD_T2_P12", "name": "Unnikulam", "type": "grama_panchayat" }
+        ]
+      },
+      {
+        "id": "KKD_T3",
+        "name": "Koyilandy",
+        "lsg_units": [
+          { "id": "KKD_T3_M01", "name": "Koyilandy", "type": "municipality" },
+          { "id": "KKD_T3_M02", "name": "Payyoli", "type": "municipality" },
+          { "id": "KKD_T3_P01", "name": "Chemancheri", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P02", "name": "Chengottukavu", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P03", "name": "Arikkulam", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P04", "name": "Moodadi", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P05", "name": "Keezhariyur", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P06", "name": "Thikkodi", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P07", "name": "Thurayur", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P08", "name": "Meppayur", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P09", "name": "Cheruvannur", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P10", "name": "Perambra", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P11", "name": "Changaroth", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P12", "name": "Chakkittapara", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P13", "name": "Kayanna", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P14", "name": "Koothali", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P15", "name": "Nochad", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P16", "name": "Balussery", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P17", "name": "Panangad", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P18", "name": "Kottur", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P19", "name": "Naduvannur", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P20", "name": "Ulliyeri", "type": "grama_panchayat" },
+          { "id": "KKD_T3_P21", "name": "Atholi", "type": "grama_panchayat" }
+        ]
+      },
+      {
+        "id": "KKD_T4",
+        "name": "Vatakara",
+        "lsg_units": [
+          { "id": "KKD_T4_M01", "name": "Vatakara", "type": "municipality" },
+          { "id": "KKD_T4_P01", "name": "Azhiyur", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P02", "name": "Chorode", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P03", "name": "Eramala", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P04", "name": "Onchiyam", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P05", "name": "Thiruvallur", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P06", "name": "Villiappally", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P07", "name": "Ayancheri", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P08", "name": "Maniyur", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P09", "name": "Thuneri", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P10", "name": "Nadapuram", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P11", "name": "Valayam", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P12", "name": "Vanimal", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P13", "name": "Edachery", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P14", "name": "Chekkiad", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P15", "name": "Purameri", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P16", "name": "Kunnummal", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P17", "name": "Kayakkodi", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P18", "name": "Kavilumpara", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P19", "name": "Maruthonkara", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P20", "name": "Narippatta", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P21", "name": "Kuttiadi", "type": "grama_panchayat" },
+          { "id": "KKD_T4_P22", "name": "Velom", "type": "grama_panchayat" }
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "structure": "district > taluk > lsg_unit (> zone for corporation)",
+    "lsg_types": ["corporation", "municipality", "grama_panchayat"],
+    "notes": [
+      "Feroke, Ramanattukara, Mukkam, Koduvally and Payyoli were upgraded from grama panchayats to municipalities in 2015; do not list them again as panchayats.",
+      "Corporation 'zones' are informal locality groupings for donor proximity, not official ward divisions. Rename or re-split them to match the hospitals you serve.",
+      "A few panchayats sit on taluk boundaries; verify borderline taluk assignments (e.g. Unnikulam, Atholi, Karassery) against lsgkerala.gov.in before production use.",
+      "Store donors against the lsg_unit id (or zone id), never the display name, so spelling fixes don't break records."
+    ]
+  }
+}
