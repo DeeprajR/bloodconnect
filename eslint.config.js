@@ -86,7 +86,15 @@ export default tseslint.config(
     // Node scripts, linted without type information.
     files: ['scripts/**/*.mjs', '**/*.config.js', '**/*.cjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly', module: 'writable' },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        module: 'writable',
+        // Node 20+ globals these scripts use.
+        fetch: 'readonly',
+        FormData: 'readonly',
+        URL: 'readonly',
+      },
     },
   },
 

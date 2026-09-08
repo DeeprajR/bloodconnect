@@ -98,6 +98,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `pnpm boundaries` | The import boundary of §11.2 |
 | `pnpm boundaries:prove` | Writes a deliberate deep import and asserts the check rejects it |
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
+| `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |
 | `pnpm db:generate` | Generate a migration from the Drizzle schema |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed reference data |
 | `pnpm db:push` | Refused unless the target database is named as a scratch one |

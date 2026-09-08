@@ -22,7 +22,8 @@
     "up": "docker compose up -d",
     "down": "docker compose down",
     "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm test",
-    "dev": "pnpm --filter @blood-connect/web dev"
+    "dev": "pnpm --filter @blood-connect/web dev",
+    "smoke:signin": "node scripts/signin-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
