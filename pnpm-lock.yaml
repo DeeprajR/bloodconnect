@@ -154,6 +154,9 @@ importers:
       '@blood-connect/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@blood-connect/hospital':
+        specifier: workspace:*
+        version: link:../../packages/hospital
       '@blood-connect/ids':
         specifier: workspace:*
         version: link:../../packages/ids
@@ -206,6 +209,9 @@ importers:
       '@blood-connect/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@blood-connect/hospital':
+        specifier: workspace:*
+        version: link:../../packages/hospital
       '@blood-connect/ids':
         specifier: workspace:*
         version: link:../../packages/ids
@@ -291,6 +297,40 @@ importers:
         version: 4.5.4
 
   packages/domain: {}
+
+  packages/hospital:
+    dependencies:
+      '@blood-connect/db':
+        specifier: workspace:*
+        version: link:../../db
+      '@blood-connect/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@blood-connect/ids':
+        specifier: workspace:*
+        version: link:../ids
+      '@blood-connect/platform':
+        specifier: workspace:*
+        version: link:../platform
+      '@blood-connect/result':
+        specifier: workspace:*
+        version: link:../result
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
+    devDependencies:
+      '@blood-connect/config':
+        specifier: workspace:*
+        version: link:../config
+      '@blood-connect/testing':
+        specifier: workspace:*
+        version: link:../testing
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
 
   packages/ids:
     dependencies:

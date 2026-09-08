@@ -13,7 +13,9 @@
     "@blood-connect/config": "workspace:*",
     "@blood-connect/db": "workspace:*",
     "@blood-connect/domain": "workspace:*",
+    "@blood-connect/hospital": "workspace:*",
     "@blood-connect/ids": "workspace:*",
+    "@blood-connect/platform": "workspace:*",
     "@blood-connect/result": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "next": "^16.3.4",
@@ -21,8 +23,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "ux4g-web-components": "^2.1.0",
-    "zod": "^4.5.4",
-    "@blood-connect/platform": "workspace:*"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

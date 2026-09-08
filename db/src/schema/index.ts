@@ -9,3 +9,4 @@
 export * from './reference.js';
 export * from './platform.js';
 export * from './accounts.js';
+export * from './hospital.js';

@@ -7,6 +7,7 @@ import { ChangeEmailForm, EditDoctorForm, SealForm } from '../../forms';
 import { removeSealAction, resendInviteAction, setStatusAction } from '../../actions';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getDoctor } from '@blood-connect/platform';
+import { getPatientsForDoctor } from '@blood-connect/hospital';
 
 export const metadata: Metadata = { title: 'Doctor · Administration' };
 
@@ -21,6 +22,10 @@ export default async function DoctorPage({
 
   const doctor = await getDoctor(ctx, id);
   if (!doctor) notFound();
+
+  // Requires `patients:read_all`, and writes an audit row naming every record
+  // it returned. See ADR 0003: this is the system's largest disclosure surface.
+  const patients = await getPatientsForDoctor(ctx, id);
 
   const resend = resendInviteAction.bind(null, id);
   const deactivate = setStatusAction.bind(null, id, 'deactivated');
@@ -144,22 +149,51 @@ export default async function DoctorPage({
         <div className="ux4g-card-header">
           <h2 className="ux4g-card-title">Patients</h2>
           <p className="ux4g-card-sub-title">
-            This doctor’s patients, live and historical.
+            This doctor’s patients, live and historical. Opening this page is recorded in
+            the audit log, naming every record shown.
           </p>
         </div>
-        <div className="ux4g-card-body">
-          {/*
-            Patients and admissions arrive in phase 2. Saying so is better than
-            an empty table that reads as "this doctor has no patients".
-          */}
-          <div className="ux4g-alert ux4g-alert-info" role="status">
-            <div className="ux4g-alert-content">
-              <p className="ux4g-alert-message">
-                Patient records are not built yet — they arrive with the request flow in
-                phase 2. Reads here will be audited individually.
-              </p>
-            </div>
-          </div>
+        <div className="ux4g-card-body app-scroll-x">
+          {patients === undefined ? (
+            <p className="ux4g-body-s-default">
+              This account cannot read patient records.
+            </p>
+          ) : patients.length === 0 ? (
+            <p className="ux4g-body-s-default">
+              This doctor has not requested blood for anyone yet.
+            </p>
+          ) : (
+            <table className="ux4g-table">
+              <thead>
+                <tr>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Hospital ID</th>
+                  <th scope="col">IP number</th>
+                  <th scope="col">Ward</th>
+                  <th scope="col">Group</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Requests</th>
+                  <th scope="col">Known diagnosis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patients.map((patient) => (
+                  <tr key={`${patient.patientId}-${patient.ipNo}`}>
+                    <td>{patient.name}</td>
+                    <td className="app-figure">{patient.uhid ?? '—'}</td>
+                    <td className="app-figure">{patient.ipNo}</td>
+                    <td>{patient.ward}</td>
+                    <td className="app-figure">{patient.bloodGroup}</td>
+                    <td>
+                      {patient.admissionStatus === 'admitted' ? 'Live' : 'Discharged'}
+                    </td>
+                    <td className="app-figure">{patient.requestCount}</td>
+                    <td>{patient.diagnosis ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </section>
 

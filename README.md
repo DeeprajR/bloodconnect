@@ -31,8 +31,8 @@ Section references written as §n point at the specification.
 ```
 P0  Foundations                  ✅
 P1  Identity and access, thin    ✅
-P2  The request, thin            ← next
-P3  The centre decision, thin
+P2  The request, thin            ✅
+P3  The centre decision, thin    ← next
 P4  The bot loop, thin              ▲ Milestone A — the loop closes
 …
 ```
@@ -58,6 +58,12 @@ An administrator adds a doctor, who receives an emailed link, sets their own pas
 signed in. Doctors reset a password with a six-digit code, and change their address by confirming
 it from the new inbox — no administrator approves it. Mail lands in Mailpit at
 http://localhost:8025.
+
+**P2** delivered Module 1: patients, admissions, the draft/review/submit flow, and the
+transactional counter of §7.1 that gives two doctors submitting in the same millisecond
+consecutive identifiers with no gap. Both snapshots are frozen at submit, so editing a patient
+record later never rewrites what the centre was told. The administrator's patients-per-doctor
+view is wired up, and every read of it is audited by record.
 
 Run `pnpm db:seed` and sign in as any of:
 
@@ -124,6 +130,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 ```
 packages/
   platform/   accounts, sessions, authorization, audit, email, config — shared by both apps
+  hospital/   Module 1: patients, admissions, requests, and its narrow read API
   domain/     the clinical rules — pure, no clock, no I/O, imported by web and bot alike
   contract/   the two shared tables: schemas, column ownership, writer-scoped transitions
   config/     clinical thresholds as data, with defaults and a 60-second cache

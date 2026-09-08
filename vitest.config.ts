@@ -20,6 +20,7 @@ export default defineConfig({
       '@blood-connect/contract': pkg('contract'),
       '@blood-connect/testing': pkg('testing'),
       '@blood-connect/platform': pkg('platform'),
+      '@blood-connect/hospital': pkg('hospital'),
       // The web app's own path alias, so its module tests import exactly what
       // the app imports.
       '@blood-connect/db': path.resolve(import.meta.dirname, 'db/src/index.ts'),

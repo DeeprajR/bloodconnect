@@ -2,7 +2,10 @@
   "$comment": "Test files are excluded from the emitted build but must still typecheck — a test that does not compile is a test that is not run.",
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "paths": { "@blood-connect/platform": ["./packages/platform/src/index.ts"] },
+    "paths": {
+      "@blood-connect/platform": ["./packages/platform/src/index.ts"],
+      "@blood-connect/hospital": ["./packages/hospital/src/index.ts"]
+    },
     "noEmit": true,
     "composite": false,
     "declaration": false,

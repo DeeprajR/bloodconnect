@@ -50,6 +50,20 @@
       "when": 1788872420156,
       "tag": "0006_account_lifecycle_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788877092339,
+      "tag": "0007_hospital_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788877093488,
+      "tag": "0008_hospital_requests_support",
+      "breakpoints": true
     }
   ]
 }

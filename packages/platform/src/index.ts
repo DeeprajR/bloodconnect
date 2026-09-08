@@ -67,6 +67,7 @@ export {
   sealRejected,
   sessionInvalid,
   type AccountLifecycleError,
+  type NotAuthorized,
   type PlatformError,
 } from './errors.js';
 

@@ -20,6 +20,9 @@
       "path": "packages/platform"
     },
     {
+      "path": "packages/hospital"
+    },
+    {
       "path": "packages/testing"
     },
     {
