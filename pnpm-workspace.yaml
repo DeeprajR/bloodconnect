@@ -8,3 +8,28 @@ packages:
 # scripts, which is the default worth keeping.
 allowBuilds:
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@types/node@26.5.0'
+  - '@typescript-eslint/eslint-plugin@8.70.0'
+  - '@typescript-eslint/parser@8.70.0'
+  - '@typescript-eslint/type-utils@8.70.0'
+  - '@typescript-eslint/utils@8.70.0'
+  - typescript-eslint@8.70.0
+
+# typescript-eslint 8.70.0 was published inside pnpm's minimumReleaseAge window,
+# and the 8.69.0 packages depend on their siblings by caret range, so the newest
+# build gets pulled in transitively. Pinning the whole set holds the line without
+# weakening the supply-chain policy, which is the control worth keeping.
+# Remove these once 8.70.0 is past the age cutoff.
+overrides:
+  '@typescript-eslint/eslint-plugin': 8.69.0
+  '@typescript-eslint/parser': 8.69.0
+  '@typescript-eslint/project-service': 8.69.0
+  '@typescript-eslint/scope-manager': 8.69.0
+  '@typescript-eslint/tsconfig-utils': 8.69.0
+  '@typescript-eslint/type-utils': 8.69.0
+  '@typescript-eslint/types': 8.69.0
+  '@typescript-eslint/typescript-estree': 8.69.0
+  '@typescript-eslint/utils': 8.69.0
+  '@typescript-eslint/visitor-keys': 8.69.0

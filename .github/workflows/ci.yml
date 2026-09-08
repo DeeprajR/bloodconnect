@@ -73,9 +73,6 @@ jobs:
       - name: Migrations apply cleanly to an empty database (§5.9)
         run: pnpm db:migrate
 
-      - name: Seed
-        run: pnpm db:seed
-
       - name: Migrations are idempotent against an already-migrated database
         # The second half of §5.9's requirement: clean against empty, and clean
         # against a database seeded from the previous release.
@@ -89,6 +86,11 @@ jobs:
           fi
 
       # ------------------------------------------------------------------ test
+      - name: Seed
+        run: pnpm db:seed
+        env:
+          NODE_ENV: test
+
       - name: Tests
         run: pnpm test
 

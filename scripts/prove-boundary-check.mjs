@@ -42,7 +42,7 @@ const cruiserEntry = path.join(
 function runCruiser() {
   return spawnSync(
     process.execPath,
-    [cruiserEntry, 'packages', 'db', '--config', '.dependency-cruiser.cjs'],
+    [cruiserEntry, 'packages', 'db', 'apps', '--config', '.dependency-cruiser.cjs'],
     { cwd: repoRoot, encoding: 'utf8', shell: false },
   );
 }

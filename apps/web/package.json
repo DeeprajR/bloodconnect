@@ -1,0 +1,33 @@
+{
+  "name": "@blood-connect/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@blood-connect/config": "workspace:*",
+    "@blood-connect/contract": "workspace:*",
+    "@blood-connect/db": "workspace:*",
+    "@blood-connect/domain": "workspace:*",
+    "@blood-connect/ids": "workspace:*",
+    "@blood-connect/result": "workspace:*",
+    "@node-rs/argon2": "^2.2.0",
+    "drizzle-orm": "^0.45.2",
+    "next": "^16.3.4",
+    "postgres": "^3.4.9",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "ux4g-web-components": "^2.1.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@blood-connect/testing": "workspace:*",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7"
+  }
+}

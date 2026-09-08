@@ -26,22 +26,40 @@ Section references written as §n point at the specification.
 
 ## Where the build is
 
-**Phase 0 — foundations. Complete.**
+**Phase 1 — identity and access. Complete.**
 
 ```
-P0  Foundations                  ✅ this repository
-P1  Identity and access, thin    ← next
-P2  The request, thin
+P0  Foundations                  ✅
+P1  Identity and access, thin    ✅
+P2  The request, thin            ← next
 P3  The centre decision, thin
 P4  The bot loop, thin              ▲ Milestone A — the loop closes
 …
 ```
 
-What Phase 0 delivered: the pnpm workspace and its strict TypeScript settings; the import
-boundary and a CI job that proves it rejects a deep import; Docker Compose with Postgres, Mailpit
-and MinIO; three schemas, three roles and the grants of §5.1; Drizzle with the first migrations
-and a seed runner; the six shared packages; and the Kozhikode location hierarchy seeded and
-versioned. No feature, and no UI.
+**P0** delivered the workspace and its strict TypeScript settings; the import boundary and a CI
+job that proves it rejects a deep import; Docker Compose with Postgres, Mailpit and MinIO; three
+schemas, three roles and the grants of §5.1; Drizzle with the first migrations and a seed runner;
+the six shared packages; and the Kozhikode location hierarchy, seeded and versioned.
+
+**P1** delivered the Next.js app and the platform module: `users`, `sessions`,
+`auth_rate_limits`, `audit_log` and `app_config`; Argon2id passwords and an httpOnly session
+cookie storing only a hash; login throttling per IP and per account, in the database; the three
+authorization layers of §13 reading one decision function; the audit writer wired into the
+use-case context; and a seeded account for each of the four roles. Sign in, sign out, and four
+role dashboards, built on UX4G.
+
+Run `pnpm db:seed` and sign in as any of:
+
+| Role | Email | Lands on |
+|---|---|---|
+| Doctor | `doctor@blood-connect.invalid` | `/dashboard` |
+| Administrator | `admin@blood-connect.invalid` | `/dashboard` |
+| Blood centre | `centre@blood-connect.invalid` | `/centre` |
+| Volunteer admin | `volunteer@blood-connect.invalid` | `/volunteer` |
+
+Password `BloodConnect!Demo2026`, printed by the seed. These are synthetic accounts on a
+`.invalid` domain, and the seed refuses to run with `NODE_ENV=production`.
 
 ## Getting started
 
@@ -52,8 +70,9 @@ pnpm install
 cp .env.example .env       # everything already points at the local stack
 pnpm up                    # Postgres, Mailpit, MinIO
 pnpm db:migrate            # apply db/migrations as the migrator role
-pnpm db:seed               # the location hierarchy
+pnpm db:seed               # locations, and one account per role
 pnpm verify                # typecheck, lint, boundaries, tests
+pnpm --filter @blood-connect/web dev
 ```
 
 | Service | Where |
@@ -112,6 +131,8 @@ Because there is no second reader on a commit here, CI is the reviewer:
   what they *cannot* do.
 - **Every state machine's table is checked for states with no way out** — the failure §8 exists
   to prevent.
+- **§9's role matrix is a test**, transcribed row by row, asserted for every role — and the 403
+  response is checked for carrying *no data*, which is the mistake §14 names.
 
 ## Licence
 

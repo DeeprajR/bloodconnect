@@ -7,3 +7,4 @@
  * the build if it appears (§2.1).
  */
 export * from './reference.js';
+export * from './platform.js';

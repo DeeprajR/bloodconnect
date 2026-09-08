@@ -27,7 +27,7 @@ export default tseslint.config(
   ...tseslint.configs.stylisticTypeChecked,
 
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parserOptions: {
         // Named explicitly rather than via `projectService`, because the test
@@ -37,6 +37,7 @@ export default tseslint.config(
           './tsconfig.test.json',
           './packages/*/tsconfig.json',
           './db/tsconfig.json',
+          './apps/web/tsconfig.json',
         ],
         tsconfigRootDir: import.meta.dirname,
       },

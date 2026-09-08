@@ -75,6 +75,37 @@ module.exports = {
       to: { path: '^packages/(?!domain|ids)' },
     },
     {
+      name: 'module-boundary',
+      comment:
+        'One module may not reach inside another (§11.2). Each of platform / hospital / centre / ' +
+        'volunteer exposes exactly one index.ts, and that is the whole of its surface — the ' +
+        'alternative is the cross-module table read the spec forbids.',
+      severity: 'error',
+      from: { path: '^apps/web/src/modules/([^/]+)/' },
+      to: {
+        path: '^apps/web/src/modules/([^/]+)/(?!index\\.ts$)',
+        pathNot: ['^apps/web/src/modules/$1/'],
+      },
+    },
+    {
+      name: 'no-http-in-a-module',
+      comment:
+        'A module may not import from app/. Routes and server actions call modules, never the ' +
+        'reverse: the application layer must not know about HTTP, cookies or React (§3).',
+      severity: 'error',
+      from: { path: '^apps/web/src/modules/' },
+      to: { path: '^apps/web/src/app/' },
+    },
+    {
+      name: 'no-rule-in-a-route',
+      comment:
+        'No business logic in app/ (§9.1). A route or a server action parses input and calls one ' +
+        'use case; it may not reach past a module entry point to do it itself.',
+      severity: 'error',
+      from: { path: '^apps/web/src/app/' },
+      to: { path: '^apps/web/src/modules/[^/]+/(?!index\\.ts$)' },
+    },
+    {
       name: 'no-circular',
       comment: 'A cycle means the layering has been crossed somewhere (§3).',
       severity: 'error',
@@ -96,6 +127,13 @@ module.exports = {
           // A package entry point is an orphan until something imports it, and
           // publishing it before its first caller exists is the intended order.
           '^packages/[^/]+/src/index\\.ts$',
+          // Next's file conventions: a page, a layout, the proxy and the config
+          // are entry points the framework calls, not modules anything imports.
+          '^apps/[^/]+/next\\.config\\.ts$',
+          '^apps/[^/]+/src/(proxy|middleware)\\.ts$',
+          '^apps/[^/]+/src/app/.+\\.(ts|tsx)$',
+          // A test is run, not imported.
+          '\\.(test|spec)\\.ts$',
         ],
       },
       to: {},
@@ -104,13 +142,16 @@ module.exports = {
 
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)(dist|coverage)/' },
+    exclude: { path: '(^|/)(dist|coverage|\\.next|node_modules)/' },
     tsPreCompilationDeps: true,
-    tsConfig: { fileName: 'tsconfig.base.json' },
+    // Carries the web app's @/* path mapping. Without it every `@/...` import
+    // resolves to nothing and the module rules below check an empty graph — a
+    // boundary check that passes for want of edges reads as a green tick.
+    tsConfig: { fileName: 'tsconfig.depcruise.json' },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
       conditionNames: ['import', 'require', 'node', 'types', 'default'],
-      extensions: ['.js', '.ts'],
+      extensions: ['.js', '.ts', '.tsx'],
       mainFields: ['module', 'main', 'types'],
     },
     reporterOptions: {
