@@ -34,6 +34,15 @@ describe('clinical vocabulary (§2.7)', () => {
     expect(WORDING.neededBy).toBe('Needed by');
   });
 
+  it('names the centre’s own terms without abbreviating them', () => {
+    // A counter reads these under time pressure. "Unit no." and "Exp." save
+    // three characters and cost the one moment somebody notices a wrong date.
+    expect(WORDING.unitNumber).toBe('Unit number');
+    expect(WORDING.collectedOn).toBe('Collection date');
+    expect(WORDING.expiresOn).toBe('Expiry date');
+    expect(WORDING.stockFloor).toBe('Stock floor');
+  });
+
   it('calls a deferral a deferral', () => {
     // Accurate, temporary by default, and it does not read as a judgement of
     // the person.

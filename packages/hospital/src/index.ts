@@ -33,6 +33,18 @@ export {
 } from './read.js';
 
 export {
+  getRequestForDecision,
+  isAdmissionOpen,
+  listDecidedRequests,
+  listRequestsAwaitingDecision,
+  markRequestDecided,
+  type DecidedStatus,
+  type DoctorSnapshot,
+  type PatientSnapshot,
+  type RequestForDecision,
+} from './for-centre.js';
+
+export {
   admissionNotFound,
   incompleteDraft,
   invalidPatient,

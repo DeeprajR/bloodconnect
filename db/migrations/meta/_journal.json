@@ -64,6 +64,20 @@
       "when": 1788877093488,
       "tag": "0008_hospital_requests_support",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788878817510,
+      "tag": "0009_centre_register_and_contract",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788878818510,
+      "tag": "0010_centre_grants",
+      "breakpoints": true
     }
   ]
 }

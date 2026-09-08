@@ -16,7 +16,7 @@
  */
 
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { sql as raw } from 'drizzle-orm';
+import { count, eq, sql as raw } from 'drizzle-orm';
 import postgres from 'postgres';
 
 import { CONTRACT_VERSION, CONTRACT_VERSION_CONFIG_KEY } from '@blood-connect/contract';
@@ -28,13 +28,19 @@ import {
   DATASET_VERSION,
   readLocationSeed,
 } from '../seeds/locations.js';
+import { buildStockSeed } from '../seeds/stock.js';
 import {
   appConfig,
+  bloodBags,
+  centreSettings,
   locationAliases,
   locationDatasetVersions,
   locationNodes,
   users,
 } from './schema/index.js';
+
+/** This deployment's centre. Multi-tenant needs more rows, not a migration. */
+const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
 
 type Database = ReturnType<typeof drizzle>;
 
@@ -131,6 +137,62 @@ async function seedAccounts(db: Database): Promise<void> {
   process.stdout.write(`  password:  ${SEED_PASSWORD}\n`);
 }
 
+/**
+ * Points the centre at its district, now that the hierarchy exists.
+ *
+ * Migration 0010 creates the settings row without one, because `district_id` is
+ * a foreign key into `reference.location_nodes` and the migrations run before
+ * this file does. Set here rather than there, so a fresh database migrates
+ * cleanly and the demand use case has an address to snapshot.
+ */
+async function seedCentreSettings(db: Database): Promise<void> {
+  await db
+    .update(centreSettings)
+    .set({ districtId: 'KL_KKD', cityId: 'KKD_T1', updatedAt: raw`now()` })
+    .where(eq(centreSettings.id, 1));
+
+  process.stdout.write('  centre:    settings pointed at Kozhikode (KL_KKD)\n');
+}
+
+/**
+ * Stock on the shelf.
+ *
+ * Idempotent through the unique unit number: re-running adds nothing, and a
+ * bag that has since been reserved or issued keeps whatever happened to it.
+ * Deliberately not a fixed set of ids — a seed that resurrected an issued unit
+ * would be rewriting the register.
+ */
+async function seedStock(db: Database): Promise<void> {
+  const bags = buildStockSeed();
+
+  await db
+    .insert(bloodBags)
+    .values(
+      bags.map((bag) => ({
+        id: bag.id,
+        centreId: CENTRE_ID,
+        unitNumber: bag.unitNumber,
+        bloodGroup: bag.bloodGroup,
+        product: bag.product,
+        collectedAt: bag.collectedAt,
+        expiresAt: bag.expiresAt,
+        expirySource: 'derived' as const,
+        source: bag.source,
+        status: 'available' as const,
+      })),
+    )
+    .onConflictDoNothing();
+
+  const [held] = await db
+    .select({ n: count() })
+    .from(bloodBags)
+    .where(eq(bloodBags.status, 'available'));
+
+  process.stdout.write(
+    `  stock:     ${held?.n ?? 0} bags available (synthetic, SYN- prefixed)\n`,
+  );
+}
+
 async function seedConfig(db: Database): Promise<void> {
   // Both processes assert their compiled contract version against this at boot
   // and refuse to start on a major mismatch (§6).
@@ -166,6 +228,8 @@ async function main(): Promise<void> {
     const db = drizzle(client);
     await seedLocations(db);
     await seedAccounts(db);
+    await seedCentreSettings(db);
+    await seedStock(db);
     await seedConfig(db);
     process.stdout.write('seed complete\n');
   } finally {

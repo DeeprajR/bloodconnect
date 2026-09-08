@@ -10,8 +10,10 @@ import postgres from 'postgres';
  * grant that never gets exercised by normal use and therefore never fails until
  * it matters.
  *
- * The column-level grants on `hospital.donor_demand` join this file in P3, when
- * the table exists. The shape is already here.
+ * The column-level grants on `hospital.donor_demand` are the third of the three
+ * defences §11.2 asks for, and the only one that still holds when the
+ * application logic is wrong. So they are asserted from the roles themselves,
+ * below, rather than reviewed in the migration.
  */
 
 const testUrl = process.env['TEST_DATABASE_URL'];

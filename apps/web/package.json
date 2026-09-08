@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@blood-connect/centre": "workspace:*",
     "@blood-connect/config": "workspace:*",
     "@blood-connect/contract": "workspace:*",
     "@blood-connect/db": "workspace:*",

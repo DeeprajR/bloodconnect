@@ -43,6 +43,18 @@ export const WORDING = {
   admittedAt: 'Admitted at',
   dischargedAt: 'Discharged at',
 
+  /* Module 2 — the centre */
+  unitNumber: 'Unit number',
+  collectedOn: 'Collection date',
+  expiresOn: 'Expiry date',
+  stockOnHand: 'Stock on hand',
+  stockFloor: 'Stock floor',
+  donorDemand: 'Donor demand',
+  unitsIssued: 'Units issued',
+  /** Never "quarantined forever": it is a waiting room with two exits (§4). */
+  quarantine: 'Quarantine',
+  walkIn: 'Walk-in donation',
+
   /* Module 3 — donors. Here so the whole vocabulary is in one place. */
   deferral: 'Deferral',
   interDonationInterval: 'Inter-donation interval',
