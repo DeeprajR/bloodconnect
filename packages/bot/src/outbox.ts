@@ -105,6 +105,8 @@ export type DrainResult = {
   readonly sent: number;
   readonly failed: number;
   readonly abandoned: number;
+  /** Queued for a channel this process is not running. Left for one that is. */
+  readonly skipped: number;
 };
 
 /** Stops retrying after this many attempts, and says so in the row. */
@@ -132,6 +134,7 @@ export async function drainOutbox(
   let sent = 0;
   let failed = 0;
   let abandoned = 0;
+  let skipped = 0;
 
   const due = await ctx.db
     .select({
@@ -175,7 +178,31 @@ export async function drainOutbox(
     // Another drain got there first.
     if (claimed.length === 0) continue;
 
-    const result = await ctx.channel.send(
+    /**
+     * Route by the row's own channel (§2.11).
+     *
+     * One global adapter would send a message queued for Telegram through
+     * whatever this process happens to be polling — to a stranger, or to
+     * nobody. The channel is on the row precisely so this is a lookup.
+     */
+    const port = ctx.channel.for(row.channel);
+
+    if (!port) {
+      // Not a bad message: a platform this process is not running. Left
+      // pending, so a process that *does* run it will deliver it, and so the
+      // §11.9 alert notices if nothing ever does.
+      await ctx.db
+        .update(messageOutbox)
+        .set({
+          lastError: `no adapter for channel "${row.channel}" in this process`,
+          nextAttemptAt: new Date(now.getTime() + LEASE_MS),
+        })
+        .where(eq(messageOutbox.id, row.id));
+      skipped += 1;
+      continue;
+    }
+
+    const result = await port.send(
       { channel: row.channel, channelUserId: row.channelUserId },
       row.payload as OutgoingMessage,
     );
@@ -210,7 +237,7 @@ export async function drainOutbox(
     else failed += 1;
   }
 
-  return { sent, failed, abandoned };
+  return { sent, failed, abandoned, skipped };
 }
 
 /**

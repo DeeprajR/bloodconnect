@@ -18,13 +18,14 @@ import type { Clock } from '@blood-connect/domain';
 import type { IdGenerator } from '@blood-connect/ids';
 
 import type { BotDatabase, BotTransaction } from './db.js';
-import type { ChannelPort } from './ports/channel.js';
+import type { ChannelRegistry } from './ports/channel.js';
 
 export type BotContext = {
   readonly db: BotDatabase;
   readonly clock: Clock;
   readonly ids: IdGenerator;
-  readonly channel: ChannelPort;
+  /** Delivery is a lookup by the row's own channel, never one global port. */
+  readonly channel: ChannelRegistry;
   readonly config: AppConfig;
   /** Ties one unit of blood end to end, across both processes (§14). */
   readonly correlationId: string;

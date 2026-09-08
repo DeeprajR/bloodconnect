@@ -11,6 +11,7 @@ import { idGenerator, newId } from '@blood-connect/ids';
 import { createFakeClock } from '@blood-connect/testing';
 
 import { createMemoryChannel, type MemoryChannel } from './adapters/memory-channel.js';
+import { createChannelRegistry } from './ports/channel.js';
 import type { BotContext } from './context.js';
 import type { BotDatabase } from './db.js';
 import { tick } from './ticker.js';
@@ -39,7 +40,7 @@ describe.skipIf(!testUrl)('the ticker', () => {
     db,
     clock,
     ids: idGenerator,
-    channel,
+    channel: createChannelRegistry(channel),
     config: CONFIG_DEFAULTS,
     correlationId: newId(),
   });
@@ -194,6 +195,37 @@ describe.skipIf(!testUrl)('the ticker', () => {
                     SET next_attempt_at = ${clock.now().toISOString()}::timestamptz`;
     const recovered = await tick(context());
     expect(recovered.drain.sent).toBeGreaterThanOrEqual(1);
+  });
+
+  it('never sends a message through a channel it was not queued for', async () => {
+    await openDemand(2);
+    await makeDonor(1);
+
+    // The donors above are on `memory`. This process runs `telegram` only —
+    // which is exactly what happened the first time the bot was pointed at a
+    // real token with a seeded pool behind it.
+    const telegramOnly: BotContext = {
+      ...context(),
+      channel: createChannelRegistry({
+        name: 'telegram',
+        send: () => {
+          throw new Error('a memory-channel message was routed to Telegram');
+        },
+        receive: () => Promise.resolve([]),
+        check: () => Promise.resolve({ ok: true, detail: 'stub' }),
+      }),
+    };
+
+    const result = await tick(telegramOnly);
+
+    expect(result.drain.sent).toBe(0);
+    // Left pending, not abandoned: the message is fine, the platform is simply
+    // not running here, and a process that does run it will deliver it.
+    expect(result.drain.skipped).toBeGreaterThanOrEqual(1);
+
+    const [row] = await db.select().from(bot.messageOutbox);
+    expect(row?.status).toBe('pending');
+    expect(row?.lastError).toContain('no adapter for channel "memory"');
   });
 
   it('writes progress back to the centre on every pass that touched a request', async () => {

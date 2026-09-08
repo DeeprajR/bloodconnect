@@ -83,3 +83,35 @@ export type ChannelPort = {
   /** Verifies the platform is actually reachable — a health check, not a ping. */
   readonly check: () => Promise<{ ok: boolean; detail: string }>;
 };
+
+/**
+ * The channels this process can actually reach.
+ *
+ * §2.11 stores a channel **per donor** and **per queued message**, because one
+ * person may be reachable on Telegram today and WhatsApp tomorrow, and both
+ * kinds of row can be in the outbox at once. So delivery is a lookup, not a
+ * single adapter: sending a message queued for one platform through another
+ * delivers it to a stranger, or to nobody.
+ *
+ * `default` is the channel new conversations arrive on — the one being polled.
+ */
+export type ChannelRegistry = {
+  readonly default: ChannelPort;
+  readonly for: (name: string) => ChannelPort | undefined;
+  readonly names: readonly string[];
+};
+
+export function createChannelRegistry(
+  primary: ChannelPort,
+  ...others: readonly ChannelPort[]
+): ChannelRegistry {
+  const ports = new Map<string, ChannelPort>(
+    [primary, ...others].map((port) => [port.name, port]),
+  );
+
+  return {
+    default: primary,
+    for: (name) => ports.get(name),
+    names: [...ports.keys()],
+  };
+}

@@ -17,6 +17,7 @@ import { idGenerator, newId } from '@blood-connect/ids';
 import { createFakeClock } from '@blood-connect/testing';
 
 import { createMemoryChannel, type MemoryChannel } from '../adapters/memory-channel.js';
+import { createChannelRegistry } from '../ports/channel.js';
 import type { BotContext } from '../context.js';
 import type { BotDatabase } from '../db.js';
 import { drainOutbox, countStuckStandDowns } from '../outbox.js';
@@ -47,7 +48,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
     db,
     clock,
     ids: idGenerator,
-    channel,
+    channel: createChannelRegistry(channel),
     config: CONFIG_DEFAULTS,
     correlationId: newId(),
     ...overrides,

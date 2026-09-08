@@ -11,9 +11,11 @@ export { createBotDatabase, type BotDatabase, type BotTransaction } from './db.j
 export { createBotConfigCache, loadBotConfig } from './config.js';
 export type { BotContext, BotTransactionContext } from './context.js';
 
+export { createChannelRegistry } from './ports/channel.js';
 export {
   type ChannelAddress,
   type ChannelPort,
+  type ChannelRegistry,
   type Choice,
   type IncomingUpdate,
   type OutgoingMessage,

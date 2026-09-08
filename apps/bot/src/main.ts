@@ -23,6 +23,7 @@ import path from 'node:path';
 
 import {
   createBotDatabase,
+  createChannelRegistry,
   createMemoryChannel,
   createTelegramChannel,
   handleUpdate,
@@ -50,9 +51,29 @@ const TICK_INTERVAL_MS = Number(process.env['BOT_TICK_INTERVAL_MS'] ?? '15000');
  * exactly that. It is also what makes a first clone of this repository runnable
  * before anybody has spoken to @BotFather.
  */
+const CHANNELS = ['telegram', 'memory'] as const;
+
 function selectChannel(): ChannelPort {
   const choice = process.env['CHANNEL'] ?? 'telegram';
   const token = process.env['TELEGRAM_BOT_TOKEN'] ?? '';
+
+  /**
+   * An unrecognised channel refuses to start (§13).
+   *
+   * `CHANNEL` names the **platform**, and it is stored in
+   * `donor_channels.channel` — it is not the bot's @username, which is
+   * `TELEGRAM_BOT_USERNAME` and only appears in deep links. Anything else here
+   * used to fall through to Telegram silently, so a value that meant nothing
+   * looked like it was configuring something. It was set to the bot's username
+   * once, and nothing said so.
+   */
+  if (!(CHANNELS as readonly string[]).includes(choice)) {
+    process.stderr.write(
+      `CHANNEL is "${choice}", which is not a channel. Use one of: ${CHANNELS.join(', ')}.\n` +
+        'The bot\'s @username goes in TELEGRAM_BOT_USERNAME, not here.\n',
+    );
+    process.exit(1);
+  }
 
   if (choice === 'memory' || token === '' || token === 'replace-me') {
     if (choice !== 'memory') {
@@ -71,6 +92,7 @@ function selectChannel(): ChannelPort {
 async function main(): Promise<void> {
   const db = createBotDatabase();
   const channel = selectChannel();
+  const channels = createChannelRegistry(channel);
   const config = createBotConfigCache(db);
 
   /* --- boot checks: refuse to start rather than run wrong (§6, §13) ----- */
@@ -105,7 +127,7 @@ async function main(): Promise<void> {
       today: (timeZone: string = APP_TIMEZONE) => dayOf(new Date(), timeZone),
     },
     ids: idGenerator,
-    channel,
+    channel: channels,
     config: await config.get(),
     // One id per pass, so every write it causes is tied together (§14).
     correlationId: crypto.randomUUID(),
@@ -141,7 +163,11 @@ async function main(): Promise<void> {
               `(${String(result.donorsNotified)} asked), cancelled ${String(result.cancelled)}, ` +
               `expired ${String(result.expired)}, completed ${String(result.completed)}, ` +
               `outcomes ${String(result.outcomesApplied)}, promoted ${String(result.promoted)}, ` +
-              `sent ${String(result.drain.sent)}\n`,
+              `sent ${String(result.drain.sent)}` +
+              (result.drain.skipped > 0
+                ? `, ${String(result.drain.skipped)} queued for a channel this process is not running`
+                : '') +
+              '\n',
           );
         }
       } catch (error) {

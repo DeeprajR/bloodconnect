@@ -172,9 +172,40 @@ P7 has the interview depth: the four-level location with the type-ahead, the
 summary-and-fix-several flow, the locality review queue, self-service profile
 edits, admin cards. P9 has the demand board and volunteer cards.
 
-**The Telegram adapter is written and unexercised.** `.env` still carries
-`TELEGRAM_BOT_TOKEN=replace-me`, so every run so far has been on the in-memory
-channel. The whole loop is proven; the live send is not. Setting a real token
-from @BotFather is the only step between here and a demonstration against a real
-account, and the adapter's `check()` verifies the token on boot rather than
-failing on the first message.
+## 8. The first live connection, and what it found
+
+A real token went in and the adapter connected on the first attempt —
+`getMe` returning `@cmck_blood_donor_bot`. Two things came out of that ten
+seconds, and both were real:
+
+**`CHANNEL` had been set to the bot's @username.** That variable names the
+*platform* and is stored in `donor_channels.channel`; the username belongs in
+`TELEGRAM_BOT_USERNAME` and appears only in deep links. The process accepted it
+silently, because anything that was not `memory` fell through to Telegram — so a
+value that configured nothing looked like it configured something. It now
+refuses to start on an unrecognised channel (§13).
+
+**The outbox drain ignored the channel on the row.** It sent every message
+through the one adapter the process was polling, so a message queued for one
+platform would go out on another — to a stranger, or to nobody. §2.11 stores a
+channel per donor *and* per queued message precisely because both kinds of row
+can be in the queue at once, so delivery is a lookup: `ChannelRegistry`, and a
+row for a platform this process is not running is left **pending** rather than
+abandoned. The message is fine; the platform is simply elsewhere.
+
+Neither was reachable from the in-memory channel, because with one adapter
+running, routing to it is always right. The lesson is the one this phase keeps
+teaching: **a second real thing is what makes the first one's assumptions
+visible.**
+
+## 9. Still not exercised
+
+A live **send**. `getMe` proves the token and the transport; nothing has yet
+been delivered to a person, because that needs somebody to message the bot.
+
+And a donor registering through Telegram is **not selectable into a wave**:
+`blood_group_verified_at` is null until the centre confirms the group, and
+§7.7 requires it — recruiting on a self-declared group sends the wrong person to
+the counter. There is no screen that sets it yet; that belongs with the counter
+work in P6. Until then it is a database row, and the gap is named rather than
+papered over.

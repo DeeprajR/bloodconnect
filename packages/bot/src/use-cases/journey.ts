@@ -433,7 +433,7 @@ async function claimUnit(
         demandId: request.demandId,
         // The bot's **internal** donor id, not a platform user id (§2.11).
         donorId: journey.donorId,
-        channel: channel?.channel ?? ctx.channel.name,
+        channel: channel?.channel ?? ctx.channel.default.name,
         donorName: donor?.name ?? 'Donor',
         donorPhone: phone?.e164 ?? 'not verified',
         bloodGroup: donor?.bloodGroup ?? request.bloodGroup,
@@ -567,7 +567,7 @@ export async function promoteFromWaitlist(
           id: ctx.ids.next<'ConfirmationId'>(),
           demandId: request.demandId,
           donorId: candidate.donorId,
-          channel: channel?.channel ?? ctx.channel.name,
+          channel: channel?.channel ?? ctx.channel.default.name,
           donorName: donor?.name ?? 'Donor',
           donorPhone: phone?.e164 ?? 'not verified',
           bloodGroup: donor?.bloodGroup ?? request.bloodGroup,
