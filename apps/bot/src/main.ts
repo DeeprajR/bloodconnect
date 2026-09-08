@@ -26,6 +26,7 @@ import {
   createChannelRegistry,
   createMemoryChannel,
   createTelegramChannel,
+  drainOutbox,
   handleUpdate,
   tick,
   type BotContext,
@@ -194,7 +195,23 @@ async function main(): Promise<void> {
             process.stderr.write(`update ${update.updateId} failed: ${String(error)}\n`);
           }
         }
-        if (updates.length === 0) {
+        /**
+         * Send what those replies queued, **now**.
+         *
+         * Replies go through the outbox so ordering holds — "you are confirmed"
+         * must never arrive after "you are no longer needed". But the ticker was
+         * the only thing draining it, so every tap waited up to a full tick
+         * interval before anything came back, and the bot felt broken. Draining
+         * here keeps the ordering and removes the wait.
+         */
+        if (updates.length > 0) {
+          try {
+            await drainOutbox(await context(), 20);
+          } catch (error) {
+            // The reply is already committed; the ticker's drain will retry it.
+            process.stderr.write(`reply drain failed: ${String(error)}\n`);
+          }
+        } else {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (error) {

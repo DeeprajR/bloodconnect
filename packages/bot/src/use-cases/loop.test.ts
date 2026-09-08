@@ -17,6 +17,7 @@ import { idGenerator, newId } from '@blood-connect/ids';
 import { createFakeClock } from '@blood-connect/testing';
 
 import { createMemoryChannel, type MemoryChannel } from '../adapters/memory-channel.js';
+import { readableDay } from '../messages.js';
 import { createChannelRegistry } from '../ports/channel.js';
 import type { BotContext } from '../context.js';
 import type { BotDatabase } from '../db.js';
@@ -758,7 +759,8 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
         .to(donor.channelUserId)
         .find((m) => m.text.startsWith('Thank you — the centre has recorded'));
       expect(thanks).toBeDefined();
-      expect(thanks?.text).toContain(row?.nextEligibleOn ?? '');
+      // The date a person reads, not an ISO string: "7 Dec", not "2026-12-07".
+      expect(thanks?.text).toContain(readableDay(row?.nextEligibleOn ?? ''));
     });
 
     it('applies a counter outcome only once', async () => {

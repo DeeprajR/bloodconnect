@@ -2,17 +2,28 @@
  * Turning an incoming update into one use-case call (§3, §9.5).
  *
  * The equivalent of a route handler: it parses, dispatches, and formats a reply.
- * No rule lives here. Whether a donor may give, whether a place is still open,
- * whether a tap is a replay — all of that is decided inside a use case, on a
- * transaction, and this file only says what the person sees.
+ * No rule lives here — whether a donor may give, whether a place is still open,
+ * whether a tap is a replay, are all decided inside a use case, on a
+ * transaction. This file only decides what the person sees.
  *
- * Replies go **through the outbox** like everything else, rather than being sent
- * inline. A reply sent inline while the outbox holds a stand-down would arrive
- * out of order, and the ordering that matters — "you are confirmed" before "you
- * are no longer needed" — is the one a donor would act on.
+ * **Routing is by the person's state, not by a command.** Somebody who has never
+ * registered gets the first question, whatever they typed; somebody part-way
+ * through gets the next one; somebody registered gets an answer about their own
+ * situation. Nobody has to know that `/start` exists.
+ *
+ * That ordering — *who is this?* before *what did they say?* — is also the fix
+ * for a bad bug. The router used to fall through to the onboarding handler for
+ * any unrecognised text, and with no conversation row it replied "you are not
+ * registered yet" to people who had just finished registering.
+ *
+ * Replies go **through the outbox** like everything else rather than being sent
+ * inline, so ordering holds: "you are confirmed" must never arrive after "you
+ * are no longer needed". The caller drains immediately after handling an update,
+ * so that costs nothing in latency.
  */
 
 import { locationNodes } from '@blood-connect/db';
+import { addDays } from '@blood-connect/domain';
 import { asc, eq } from 'drizzle-orm';
 
 import type { BotContext } from './context.js';
@@ -24,16 +35,18 @@ import {
   answerScreeningQuestion,
   declineRequest,
 } from './use-cases/journey.js';
+import { standingFor } from './use-cases/needs.js';
 import {
   advanceOnboarding,
   beginOnboarding,
   deleteDonorData,
   findDonorByAddress,
+  loadState,
   optOutDonor,
   promptFor,
+  resumeDonor,
   snoozeDonor,
 } from './use-cases/onboarding.js';
-import { addDays } from '@blood-connect/domain';
 
 /** How long "pause" lasts before a donor is asked again. */
 const SNOOZE_DAYS = 90;
@@ -46,173 +59,276 @@ async function districts(ctx: BotContext): Promise<{ id: string; name: string }[
     .orderBy(asc(locationNodes.name));
 }
 
-/** Queues one reply, keyed so a redelivered update writes nothing twice. */
+/** Queues replies, keyed so a redelivered update writes nothing twice. */
 async function reply(
   ctx: BotContext,
   to: ChannelAddress,
-  message: OutgoingMessage,
+  messages: readonly OutgoingMessage[],
   updateId: string,
 ): Promise<void> {
-  const queued: QueuedMessage = {
+  const queued: QueuedMessage[] = messages.map((message, index) => ({
     to,
-    kind: 'reply',
+    kind: 'reply' as const,
     message,
-    dedupeKey: `reply:${to.channel}:${to.channelUserId}:${updateId}`,
-  };
+    dedupeKey: `reply:${to.channel}:${to.channelUserId}:${updateId}:${String(index)}`,
+  }));
 
   await ctx.db.transaction(async (tx) => {
-    await enqueue(tx, ctx.ids, [queued], ctx.clock.now());
+    await enqueue(tx, ctx.ids, queued, ctx.clock.now());
   });
 }
 
+/* -------------------------------------------------------------------------- */
+/* What a registered donor sees                                                */
+/* -------------------------------------------------------------------------- */
+
 /**
- * Handles one update.
+ * Their own situation, and what is open that they could answer.
  *
- * Every branch ends by queueing exactly one reply, because a person who taps a
- * button and sees nothing assumes it did not work and taps again.
+ * This is the default reply for a registered donor — the answer to "so what
+ * now?", which is what somebody who has just finished a minute of questions is
+ * actually asking. Never "you are not registered".
  */
+async function standingMessage(
+  ctx: BotContext,
+  donorId: string,
+): Promise<OutgoingMessage> {
+  const standing = await standingFor(ctx, donorId);
+  if (!standing) return { text: MESSAGES.help };
+
+  const lines: string[] = [];
+
+  if (standing.pausedUntil !== null) {
+    lines.push(MESSAGES.paused(standing.pausedUntil));
+  } else if (standing.eligibleFrom !== null) {
+    // The reason they are not being asked, said before the list — otherwise an
+    // empty list reads as "nobody needs blood", which is not what it means.
+    lines.push(MESSAGES.notEligibleYet(standing.eligibleFrom));
+  }
+
+  if (standing.needs.length === 0) {
+    lines.push(MESSAGES.nothingNeeded(standing.bloodGroup));
+  } else {
+    lines.push(MESSAGES.needsHeading(standing.needs.length));
+    for (const need of standing.needs) {
+      lines.push(
+        MESSAGES.needLine(
+          need.bloodGroup,
+          need.unitsOutstanding,
+          need.neededBy,
+          need.hospital,
+        ) + (need.alreadyAsked ? ' (already messaged you)' : ''),
+      );
+    }
+    if (standing.pausedUntil === null && standing.eligibleFrom === null) {
+      lines.push('\nWe will message you if one of these is a match for you.');
+    }
+  }
+
+  return { text: lines.join('\n') };
+}
+
+/* -------------------------------------------------------------------------- */
+/* The router                                                                  */
+/* -------------------------------------------------------------------------- */
+
 export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Promise<void> {
   const address = update.address;
 
-  /* ------------------------------------------------------ tapped choices */
-  if (update.kind === 'choice') {
-    const [verb, ...rest] = update.data.split(':');
-    const argument = rest.join(':');
-
-    if (verb === 'accept') {
-      const result = await acceptRequest(ctx, argument);
-      await reply(
-        ctx,
-        address,
-        result.ok
-          ? {
-              text: result.value.nextQuestion ?? MESSAGES.unknown,
-              choices: [
-                { label: 'Yes', data: `screen:${argument}:0:yes` },
-                { label: 'No', data: `screen:${argument}:0:no` },
-              ],
-            }
-          : { text: result.error.message },
-        update.updateId,
-      );
-      return;
-    }
-
-    if (verb === 'decline') {
-      const result = await declineRequest(ctx, argument);
-      await reply(
-        ctx,
-        address,
-        { text: result.ok ? MESSAGES.declined : result.error.message },
-        update.updateId,
-      );
-      return;
-    }
-
-    if (verb === 'screen') {
-      const [journeyId, rawIndex, answer] = argument.split(':');
-      const index = Number(rawIndex);
-      if (!journeyId || Number.isNaN(index) || (answer !== 'yes' && answer !== 'no')) {
-        await reply(ctx, address, { text: MESSAGES.unknown }, update.updateId);
-        return;
-      }
-
-      const result = await answerScreeningQuestion(ctx, journeyId, index, answer);
-      if (!result.ok) {
-        await reply(ctx, address, { text: result.error.message }, update.updateId);
-        return;
-      }
-
-      const step = result.value;
-      const message: OutgoingMessage =
-        step.kind === 'question'
-          ? {
-              text: step.text,
-              choices: [
-                { label: 'Yes', data: `screen:${journeyId}:${String(step.index)}:yes` },
-                { label: 'No', data: `screen:${journeyId}:${String(step.index)}:no` },
-              ],
-            }
-          : step.kind === 'deferred'
-            ? { text: MESSAGES.deferred }
-            : step.kind === 'waitlisted'
-              ? { text: MESSAGES.waitlisted }
-              : { text: MESSAGES.confirmed(step.hospital, step.neededBy) };
-
-      await reply(ctx, address, message, update.updateId);
-      return;
-    }
-
-    // An onboarding choice — sex, group, weight, district, consent.
-    await handleOnboardingInput(ctx, address, update.data, update.updateId);
+  // A tap on a request card is answerable whatever state the person is in, so
+  // it is handled before anything else looks them up.
+  if (update.kind === 'choice' && isJourneyChoice(update.data)) {
+    await handleJourneyChoice(ctx, address, update.data, update.updateId);
     return;
   }
 
-  /* ------------------------------------------------------- typed messages */
-  const text = update.text.trim().toLowerCase();
+  const donor = await findDonorByAddress(ctx, address);
+  const said = update.kind === 'text' ? update.text.trim() : update.data;
 
-  if (text === 'start' || text === '/start') {
-    const existing = await findDonorByAddress(ctx, address);
-    if (existing) {
-      await reply(ctx, address, { text: MESSAGES.help }, update.updateId);
-      return;
-    }
-    const begun = await beginOnboarding(ctx, address);
+  /* ------------------------------------------------ a registered donor */
+  if (donor) {
+    await handleRegistered(ctx, address, donor.donorId, said, update.updateId);
+    return;
+  }
+
+  /* ------------------------------------------ somebody part-way through */
+  const state = await loadState(ctx, address);
+  if (state) {
+    await handleOnboardingInput(ctx, address, said, update.updateId);
+    return;
+  }
+
+  /* --------------------------------------------------- somebody new ---- */
+  /**
+   * No command needed. Whatever they said, the useful reply is the welcome and
+   * the first question — asking somebody to type `/start` first is a step that
+   * exists for the system's convenience, not theirs.
+   */
+  const begun = await beginOnboarding(ctx, address);
+  await reply(
+    ctx,
+    address,
+    begun.ok
+      ? [{ text: MESSAGES.welcome }, promptFor('name')]
+      : [{ text: begun.error.message }],
+    update.updateId,
+  );
+}
+
+const JOURNEY_VERBS = ['accept', 'decline', 'screen'] as const;
+
+const isJourneyChoice = (data: string): boolean =>
+  (JOURNEY_VERBS as readonly string[]).includes(data.split(':')[0] ?? '');
+
+async function handleJourneyChoice(
+  ctx: BotContext,
+  address: ChannelAddress,
+  data: string,
+  updateId: string,
+): Promise<void> {
+  const [verb, ...rest] = data.split(':');
+  const argument = rest.join(':');
+
+  if (verb === 'accept') {
+    const result = await acceptRequest(ctx, argument);
     await reply(
       ctx,
       address,
-      begun.ok
-        ? { text: `${MESSAGES.welcome}\n\n${MESSAGES.askName}` }
-        : { text: begun.error.message },
-      update.updateId,
+      [
+        result.ok
+          ? question(argument, 0, result.value.nextQuestion ?? '')
+          : { text: result.error.message },
+      ],
+      updateId,
     );
     return;
   }
 
-  if (text === 'help' || text === '/help') {
-    await reply(ctx, address, { text: MESSAGES.help }, update.updateId);
+  if (verb === 'decline') {
+    const result = await declineRequest(ctx, argument);
+    await reply(
+      ctx,
+      address,
+      [{ text: result.ok ? MESSAGES.declined : result.error.message }],
+      updateId,
+    );
     return;
   }
 
-  if (text === 'pause' || text === 'stop' || text === 'delete') {
-    const donor = await findDonorByAddress(ctx, address);
-    if (!donor) {
-      await reply(ctx, address, { text: MESSAGES.notRegistered }, update.updateId);
-      return;
-    }
+  const [journeyId, rawIndex, answer] = argument.split(':');
+  const index = Number(rawIndex);
+  if (!journeyId || Number.isNaN(index) || (answer !== 'yes' && answer !== 'no')) {
+    await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
+    return;
+  }
 
-    if (text === 'pause') {
-      const until = addDays(ctx.clock.today(), SNOOZE_DAYS);
-      await snoozeDonor(ctx, donor.donorId, until);
-      await reply(ctx, address, { text: MESSAGES.snoozed(until) }, update.updateId);
-      return;
-    }
+  const result = await answerScreeningQuestion(ctx, journeyId, index, answer);
+  if (!result.ok) {
+    await reply(ctx, address, [{ text: result.error.message }], updateId);
+    return;
+  }
 
-    if (text === 'stop') {
-      await optOutDonor(ctx, donor.donorId);
-      await reply(ctx, address, { text: MESSAGES.optedOut }, update.updateId);
-      return;
-    }
+  const step = result.value;
+  const message: OutgoingMessage =
+    step.kind === 'question'
+      ? question(journeyId, step.index, step.text)
+      : step.kind === 'deferred'
+        ? { text: MESSAGES.deferred }
+        : step.kind === 'waitlisted'
+          ? { text: MESSAGES.waitlisted }
+          : { text: MESSAGES.confirmed(step.hospital, step.neededBy) };
 
+  await reply(ctx, address, [message], updateId);
+}
+
+const question = (journeyId: string, index: number, text: string): OutgoingMessage => ({
+  text,
+  choices: [
+    { label: 'Yes', data: `screen:${journeyId}:${String(index)}:yes` },
+    { label: 'No', data: `screen:${journeyId}:${String(index)}:no` },
+  ],
+});
+
+/* -------------------------------------------------------------------------- */
+/* Registered                                                                  */
+/* -------------------------------------------------------------------------- */
+
+async function handleRegistered(
+  ctx: BotContext,
+  address: ChannelAddress,
+  donorId: string,
+  said: string,
+  updateId: string,
+): Promise<void> {
+  const word = said.toLowerCase().replace(/^\//, '');
+
+  if (word === 'delete:confirm' || said === `delete:${donorId}`) {
+    await deleteDonorData(ctx, donorId);
+    await reply(ctx, address, [{ text: MESSAGES.deleted }], updateId);
+    return;
+  }
+  if (said === 'cancel:delete') {
+    await reply(ctx, address, [{ text: MESSAGES.deletionCancelled }], updateId);
+    return;
+  }
+
+  if (word === 'pause') {
+    const until = addDays(ctx.clock.today(), SNOOZE_DAYS);
+    await snoozeDonor(ctx, donorId, until);
+    await reply(ctx, address, [{ text: MESSAGES.snoozed(until) }], updateId);
+    return;
+  }
+
+  if (word === 'resume' || word === 'start') {
+    // "start" from somebody already registered is not a re-registration — it is
+    // almost always somebody looking for the menu, or coming back after a pause.
+    await resumeDonor(ctx, donorId);
+    await reply(
+      ctx,
+      address,
+      [{ text: MESSAGES.resumed }, await standingMessage(ctx, donorId)],
+      updateId,
+    );
+    return;
+  }
+
+  if (word === 'stop') {
+    await optOutDonor(ctx, donorId);
+    await reply(ctx, address, [{ text: MESSAGES.optedOut }], updateId);
+    return;
+  }
+
+  if (word === 'delete') {
     // Said plainly **before** deleting, in one sentence (§5).
     await reply(
       ctx,
       address,
-      {
-        text: MESSAGES.confirmDeletion,
-        choices: [
-          { label: 'Yes, delete everything', data: `delete:${donor.donorId}` },
-          { label: 'No, keep my details', data: 'cancel:delete' },
-        ],
-      },
-      update.updateId,
+      [
+        {
+          text: MESSAGES.confirmDeletion,
+          choices: [
+            { label: 'Yes, delete everything', data: `delete:${donorId}` },
+            { label: 'No, keep my details', data: 'cancel:delete' },
+          ],
+        },
+      ],
+      updateId,
     );
     return;
   }
 
-  // Anything else during onboarding is an answer to the current question.
-  await handleOnboardingInput(ctx, address, update.text, update.updateId);
+  if (word === 'help') {
+    await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
+    return;
+  }
+
+  // Anything else: their own situation. Useful, and never a contradiction.
+  await reply(ctx, address, [await standingMessage(ctx, donorId)], updateId);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Onboarding                                                                  */
+/* -------------------------------------------------------------------------- */
 
 async function handleOnboardingInput(
   ctx: BotContext,
@@ -220,38 +336,48 @@ async function handleOnboardingInput(
   input: string,
   updateId: string,
 ): Promise<void> {
-  if (input.startsWith('delete:')) {
-    await deleteDonorData(ctx, input.slice('delete:'.length));
-    await reply(ctx, address, { text: MESSAGES.deleted }, updateId);
-    return;
-  }
-  if (input === 'cancel:delete') {
-    await reply(ctx, address, { text: 'Nothing was deleted.' }, updateId);
-    return;
-  }
-
   const result = await advanceOnboarding(ctx, address, input);
 
   if (result.kind === 'next') {
     const list = result.state.step === 'district' ? await districts(ctx) : [];
-    await reply(ctx, address, promptFor(result.state.step, list), updateId);
+    await reply(ctx, address, [promptFor(result.state.step, list)], updateId);
     return;
   }
 
   if (result.kind === 'registered') {
+    /**
+     * Two messages, and the second is the point.
+     *
+     * "You are registered" on its own leaves somebody with nothing to do and no
+     * idea whether anything will ever happen. What is open near them right now
+     * answers that, and it is the state they will see from here on.
+     */
     await reply(
       ctx,
       address,
-      { text: MESSAGES.registered(result.nextEligible) },
+      [
+        { text: MESSAGES.registered(result.name) },
+        await standingMessage(ctx, result.donorId),
+      ],
       updateId,
     );
     return;
   }
 
   if (result.kind === 'abandoned') {
-    await reply(ctx, address, { text: MESSAGES.abandoned }, updateId);
+    await reply(ctx, address, [{ text: MESSAGES.abandoned }], updateId);
     return;
   }
 
-  await reply(ctx, address, { text: result.message }, updateId);
+  // A validation problem: say what is wrong and ask the same question again,
+  // rather than leaving somebody staring at an error with no prompt.
+  const list = result.step === 'district' ? await districts(ctx) : [];
+  await reply(
+    ctx,
+    address,
+    [{ text: result.message }, promptFor(result.step, list)],
+    updateId,
+  );
 }
+
+export { standingMessage };

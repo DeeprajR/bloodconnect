@@ -209,3 +209,56 @@ And a donor registering through Telegram is **not selectable into a wave**:
 the counter. There is no screen that sets it yet; that belongs with the counter
 work in P6. Until then it is a database row, and the gap is named rather than
 papered over.
+
+
+---
+
+## 10. What using it found, which running it did not
+
+The loop was correct and the conversation was bad. Four things, all reported
+from a real phone.
+
+**It was slow.** Replies go through the outbox so that ordering holds — "you are
+confirmed" must never arrive after "you are no longer needed". But the *ticker*
+was the only thing draining it, so every tap waited up to a fifteen-second
+interval before anything came back. The queue was right; the drain was in the
+wrong place. The conversation loop now drains immediately after handling a
+batch, which keeps the ordering and removes the wait entirely.
+
+**It contradicted itself.** Somebody finished registering, was told "You are
+registered", and was then told "You are not registered yet. Send start…"
+followed by a command menu. The router fell through to the onboarding handler
+for anything it did not recognise, and since a successful registration deletes
+the conversation row, that handler concluded they had never begun.
+
+The fix is an ordering: **who is this** before **what did they say**. A
+registered donor is answered from their own state; somebody part-way through
+gets the next question; somebody new gets the welcome. `MESSAGES.notRegistered`
+no longer exists, because there is no longer a path that could reach it.
+
+**It required `/start`.** Nobody should have to know a command exists to use
+something. Any message from an unrecognised person now begins the interview.
+
+**The copy was long and the questions were vague.** Rewritten shorter, warmer,
+one question at a time, with the reason underneath only where the reason changes
+what somebody answers. A validation failure now re-asks the question rather than
+leaving an error with no prompt.
+
+### The state the router actually branches on
+
+| Who | What they get |
+|---|---|
+| Never seen | The welcome and the first question — no command needed |
+| Part-way through | The next question, or the same one again if the answer will not do |
+| Registered | Their own situation: what is open near them that **their** blood could answer, and why it is quiet if it is |
+
+That last row is new work and worth its own note. `standingFor` lists open
+requests filtered by `compatibleRecipientGroupsFor` — the direction that runs
+*opposite* to recruitment. A wave for group X selects donors who can give **to**
+X; this asks which requests **this donor** can answer. An AB+ donor is shown an
+AB+ request and never an O− one, because travelling to a hospital that cannot
+use your blood is the specific harm of getting that backwards. Tested both ways.
+
+It shows no patient detail, creates no journey row, and counts as no
+notification — it is a list somebody chose to look at, not a request made of
+them.

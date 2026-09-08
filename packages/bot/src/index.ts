@@ -25,7 +25,7 @@ export {
 export { createMemoryChannel, type MemoryChannel } from './adapters/memory-channel.js';
 export { TELEGRAM_CHANNEL, createTelegramChannel, type TelegramOptions } from './adapters/telegram.js';
 
-export { MESSAGES, WORDING_VERSION, type HospitalSnapshot } from './messages.js';
+export { MESSAGES, WORDING_VERSION, readableDay, type HospitalSnapshot } from './messages.js';
 export {
   QUESTION_COUNT,
   SCREENING_QUESTIONS,
@@ -50,6 +50,7 @@ export {
 } from './outbox.js';
 
 export { handleUpdate } from './conversation.js';
+export { standingFor, unaskedRequestsFor, type DonorStanding, type OpenNeed } from './use-cases/needs.js';
 export { tick, type TickResult } from './ticker.js';
 
 export {
@@ -102,6 +103,7 @@ export {
   loadState,
   optOutDonor,
   promptFor,
+  resumeDonor,
   snoozeDonor,
   type OnboardingDraft,
   type OnboardingStep,

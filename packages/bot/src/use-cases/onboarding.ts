@@ -211,9 +211,20 @@ export async function loadState(
 
 export type AdvanceResult =
   | { readonly kind: 'next'; readonly state: OnboardingState }
-  | { readonly kind: 'registered'; readonly donorId: string; readonly nextEligible: string | null }
+  | {
+      readonly kind: 'registered';
+      readonly donorId: string;
+      readonly name: string;
+      readonly nextEligible: string | null;
+    }
   | { readonly kind: 'abandoned' }
-  | { readonly kind: 'invalid'; readonly message: string };
+  /**
+   * `step` is carried so the caller can re-ask the same question.
+   *
+   * A validation message on its own leaves somebody looking at an error with no
+   * prompt, unsure whether to answer again or start over.
+   */
+  | { readonly kind: 'invalid'; readonly message: string; readonly step: OnboardingStep };
 
 /**
  * Records one answer and moves to the next step.
@@ -227,28 +238,35 @@ export async function advanceOnboarding(
   input: string,
 ): Promise<AdvanceResult> {
   const state = await loadState(ctx, address);
-  if (!state) return { kind: 'invalid', message: MESSAGES.notRegistered };
+  // The router checks this before calling, so reaching here means the draft
+  // expired between the two — start again rather than half-answer.
+  if (!state) {
+    const restarted = await beginOnboarding(ctx, address);
+    return restarted.ok
+      ? { kind: 'next', state: restarted.value }
+      : { kind: 'invalid', message: restarted.error.message, step: 'name' };
+  }
 
   const draft: OnboardingDraft = { ...state.draft };
   const value = input.trim();
 
   switch (state.step) {
     case 'name': {
-      if (value.length < 2) return { kind: 'invalid', message: 'Please give a name.' };
+      if (value.length < 2) return { kind: 'invalid', message: 'Please give a name.', step: state.step };
       draft.name = value.slice(0, 120);
       break;
     }
     case 'phone': {
       const digits = value.replace(/[^\d+]/g, '');
       if (digits.replace(/\D/g, '').length < 10) {
-        return { kind: 'invalid', message: 'That does not look like a phone number.' };
+        return { kind: 'invalid', message: 'That does not look like a phone number.', step: state.step };
       }
       draft.phone = digits;
       break;
     }
     case 'dob': {
       const day = parseCalendarDay(value);
-      if (!day) return { kind: 'invalid', message: 'Please give it as YYYY-MM-DD.' };
+      if (!day) return { kind: 'invalid', message: 'Please give it as YYYY-MM-DD.', step: state.step };
       const age = ageOn(day, ctx.clock.today());
       const { minAge, maxAge } = ctx.config.donor;
       if (age < minAge || age > maxAge) {
@@ -257,8 +275,9 @@ export async function advanceOnboarding(
         return {
           kind: 'invalid',
           message:
-            `Blood donation is for people aged ${minAge} to ${maxAge}. ` +
-            'Thank you for offering — please do come back when you are eligible.',
+            `Thank you for offering. Blood donation is for people aged ${minAge} to ` +
+            `${maxAge}, so please do come back when you are eligible.`,
+          step: state.step,
         };
       }
       draft.dob = day;
@@ -267,28 +286,29 @@ export async function advanceOnboarding(
     case 'sex': {
       const sex = value.replace('sex:', '');
       if (sex !== 'female' && sex !== 'male' && sex !== 'other') {
-        return { kind: 'invalid', message: 'Please choose one of the options.' };
+        return { kind: 'invalid', message: 'Please choose one of the options.', step: state.step };
       }
       draft.sex = sex;
       break;
     }
     case 'blood_group': {
       const group = parseBloodGroup(value.replace('group:', ''));
-      if (!group) return { kind: 'invalid', message: 'Please choose a blood group.' };
+      if (!group) return { kind: 'invalid', message: 'Please choose a blood group.', step: state.step };
       draft.bloodGroup = group;
       break;
     }
     case 'weight': {
       const band = value.replace('weight:', '') as WeightBand;
       if (!(WEIGHT_BANDS as readonly string[]).includes(band)) {
-        return { kind: 'invalid', message: 'Please choose a band.' };
+        return { kind: 'invalid', message: 'Please choose a band.', step: state.step };
       }
       if (band === 'under_45') {
         return {
           kind: 'invalid',
           message:
-            `Donating needs a weight of at least ${ctx.config.donor.minWeightKg} kg, for your ` +
-            'own safety. Thank you for offering.',
+            'Thank you for offering. Donating needs a weight of at least ' +
+            `${String(ctx.config.donor.minWeightKg)} kg, for your own safety.`,
+          step: state.step,
         };
       }
       draft.weightBand = band;
@@ -317,7 +337,7 @@ export async function advanceOnboarding(
 
   const index = ONBOARDING_STEPS.indexOf(state.step);
   const next = ONBOARDING_STEPS[index + 1];
-  if (!next) return { kind: 'invalid', message: MESSAGES.unknown };
+  if (!next) return { kind: 'invalid', message: MESSAGES.help, step: state.step };
 
   await ctx.db
     .update(conversationState)
@@ -352,7 +372,7 @@ async function commitRegistration(
     !draft.bloodGroup ||
     !draft.weightBand
   ) {
-    return { kind: 'invalid', message: 'Something is missing. Send "start" to begin again.' };
+    return { kind: 'invalid', message: 'Something is missing — let us start again.', step: 'name' };
   }
 
   const now = ctx.clock.now();
@@ -439,6 +459,8 @@ async function commitRegistration(
     return {
       kind: 'registered' as const,
       donorId,
+      // Carried back so the first thing they are told uses their own name.
+      name: draft.name ?? '',
       nextEligible: eligible ?? null,
     };
   });
@@ -459,6 +481,26 @@ export async function snoozeDonor(
     await tx.update(donors).set({ snoozeUntil: until }).where(eq(donors.id, donorId));
     const event = createEventWriter(tx, ctx.correlationId, now);
     await event({ event: 'donor.snoozed', subjectType: 'donor', subjectId: donorId });
+  });
+}
+
+/**
+ * Undoes a pause or an opt-out (§5).
+ *
+ * The counterpart to `pause` and `stop`, and it exists because those two are
+ * only kind if coming back is as easy as leaving. Clearing `opted_out_at` also
+ * restores consent currency, which is what the wave query actually reads.
+ */
+export async function resumeDonor(ctx: BotContext, donorId: string): Promise<void> {
+  const now = ctx.clock.now();
+
+  await ctx.db.transaction(async (tx) => {
+    await tx
+      .update(donors)
+      .set({ snoozeUntil: null, optedOutAt: null, consentCurrentAt: now })
+      .where(eq(donors.id, donorId));
+    const event = createEventWriter(tx, ctx.correlationId, now);
+    await event({ event: 'donor.resumed', subjectType: 'donor', subjectId: donorId });
   });
 }
 
