@@ -35,7 +35,8 @@ P2  The request, thin            ✅
 P3  The centre decision, thin    ✅
 P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
 P5  Module 1 depth               ✅
-P6  Centre depth — collisions    ← next
+P6  Centre depth — collisions    ✅
+P7  Bot depth — the interview    ← next
 …
 ```
 
@@ -98,6 +99,20 @@ because a request showing cancelled while units stay held for it is worse than n
 Plus the duplicate-patient warning, draft ageing, and the compatibility testing sample with its
 globally unique identifier. ([ADR 0007](docs/adr/0007-module-1-depth-and-a-query-that-lied.md))
 
+**P6** built the part of the system most likely to put the wrong unit into a patient. A tag that
+already exists is **three** situations, and they do not share a button: a return, a release, or a
+discrepancy that offers no resolution at all and asks somebody to go and find the conflicting unit.
+Returns ask how long the unit was out of storage **before** offering an outcome, and the database
+refuses a restock that was out too long or for a time nobody can say. Plus quarantine that ages
+visibly, discards that require a disposal route, and the counter roster.
+
+The walk-in was the interesting one: recorded as a confirmation row it passed every test and was
+refused by Postgres the moment it ran as `app_web`, because the centre holds no INSERT on the
+bot's roster. It is now its own table, and the bot reads it and stops recruiting for a unit already
+collected. `pnpm smoke:centre` is what found that — it runs P6's writes as the real application
+role, which the test suite (connecting as `migrator`) cannot.
+([ADR 0008](docs/adr/0008-centre-depth-and-a-grant-that-said-no.md))
+
 Run `pnpm db:seed` and sign in as any of:
 
 | Role | Email | Lands on |
@@ -155,6 +170,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
 | `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
 | `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |
+| `pnpm smoke:centre` | Runs the centre's writes as `app_web` and asserts what that role must not be able to do. The suite connects as `migrator`, so it proves nothing about the grants; this does |
 | `pnpm bot` | The donor bot: long-polls the channel and ticks. `CHANNEL=memory` needs no token |
 | `pnpm check:bot-migrations` | Greps the bot's migrations for a table the web release owns (§2.1) |
 | `pnpm db:generate` / `pnpm db:generate:bot` | Generate a migration from the Drizzle schema, for either set |

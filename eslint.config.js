@@ -14,6 +14,9 @@ import tseslint from 'typescript-eslint';
 /** Everything linted without type information: it belongs to no tsconfig. */
 const UNTYPED = [
   'scripts/**/*.mjs',
+  // A package's own smoke script: plain Node, in no tsconfig, run by hand
+  // against a real database rather than compiled with the package.
+  'packages/*/scripts/**/*.mjs',
   '**/*.config.js',
   '**/*.cjs',
   'apps/*/next.config.ts',

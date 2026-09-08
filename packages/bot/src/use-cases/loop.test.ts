@@ -32,6 +32,7 @@ import {
   promoteFromWaitlist,
 } from './journey.js';
 import { applyCounterOutcomes } from './outcomes.js';
+import { applyWalkIns } from './walk-ins.js';
 import { isEligible, selectWave, sendWave } from './waves.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
@@ -63,6 +64,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
                           bot.donor_screening_answers, bot.donor_consents,
                           bot.donor_phones, bot.donor_channels, bot.donors
                  RESTART IDENTITY CASCADE`;
+    await client`DELETE FROM hospital.walk_in_donations`;
     await client`DELETE FROM hospital.donor_demand_confirmations`;
     await client`DELETE FROM hospital.donor_demand`;
 
@@ -86,6 +88,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
                           bot.donor_screening_answers, bot.donor_consents,
                           bot.donor_phones, bot.donor_channels, bot.donors
                  RESTART IDENTITY CASCADE`;
+    await client`DELETE FROM hospital.walk_in_donations`;
     await client`DELETE FROM hospital.donor_demand_confirmations`;
     await client`DELETE FROM hospital.donor_demand`;
     await client`DELETE FROM reference.location_nodes WHERE id LIKE 'TEST%'`;
@@ -459,6 +462,104 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   });
 
   /* ==================================================================== */
+  /* Walk-ins — units collected outside the bot entirely (contract 1.2.0)   */
+  /* ==================================================================== */
+
+  describe('walk-ins (§4, contract 1.2.0)', () => {
+    /** A walk-in, as the centre records one in its own half. */
+    const walkIn = async (demandId: string, bagIdentifier: string): Promise<void> => {
+      await client`INSERT INTO hospital.walk_in_donations
+                     (id, demand_id, donor_name, donor_phone, blood_group,
+                      bag_identifier, donated_on)
+                   VALUES (${newId()}, ${demandId}, 'Synthetic Walk In',
+                           '+919900000000', 'O+', ${bagIdentifier}, current_date)`;
+    };
+
+    it('counts a unit the counter collected against the need', async () => {
+      const demandId = await openDemand(2);
+      const [imported] = await importOpenDemands(context());
+      if (!imported) throw new Error('nothing imported');
+
+      await walkIn(demandId, 'U-WALK-A');
+      const result = await applyWalkIns(context());
+
+      expect(result.updated).toBe(1);
+      const [request] = await db
+        .select()
+        .from(bot.botRequests)
+        .where(eq(bot.botRequests.id, imported.botRequestId));
+      expect(request?.walkInUnits).toBe(1);
+      // The original need stays legible beside it.
+      expect(request?.unitsNeeded).toBe(2);
+    });
+
+    it('changes nothing on a second pass', async () => {
+      const demandId = await openDemand(2);
+      await importOpenDemands(context());
+      await walkIn(demandId, 'U-WALK-B');
+
+      const first = await applyWalkIns(context());
+      const second = await applyWalkIns(context());
+
+      expect(first.updated).toBe(1);
+      // Idempotent: the ticker runs this every pass, and a walk-in is news
+      // exactly once.
+      expect(second.updated).toBe(0);
+    });
+
+    it('stops recruiting once walk-ins cover the demand', async () => {
+      const demandId = await openDemand(1);
+      const [imported] = await importOpenDemands(context());
+      if (!imported) throw new Error('nothing imported');
+
+      await walkIn(demandId, 'U-WALK-C');
+      const result = await applyWalkIns(context());
+
+      expect(result.fulfilled).toBe(1);
+      const [request] = await db
+        .select()
+        .from(bot.botRequests)
+        .where(eq(bot.botRequests.id, imported.botRequestId));
+      // No further waves: the unit is in the fridge, and every donor invited
+      // from here would travel for nothing.
+      expect(request?.status).toBe('fulfilled');
+      expect(request?.nextWaveAt).toBeNull();
+    });
+
+    it('refuses to confirm a donor for a unit already collected', async () => {
+      const demandId = await openDemand(1);
+      const [imported] = await importOpenDemands(context());
+      if (!imported) throw new Error('nothing imported');
+      const donor = await makeDonor();
+      await sendWave(context(), imported.botRequestId);
+
+      await walkIn(demandId, 'U-WALK-D');
+      await applyWalkIns(context());
+
+      const outcome = await passScreening(
+        await journeyFor(imported.botRequestId, donor.donorId),
+      );
+
+      // Waitlisted, not confirmed. The place was filled at the counter.
+      expect(outcome).toMatchObject({ ok: true, value: { kind: 'waitlisted' } });
+    });
+
+    it('leaves a closed demand alone', async () => {
+      const demandId = await openDemand(1);
+      const [imported] = await importOpenDemands(context());
+      if (!imported) throw new Error('nothing imported');
+
+      await closeDemand(context(), imported.botRequestId, 'cancelled');
+      await walkIn(demandId, 'U-WALK-E');
+      const result = await applyWalkIns(context());
+
+      // A closed demand's count is history. Rewriting it would say the bot did
+      // something it did not.
+      expect(result.updated).toBe(0);
+    });
+  });
+
+  /* ==================================================================== */
   /* §7.4 — replays                                                        */
   /* ==================================================================== */
 
@@ -761,6 +862,70 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       expect(thanks).toBeDefined();
       // The date a person reads, not an ISO string: "7 Dec", not "2026-12-07".
       expect(thanks?.text).toContain(readableDay(row?.nextEligibleOn ?? ''));
+    });
+
+    it('verifies the donor’s group from the one the counter typed (contract 1.1.0)', async () => {
+      const demandId = await openDemand(1);
+      const [imported] = await importOpenDemands(context());
+      if (!imported) throw new Error('nothing imported');
+      const donor = await makeDonor({ verified: false });
+      await client`UPDATE bot.donors SET blood_group_verified_at = NULL
+                    WHERE id = ${donor.donorId}`;
+      await sendWave(context(), imported.botRequestId);
+
+      // Unverified donors are not selected into a wave (§7.7), so the journey
+      // is opened directly — which is the situation this column exists for.
+      await db.insert(bot.donorRequests).values({
+        id: newId(),
+        botRequestId: imported.botRequestId,
+        donorId: donor.donorId,
+        status: 'NOTIFIED',
+        waveNo: 1,
+        notifiedAt: clock.now(),
+      });
+      await passScreening(await journeyFor(imported.botRequestId, donor.donorId));
+
+      await client`UPDATE hospital.donor_demand_confirmations
+                      SET status = 'completed', donated_at = ${clock.today()},
+                          bag_identifier = 'SYN-TYPED', donated_blood_group = 'B+'
+                    WHERE demand_id = ${demandId} AND donor_id = ${donor.donorId}`;
+
+      await applyCounterOutcomes(context());
+
+      const [row] = await db
+        .select()
+        .from(bot.donors)
+        .where(eq(bot.donors.id, donor.donorId));
+
+      // Before this column existed there was no path here at all: §7.7 excludes
+      // an unverified donor, and `app_web` holds no grant on the bot's schema.
+      expect(row?.bloodGroupVerifiedAt).not.toBeNull();
+      // And the typed group wins over what they believed. That disagreement is
+      // exactly the case verification exists for.
+      expect(row?.bloodGroup).toBe('B+');
+    });
+
+    it('leaves the group alone when the counter typed none', async () => {
+      const demandId = await openDemand(1);
+      const [imported] = await importOpenDemands(context());
+      if (!imported) throw new Error('nothing imported');
+      const donor = await makeDonor();
+      await sendWave(context(), imported.botRequestId);
+      await passScreening(await journeyFor(imported.botRequestId, donor.donorId));
+
+      await client`UPDATE hospital.donor_demand_confirmations
+                      SET status = 'completed', donated_at = ${clock.today()}
+                    WHERE demand_id = ${demandId}`;
+      await applyCounterOutcomes(context());
+
+      const [row] = await db
+        .select()
+        .from(bot.donors)
+        .where(eq(bot.donors.id, donor.donorId));
+      // An outcome recorded without a typed group is still a donation — the
+      // interval rolls forward, and nothing is claimed about the group.
+      expect(row?.lastDonatedOn).toBe(clock.today());
+      expect(row?.bloodGroup).toBe('O+');
     });
 
     it('applies a counter outcome only once', async () => {

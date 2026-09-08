@@ -266,6 +266,9 @@ GRANT UPDATE (bot_public_id, imported_at, donors_notified, confirmed_units,
 GRANT SELECT, INSERT ON hospital.donor_demand_confirmations TO app_bot;
 GRANT UPDATE (status, acknowledged_at, updated_at)
   ON hospital.donor_demand_confirmations TO app_bot;
+-- a unit collected outside the bot is a unit it must stop recruiting for; it
+-- reads them and writes nothing (1.2.0)
+GRANT SELECT ON hospital.walk_in_donations TO app_bot;
 -- everything else in hospital stays unreachable to app_bot, blood_bags included
 
 GRANT USAGE ON SCHEMA reference TO app_bot;
@@ -364,6 +367,7 @@ Created only by `db/migrations`. Columns follow §7 exactly; see [§6](#6-the-sh
 |---|---|---|
 | `donor_demand` | centre (raise, cancel), bot (import, progress, close) | Index `(status, bot_public_id) WHERE status = 'open' AND bot_public_id IS NULL` — the bot's poll; **partial unique `(blood_group) WHERE trigger = 'stock_floor' AND status = 'open'`** so "recruit for groups below floor" cannot double-raise (§4) |
 | `donor_demand_confirmations` | bot (create, acknowledge), centre (counter outcome) | Unique `(demand_id, donor_id)` on the bot's **internal** donor id (§7, §2.11); `channel` carried alongside so the counter knows where the person was reached |
+| `walk_in_donations` | centre only; bot reads | Somebody who gave without ever being in the bot (contract 1.2.0). Its own table because the centre has no INSERT on the roster — the bot creates that. The bot reads it and stops recruiting for a unit already collected |
 
 ### 5.7 Table inventory — `bot`
 
@@ -649,7 +653,7 @@ map the `Result`". Each returns `Result<T, E>` and each writes its audit event (
 | `recruitForFloor` | Per short group, insert one demand | The partial unique index makes double-raising impossible (§5.6) |
 | `cancelDemand` | Set demand `cancelled` + reason | The bot's ticker sees the status and runs §7.6 |
 | `markRosterOutcome` | Update confirmation row: `completed` / `no_show` / `cancelled`, `donated_at`, `bag_identifier` | The counter is the authority on who gave blood (§4) |
-| `recordWalkIn` | Insert a confirmation row marked walk-in | Someone who never confirmed in the bot still needs their interval set right (§4) |
+| `recordWalkIn` | Insert `walk_in_donations` | **Not a confirmation row**: the centre holds no INSERT there, and the first version of this was refused by the database as `app_web` (ADR 0008). Someone who never confirmed in the bot still needs their donation counted (§4) |
 | `registerDevice` / `revokeDevice` | Insert with hashed token / set `revoked_at` | Token displayed once, never again (§15) |
 | `saveCalibration` / `activateCalibration` | Insert calibration + regions; activate as a new version | Earlier observations keep their own version (§4) |
 | `ingestObservation` | Insert observation + regions; open reconciliations where counts disagree | **Never writes the register** (§2.12); low confidence records "no observation", not zero |

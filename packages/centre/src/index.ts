@@ -14,6 +14,51 @@
 export { cancelRequest, type CancelResult } from './use-cases/cancel.js';
 
 export {
+  classifyTag,
+  listOpenDiscrepancies,
+  raiseTagDiscrepancy,
+  releaseTag,
+  resolveTag,
+  resolveTagDiscrepancy,
+  type DiscrepancyFinding,
+  type DiscrepancyOutcome,
+  type DiscrepancyRow,
+  type ResolvedTag,
+  type TagResolution,
+} from './use-cases/tags.js';
+
+export {
+  allowedOutcomes,
+  countOverdueQuarantine,
+  defaultOutcome,
+  discardBag,
+  discardExpiredQuarantine,
+  listQuarantine,
+  resolveQuarantine,
+  returnBag,
+  returnTimeLimitMinutes,
+  type QuarantineRow,
+  type ReturnInput,
+  type ReturnOutcome,
+  type ReturnResult,
+  type StorageBand,
+} from './use-cases/returns.js';
+
+export {
+  countUnmarked,
+  listRoster,
+  listWalkIns,
+  markRosterOutcome,
+  recordWalkIn,
+  todaysUnits,
+  type MarkInput,
+  type RosterOutcome,
+  type RosterRow,
+  type WalkInInput,
+  type WalkInRow,
+} from './use-cases/roster.js';
+
+export {
   decideRequest,
   type DecisionAction,
   type DecisionInput,
@@ -45,6 +90,7 @@ export {
   centreOverviewCounts,
   getCentreSettings,
   getDecisionForRequest,
+  getDemand,
   getShelfLives,
   listBags,
   listDecisionBags,

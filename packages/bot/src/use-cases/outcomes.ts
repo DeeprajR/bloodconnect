@@ -15,7 +15,12 @@
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { botRequests, donorChannels, donorRequests, donors } from '@blood-connect/db/bot';
 import { donorDemandConfirmations } from '@blood-connect/db';
-import { nextEligibleOn, type CalendarDay, type Sex } from '@blood-connect/domain';
+import {
+  nextEligibleOn,
+  parseBloodGroup,
+  type CalendarDay,
+  type Sex,
+} from '@blood-connect/domain';
 
 import type { BotContext } from '../context.js';
 import { createEventWriter } from '../events.js';
@@ -47,6 +52,7 @@ export async function applyCounterOutcomes(
       status: donorDemandConfirmations.status,
       donatedAt: donorDemandConfirmations.donatedAt,
       bagIdentifier: donorDemandConfirmations.bagIdentifier,
+      donatedBloodGroup: donorDemandConfirmations.donatedBloodGroup,
     })
     .from(donorDemandConfirmations)
     .where(
@@ -82,6 +88,7 @@ async function applyOne(
     status: string;
     donatedAt: string | null;
     bagIdentifier: string | null;
+    donatedBloodGroup: string | null;
   },
 ): Promise<boolean> {
   const now = ctx.clock.now();
@@ -112,7 +119,12 @@ async function applyOne(
       .where(eq(botRequests.demandId, row.demandId));
 
     const [donor] = await tx
-      .select({ id: donors.id, sex: donors.sex, lastDonatedOn: donors.lastDonatedOn })
+      .select({
+        id: donors.id,
+        sex: donors.sex,
+        bloodGroup: donors.bloodGroup,
+        lastDonatedOn: donors.lastDonatedOn,
+      })
       .from(donors)
       .where(eq(donors.id, row.donorId));
 
@@ -138,10 +150,44 @@ async function applyOne(
         ctx.config.donor.intervalDays,
       );
 
+      /**
+       * The counter typed a group off the unit it collected, so the donor's
+       * group is now **verified** rather than self-declared (contract 1.1.0).
+       *
+       * This is the only way `blood_group_verified_at` is ever set, and §7.7
+       * recruits nobody without it — so before the contract carried this
+       * column, a donor who registered through the bot could never be selected
+       * into a wave. The centre is the authority on what a unit is; the bot
+       * simply records what it was told.
+       *
+       * If the typed group differs from what they believed, **the typed one
+       * wins**. That disagreement is exactly the case verification exists for,
+       * and continuing to recruit on the guess would send them to a counter
+       * that cannot use their blood.
+       */
+      const typed = parseBloodGroup(row.donatedBloodGroup);
+
       await tx
         .update(donors)
-        .set({ lastDonatedOn: donatedOn, nextEligibleOn: eligible ?? null })
+        .set({
+          lastDonatedOn: donatedOn,
+          nextEligibleOn: eligible ?? null,
+          ...(typed
+            ? { bloodGroup: typed, bloodGroupVerifiedAt: now }
+            : {}),
+        })
         .where(eq(donors.id, donor.id));
+
+      if (typed && typed !== donor.bloodGroup) {
+        await event({
+          event: 'donor.group_corrected',
+          subjectType: 'donor',
+          subjectId: donor.id,
+          // What they said and what the unit typed as. Both, because "the
+          // register disagreed with the donor" is the interesting fact.
+          metadata: { declared: donor.bloodGroup, typed },
+        });
+      }
 
       if (request) {
         await tx
@@ -176,7 +222,12 @@ async function applyOne(
         subjectId: donor.id,
         // The bag identifier links a donor to a unit, which is the traceability
         // §4 requires. No name, no phone number (§11.9).
-        metadata: { demandId: row.demandId, bagIdentifier: row.bagIdentifier, eligible },
+        metadata: {
+        demandId: row.demandId,
+        bagIdentifier: row.bagIdentifier,
+        eligible,
+        groupVerified: row.donatedBloodGroup !== null,
+      },
       });
     }
 
@@ -239,7 +290,8 @@ export async function findCompletedRequests(
     .where(
       and(
         eq(botRequests.status, 'fulfilled'),
-        sql`${botRequests.completedCount} >= ${botRequests.unitsNeeded}`,
+        // A demand finished partly by walk-ins is still finished.
+        sql`${botRequests.completedCount} + ${botRequests.walkInUnits} >= ${botRequests.unitsNeeded}`,
       ),
     )
     .limit(limit);

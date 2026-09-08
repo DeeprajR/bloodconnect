@@ -262,6 +262,34 @@ export async function listDemands(
     .limit(limit);
 }
 
+/** One demand, for the roster page. */
+export async function getDemand(
+  ctx: UseCaseContext,
+  demandId: string,
+): Promise<DemandRow | undefined> {
+  const [row] = await ctx.db
+    .select({
+      id: donorDemand.id,
+      trigger: donorDemand.trigger,
+      bloodGroup: donorDemand.bloodGroup,
+      product: donorDemand.product,
+      units: donorDemand.units,
+      dateRequired: donorDemand.dateRequired,
+      status: donorDemand.status,
+      botPublicId: donorDemand.botPublicId,
+      donorsNotified: donorDemand.donorsNotified,
+      confirmedUnits: donorDemand.confirmedUnits,
+      waitlistedUnits: donorDemand.waitlistedUnits,
+      completedUnits: donorDemand.completedUnits,
+      notes: donorDemand.notes,
+      createdAt: donorDemand.createdAt,
+    })
+    .from(donorDemand)
+    .where(eq(donorDemand.id, demandId));
+
+  return row;
+}
+
 export type CentreSettingsRow = {
   readonly hospitalName: string;
   readonly address: string;

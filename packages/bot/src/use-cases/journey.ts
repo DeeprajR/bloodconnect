@@ -334,10 +334,22 @@ async function claimUnit(
       .where(
         and(
           eq(botRequests.id, journey.botRequestId),
-          sql`${botRequests.confirmedCount} < ${botRequests.unitsNeeded}`,
+          /**
+           * Walk-ins count against the need (contract 1.2.0).
+           *
+           * Somebody who turned up at the counter without ever being in the bot
+           * has already given one of these units. Ignoring that would have this
+           * confirm a donor for blood the shelf already holds, and send them in
+           * for nothing.
+           */
+          sql`${botRequests.confirmedCount} + ${botRequests.walkInUnits} < ${botRequests.unitsNeeded}`,
         ),
       )
-      .returning({ confirmed: botRequests.confirmedCount, needed: botRequests.unitsNeeded });
+      .returning({
+        confirmed: botRequests.confirmedCount,
+        needed: botRequests.unitsNeeded,
+        walkIns: botRequests.walkInUnits,
+      });
 
     const durable = durableAnswersFrom(answers);
     if (durable.length > 0) {
@@ -446,7 +458,8 @@ async function claimUnit(
     // centre never declares a demand fulfilled (`packages/contract`).
     const confirmed = claimed[0]?.confirmed ?? 0;
     const needed = claimed[0]?.needed ?? 0;
-    if (confirmed >= needed) {
+    const walkIns = claimed[0]?.walkIns ?? 0;
+    if (confirmed + walkIns >= needed) {
       await tx
         .update(botRequests)
         .set({ status: 'fulfilled', nextWaveAt: null })
@@ -516,7 +529,9 @@ export async function promoteFromWaitlist(
         .where(
           and(
             eq(botRequests.id, botRequestId),
-            sql`${botRequests.confirmedCount} < ${botRequests.unitsNeeded}`,
+            // Walk-ins count here too: a place already filled at the counter is
+            // not a place to promote somebody into (contract 1.2.0).
+            sql`${botRequests.confirmedCount} + ${botRequests.walkInUnits} < ${botRequests.unitsNeeded}`,
           ),
         )
         .returning({ confirmed: botRequests.confirmedCount });

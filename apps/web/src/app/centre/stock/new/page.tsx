@@ -8,9 +8,19 @@ import { getShelfLives } from '@blood-connect/centre';
 
 export const metadata: Metadata = { title: 'Register a bag · Blood Connect' };
 
-export default async function NewBagPage() {
+export default async function NewBagPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const actor = await requireAccess('/centre/stock/new');
   const ctx = await useCaseContext(actor);
+  const query = await searchParams;
+
+  // Arriving from a scan of a free tag: the tag is already in hand, so it is
+  // filled in rather than typed a second time.
+  const raw = query['tag'];
+  const tagUid = typeof raw === 'string' ? raw.trim() : '';
 
   const shelfLives = await getShelfLives(ctx);
   const byProduct = Object.fromEntries(
@@ -34,7 +44,7 @@ export default async function NewBagPage() {
 
       <section className="ux4g-card ux4g-card-outline">
         <div className="ux4g-card-body">
-          <BagForm today={ctx.clock.today()} shelfLives={byProduct} />
+          <BagForm today={ctx.clock.today()} shelfLives={byProduct} tagUid={tagUid} />
         </div>
       </section>
 

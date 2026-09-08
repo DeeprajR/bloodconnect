@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { AppShell } from '../../shell';
 import { CancelDemandForm } from '../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
-import { listDemands } from '@blood-connect/centre';
+import { countUnmarked, listDemands } from '@blood-connect/centre';
 import { WORDING, bloodGroupLabel, productLabel } from '@blood-connect/domain';
 
 export const metadata: Metadata = { title: 'Demand · Blood Connect' };
@@ -24,6 +24,14 @@ export default async function DemandsPage() {
   const demands = await listDemands(ctx);
   const open = demands.filter((row) => row.status === 'open' || row.status === 'fulfilled');
   const closed = demands.filter((row) => !open.includes(row));
+
+  // How many confirmed donors are still waiting to be marked at the counter.
+  // It is the number that decides whether anybody needs to open the roster.
+  const unmarked = new Map(
+    await Promise.all(
+      open.map(async (demand) => [demand.id, await countUnmarked(ctx, demand.id)] as const),
+    ),
+  );
 
   const day = new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
@@ -67,6 +75,7 @@ export default async function DemandsPage() {
                   <th scope="col">Notified</th>
                   <th scope="col">Confirmed</th>
                   <th scope="col">Status</th>
+                  <th scope="col">Counter</th>
                   <th scope="col">
                     <span className="app-sr-only">Action</span>
                   </th>
@@ -103,6 +112,17 @@ export default async function DemandsPage() {
                       ) : null}
                     </td>
                     <td>{STATUS_LABELS[demand.status] ?? demand.status}</td>
+                    <td>
+                      <Link
+                        className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
+                        href={`/centre/demands/${demand.id}`}
+                      >
+                        Roster
+                        {(unmarked.get(demand.id) ?? 0) > 0 ? (
+                          <span className="app-figure"> ({unmarked.get(demand.id)})</span>
+                        ) : null}
+                      </Link>
+                    </td>
                     <td>
                       <CancelDemandForm demandId={demand.id} />
                     </td>
@@ -152,11 +172,11 @@ export default async function DemandsPage() {
 
       <p className="ux4g-label-m-default">
         {/*
-          The roster and the counter outcomes are P4/P6 work. Naming what is
-          missing beats a screen that looks finished.
+          Donor names live one click away, not on this list (§2.10). The counter
+          needs them; a page showing every demand ever raised does not.
         */}
-        The confirmed-donor roster, and marking each donor donated, no-show or
-        cancelled at the counter, arrive with the bot in a later phase.
+        Donor names and numbers are on each roster, where somebody is calling a name
+        at a desk — not on this list.
       </p>
 
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">

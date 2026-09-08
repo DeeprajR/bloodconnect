@@ -84,7 +84,7 @@ P2  The request, thin            5d  ✅
 P3  The centre decision, thin    6d  ✅
 P4  The bot loop, thin           8d  ✅ ▲ MILESTONE A — the loop closes (day ~29)
 P5  Module 1 depth               7d  ✅
-P6  Centre depth — collisions    8d
+P6  Centre depth — collisions    8d  ✅
 P7  Bot depth — the interview    9d
 P8  Endings sweep                4d   ▲ MILESTONE B — every §8 flow ends (day ~57)
 P9  Volunteer + public board     4d
@@ -265,6 +265,13 @@ closes exactly three ways**; discards with a disposal route; inventory filters; 
 **Prove.** Each of the three case-3 endings has a test. **No code path resolves a discrepancy
 implicitly** — including the expiry job, which must not touch that table. A return never
 recalculates expiry. Re-registering leaves the old bag's history intact.
+
+**Done.** All of the above, plus the counter roster and walk-ins. Two things the plan did not
+anticipate: the counter now types the group the unit **typed as** (contract 1.1.0), which is the
+only thing that can set `blood_group_verified_at` and therefore the only way a bot-registered donor
+becomes recruitable at all; and a walk-in is its own table (contract 1.2.0) because the centre holds
+no INSERT on the bot's roster — found by running as `app_web`, not by the suite.
+`pnpm smoke:centre` now does that on demand. ([ADR 0008](adr/0008-centre-depth-and-a-grant-that-said-no.md))
 
 ---
 

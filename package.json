@@ -17,6 +17,7 @@
     "boundaries": "depcruise packages db --config .dependency-cruiser.cjs && depcruise apps/web --config .dependency-cruiser.cjs --ts-config tsconfig.depcruise-web.json && depcruise apps/admin --config .dependency-cruiser.cjs --ts-config tsconfig.depcruise-admin.json",
     "boundaries:prove": "node scripts/prove-boundary-check.mjs",
     "smoke:signin": "node scripts/signin-smoke.mjs",
+    "smoke:centre": "node --env-file=.env packages/centre/scripts/smoke.mjs",
     "db:generate": "pnpm --filter @blood-connect/db generate",
     "db:migrate": "pnpm --filter @blood-connect/db migrate",
     "db:seed": "pnpm --filter @blood-connect/db seed",

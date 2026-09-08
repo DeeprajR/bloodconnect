@@ -85,6 +85,7 @@ export async function standingFor(
       bloodGroup: botRequests.bloodGroup,
       unitsNeeded: botRequests.unitsNeeded,
       confirmedCount: botRequests.confirmedCount,
+      walkInUnits: botRequests.walkInUnits,
       neededBy: botRequests.neededBy,
       hospitalSnapshot: botRequests.hospitalSnapshot,
       /**
@@ -117,7 +118,9 @@ export async function standingFor(
   const needs: OpenNeed[] = rows.map((row) => ({
     publicId: row.publicId,
     bloodGroup: row.bloodGroup,
-    unitsOutstanding: Math.max(0, row.unitsNeeded - row.confirmedCount),
+    // Units already collected at the counter are not outstanding, whoever
+    // gave them (contract 1.2.0).
+    unitsOutstanding: Math.max(0, row.unitsNeeded - row.confirmedCount - row.walkInUnits),
     neededBy: row.neededBy,
     hospital: row.hospitalSnapshot as HospitalSnapshot,
     alreadyAsked: row.alreadyAsked,

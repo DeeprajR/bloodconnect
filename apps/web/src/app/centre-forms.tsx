@@ -160,7 +160,16 @@ const productOptions = PRODUCTS.map((p) => ({ value: p, label: productLabel(p) }
 /* Intake                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export function BagForm({ today, shelfLives }: { today: string; shelfLives: Record<string, number> }) {
+export function BagForm({
+  today,
+  shelfLives,
+  tagUid = '',
+}: {
+  today: string;
+  shelfLives: Record<string, number>;
+  /** Prefilled when the operator arrived here from scanning a free tag (§4). */
+  tagUid?: string;
+}) {
   const [state, action] = useActionState(registerBagAction, initial);
   const [product, setProduct] = useState<string>('prbc');
   const [collectedAt, setCollectedAt] = useState<string>(today);
@@ -232,7 +241,12 @@ export function BagForm({ today, shelfLives }: { today: string; shelfLives: Reco
         type="date"
         hint="Only if the bag carries one. The printed label wins, and a disagreement is flagged for you to check — not silently accepted."
       />
-      <Field id="tagUid" label="Tag identifier" hint="If this bag carries a tag." />
+      <Field
+        id="tagUid"
+        label="Tag identifier"
+        defaultValue={tagUid}
+        hint="If this bag carries a tag."
+      />
       <Field id="source" label="Source" hint="Camp, replacement donor, transfer in." />
 
       <Submit label="Register the bag" busy="Registering…" />

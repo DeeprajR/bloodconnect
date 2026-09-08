@@ -5,7 +5,13 @@ import { AppShell } from '../shell';
 import { RecruitButton } from '../centre-forms';
 import { recruitForFloorAction } from '../centre-actions';
 import { requireAccess, useCaseContext } from '@/lib/guards';
-import { centreOverviewCounts, listDemands, stockByGroup } from '@blood-connect/centre';
+import {
+  centreOverviewCounts,
+  listDemands,
+  listOpenDiscrepancies,
+  listQuarantine,
+  stockByGroup,
+} from '@blood-connect/centre';
 import { listRequestsAwaitingDecision } from '@blood-connect/hospital';
 import { WORDING, bloodGroupLabel } from '@blood-connect/domain';
 
@@ -15,11 +21,13 @@ export default async function CentrePage() {
   const actor = await requireAccess('/centre');
   const ctx = await useCaseContext(actor);
 
-  const [stock, queue, demands, counts] = await Promise.all([
+  const [stock, queue, demands, counts, quarantined, discrepancies] = await Promise.all([
     stockByGroup(ctx),
     listRequestsAwaitingDecision(ctx),
     listDemands(ctx, true),
     centreOverviewCounts(ctx),
+    listQuarantine(ctx),
+    listOpenDiscrepancies(ctx),
   ]);
 
   const today = ctx.clock.today();
@@ -40,6 +48,23 @@ export default async function CentrePage() {
           {queue.length === 0 ? 'Request queue' : `Answer ${queue.length} waiting`}
         </Link>
       </div>
+
+      {discrepancies.length > 0 ? (
+        <div className="ux4g-alert ux4g-alert-error" role="alert">
+          <div className="ux4g-alert-content">
+            <p className="ux4g-alert-message">
+              {/*
+                §4: a discrepancy never clears itself, so it is the one alarm on
+                this page that stays until a person has physically looked.
+              */}
+              {discrepancies.length} open tag{' '}
+              {discrepancies.length === 1 ? 'discrepancy' : 'discrepancies'}. Until each is
+              closed, two units may carry the same tag.{' '}
+              <Link href="/centre/tags">Open them</Link>.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {overdue.length > 0 ? (
         <div className="ux4g-alert ux4g-alert-error" role="alert">
@@ -150,6 +175,17 @@ export default async function CentrePage() {
               <span className="app-figure">{counts.reservedBags}</span> units reserved
               against a decision.
             </p>
+            {quarantined.length > 0 ? (
+              <p className="ux4g-label-m-default">
+                {/*
+                  Quarantine is a waiting room, and a waiting room nobody can see
+                  is where units are forgotten (§4).
+                */}
+                <span className="app-figure">{quarantined.length}</span> in{' '}
+                {WORDING.quarantine.toLowerCase()}, waiting for a decision
+                {quarantined.some((row) => row.overdue) ? ', some overdue' : ''}.
+              </p>
+            ) : null}
             <div className="app-row">
               <Link
                 className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
@@ -157,8 +193,20 @@ export default async function CentrePage() {
               >
                 Register a bag
               </Link>
+              <Link
+                className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
+                href="/centre/tags"
+              >
+                Scan a tag
+              </Link>
               <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/centre/stock">
                 View stock
+              </Link>
+              <Link
+                className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md"
+                href="/centre/quarantine"
+              >
+                {WORDING.quarantine}
               </Link>
             </div>
           </div>

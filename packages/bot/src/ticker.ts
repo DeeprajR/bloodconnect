@@ -14,11 +14,13 @@
  *  2. New demand, so recruitment can start.
  *  3. Expiries — after the import, so a demand that arrives already past its
  *     day is closed before anybody is asked about it.
- *  4. Waves.
- *  5. Counter outcomes, which roll intervals forward and thank people.
- *  6. Completions, which stand down whoever is left.
- *  7. Progress written back to the centre.
- *  8. The outbox drain, last, so everything queued this tick goes out in it.
+ *  4. Walk-ins, before the waves: a unit already collected at the counter is a
+ *     unit nobody should be invited to give.
+ *  5. Waves.
+ *  6. Counter outcomes, which roll intervals forward and thank people.
+ *  7. Completions, which stand down whoever is left.
+ *  8. Progress written back to the centre.
+ *  9. The outbox drain, last, so everything queued this tick goes out in it.
  */
 
 import type { BotContext } from './context.js';
@@ -32,6 +34,7 @@ import { importOpenDemands, writeBackProgress } from './use-cases/import-demand.
 import { applyCounterOutcomes, findCompletedRequests } from './use-cases/outcomes.js';
 import { promoteFromWaitlist } from './use-cases/journey.js';
 import { findRequestsDueAWave, sendWave } from './use-cases/waves.js';
+import { applyWalkIns } from './use-cases/walk-ins.js';
 
 export type TickResult = {
   readonly imported: number;
@@ -42,6 +45,7 @@ export type TickResult = {
   readonly completed: number;
   readonly outcomesApplied: number;
   readonly promoted: number;
+  readonly walkInsCounted: number;
   readonly standDownsQueued: number;
   readonly drain: DrainResult;
 };
@@ -88,7 +92,18 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     }
   }
 
-  /* --- 4. waves --------------------------------------------------------- */
+  /* --- 4. what the counter already collected ---------------------------- */
+  /**
+   * **Before the waves.**
+   *
+   * A walk-in that arrives between two ticks reduces what is still needed, and
+   * counting it after the wave would mean a batch of real people invited for
+   * blood the fridge already has.
+   */
+  const walkIns = await applyWalkIns(ctx);
+  for (const id of walkIns.touched) touched.add(id);
+
+  /* --- 5. waves --------------------------------------------------------- */
   let wavesSent = 0;
   let donorsNotified = 0;
   for (const row of await findRequestsDueAWave(ctx)) {
@@ -99,17 +114,17 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     touched.add(row.id);
   }
 
-  /* --- 5. what happened at the counter ---------------------------------- */
+  /* --- 6. what happened at the counter ---------------------------------- */
   const outcomes = await applyCounterOutcomes(ctx);
 
-  /* --- 6. a freed place goes to the waitlist ---------------------------- */
+  /* --- 7. a freed place goes to the waitlist ---------------------------- */
   // After the outcomes, because a no-show is what frees one.
   for (const id of touched) {
     const result = await promoteFromWaitlist(ctx, id);
     promoted += result.promoted;
   }
 
-  /* --- 7. everything given ---------------------------------------------- */
+  /* --- 8. everything given ---------------------------------------------- */
   for (const row of await findCompletedRequests(ctx)) {
     const result = await closeDemand(ctx, row.botRequestId, 'completed');
     if (result.ok && result.value.closed) {
@@ -119,7 +134,7 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     }
   }
 
-  /* --- 8. tell the centre, then send ------------------------------------ */
+  /* --- 9. tell the centre, then send ------------------------------------ */
   for (const id of touched) await writeBackProgress(ctx, id);
 
   const drain = await drainOutbox(ctx);
@@ -133,6 +148,7 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     completed,
     outcomesApplied: outcomes.processed,
     promoted,
+    walkInsCounted: walkIns.updated,
     standDownsQueued,
     drain,
   };

@@ -108,3 +108,5 @@ export {
   type OnboardingDraft,
   type OnboardingStep,
 } from './use-cases/onboarding.js';
+
+export { applyWalkIns, type WalkInSyncResult } from './use-cases/walk-ins.js';

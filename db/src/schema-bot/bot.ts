@@ -241,6 +241,19 @@ export const botRequests = botSchema.table(
     confirmedCount: integer('confirmed_count').notNull().default(0),
     waitlistedCount: integer('waitlisted_count').notNull().default(0),
     completedCount: integer('completed_count').notNull().default(0),
+    /**
+     * Units already collected from people who were never in the bot at all
+     * (contract 1.2.0).
+     *
+     * Read from `hospital.walk_in_donations`, which the centre owns and the bot
+     * may only SELECT. It is kept beside `units_needed` rather than subtracted
+     * from it so that the original need stays legible: three units were wanted,
+     * one walked in, and two donors are still worth calling.
+     *
+     * Every place that asks "does this still need people?" counts it, because
+     * the alternative is calling real donors in for blood the shelf already has.
+     */
+    walkInUnits: integer('walk_in_units').notNull().default(0),
     neededBy: date('needed_by').notNull(),
 
     /** What donors are told, frozen at import (§2.6). Never joined back. */

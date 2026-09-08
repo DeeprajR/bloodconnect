@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AppShell } from '../../shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { listBags } from '@blood-connect/centre';
+import { DiscardBagForm } from '../../centre-collision-forms';
 import {
   BLOOD_GROUPS,
   PRODUCTS,
@@ -167,6 +168,9 @@ export default async function StockPage({
                   <th scope="col">{WORDING.expiresOn}</th>
                   <th scope="col">Days left</th>
                   <th scope="col">Status</th>
+                  <th scope="col">
+                    <span className="app-sr-only">Action</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -199,6 +203,19 @@ export default async function StockPage({
                         )}
                       </td>
                       <td>{bag.status}</td>
+                      <td>
+                        {/*
+                          Offered only where it is a legal move (§12.1). A bag
+                          that is issued or already discarded gets no button,
+                          rather than a button that fails.
+                        */}
+                        {bag.status === 'available' ||
+                        bag.status === 'quarantined' ||
+                        bag.status === 'returned' ||
+                        bag.status === 'expired' ? (
+                          <DiscardBagForm bagId={bag.id} />
+                        ) : null}
+                      </td>
                     </tr>
                   );
                 })}
@@ -209,12 +226,13 @@ export default async function StockPage({
         <div className="ux4g-card-footer">
           <p className="ux4g-label-m-default">
             {/*
-              P6 brings returns, quarantine and discards; P11 brings the camera.
-              Saying so beats a row of buttons that do nothing.
+              A discard is not a status change, it is a physical event with a
+              route (§12.1). Returns start at the tag, because that is where the
+              unit is in somebody's hand.
             */}
-            Returns, {WORDING.quarantine.toLowerCase()} and discards arrive in a later
-            phase, along with the fridge camera that counts what is physically on the
-            shelf.
+            A returned unit is recorded by scanning its tag. A discard always asks where
+            the unit physically went. The fridge camera that counts what is actually on
+            the shelf arrives in a later phase.
           </p>
         </div>
       </section>

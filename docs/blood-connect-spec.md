@@ -1168,6 +1168,20 @@ id — that is what lets the same person be reached on one channel today and ano
 the centre's roster changing shape (§2.11). The channel is carried alongside so the counter knows where
 the person was reached.
 
+### `walk_in_donations` — centre to bot, one way
+
+| Written by | Columns | Meaning |
+|---|---|---|
+| Centre | demand id, donor name, donor phone, blood group, bag identifier, donated on, recorded by | Somebody who gave without ever being in the bot |
+| Bot | — | It reads and writes nothing here |
+
+Added in contract 1.2.0, and a separate table rather than a confirmation row because the centre
+holds **no INSERT** on `donor_demand_confirmations`: the bot creates the roster, the centre records
+what happened at the counter, and a centre that could invent confirmations could inflate counters
+the bot owns. The bot reads this because a unit already collected is a unit it must stop recruiting
+for — otherwise a demand covered by walk-ins goes on calling real people in for blood the shelf
+already has.
+
 ### Dates
 
 The centre records a **day**. Donors are told "Needed by Sun 7 Sep" and the request expires at 23:59

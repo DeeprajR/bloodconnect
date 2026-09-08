@@ -22,6 +22,7 @@
 
 import { relations, sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   date,
   index,
@@ -263,6 +264,200 @@ export const tagAssignments = hospitalSchema.table(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Returns, quarantine and discards (§4, §5.5)                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * How long a unit was outside controlled storage (§4).
+ *
+ * A band, not a number, because nobody at a counter knows it to the minute —
+ * and `unknown` is a real answer that has to be recordable, because it is the
+ * one that defaults to quarantine.
+ */
+export const STORAGE_BANDS = ['under_30m', '30m_to_limit', 'over_limit', 'unknown'] as const;
+export type StorageBand = (typeof STORAGE_BANDS)[number];
+
+export const RETURN_OUTCOMES = ['restock', 'quarantine', 'discard'] as const;
+
+/**
+ * A unit coming back into the centre's custody (§4).
+ *
+ * **Never writes `expires_at`** — the expiry is a property of the donation, not
+ * of the bag's travels, and a return that recalculated it would make a unit
+ * fresher for having been carried to a ward and back. §5.5 asks for that to be
+ * asserted by a test rather than left to review, and it is.
+ */
+export const bagReturns = hospitalSchema.table(
+  'bag_returns',
+  {
+    id: uuid('id').primaryKey(),
+    bagId: uuid('bag_id')
+      .notNull()
+      .references(() => bloodBags.id),
+    returnedAt: timestamp('returned_at', { withTimezone: true }).notNull().defaultNow(),
+    outOfStorageBand: text('out_of_storage_band').notNull(),
+    coldChainDocumented: boolean('cold_chain_documented').notNull().default(false),
+    outcome: text('outcome').notNull(),
+    note: text('note'),
+    /** A named person, always. Restocking is a clinical judgement (§4). */
+    decidedBy: uuid('decided_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('bag_returns_bag_idx').on(table.bagId, table.returnedAt.desc()),
+    check(
+      'bag_returns_band_check',
+      sql`out_of_storage_band IN ('under_30m', '30m_to_limit', 'over_limit', 'unknown')`,
+    ),
+    check('bag_returns_outcome_check', sql`outcome IN ('restock', 'quarantine', 'discard')`),
+    /**
+     * A unit whose time out of storage is unknown, or past the limit, is never
+     * restocked (§4). The database refuses it, so no screen and no future code
+     * path can put one back on the shelf.
+     */
+    check(
+      'bag_returns_restock_check',
+      sql`outcome <> 'restock' OR out_of_storage_band = 'under_30m'`,
+    ),
+  ],
+);
+
+export const QUARANTINE_RESOLUTIONS = ['available', 'discarded'] as const;
+
+/**
+ * **A waiting room, not a destination** (§4).
+ *
+ * A quarantined bag is out of issue and out of the stock floor, ages visibly,
+ * and must be resolved by a named person to one of exactly two ends. Nothing
+ * sits here indefinitely — the ageing escalation and the automatic discard at
+ * expiry are what make that true rather than aspirational.
+ */
+export const bagQuarantines = hospitalSchema.table(
+  'bag_quarantines',
+  {
+    id: uuid('id').primaryKey(),
+    bagId: uuid('bag_id')
+      .notNull()
+      .references(() => bloodBags.id),
+    reason: text('reason').notNull(),
+    openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolution: text('resolution'),
+    resolvedBy: uuid('resolved_by').references(() => users.id),
+    note: text('note'),
+  },
+  (table) => [
+    // One open quarantine per bag: two would make "how long has this been
+    // waiting" unanswerable.
+    uniqueIndex('bag_quarantines_open_idx').on(table.bagId).where(sql`resolved_at IS NULL`),
+    // The ageing escalation of §4 reads this.
+    index('bag_quarantines_ageing_idx').on(table.openedAt).where(sql`resolved_at IS NULL`),
+    check(
+      'bag_quarantines_resolution_check',
+      sql`resolution IS NULL OR resolution IN ('available', 'discarded')`,
+    ),
+    // Resolved means resolved by somebody, to something.
+    check(
+      'bag_quarantines_resolved_check',
+      sql`(resolved_at IS NULL) = (resolution IS NULL)`,
+    ),
+  ],
+);
+
+/**
+ * The end of a bag (§12.1).
+ *
+ * `disposal_route` is required, because **a status change is not the end of the
+ * bag**: a unit of human blood has to physically go somewhere, and a register
+ * that says `discarded` without saying where cannot answer that.
+ */
+export const bagDiscards = hospitalSchema.table(
+  'bag_discards',
+  {
+    id: uuid('id').primaryKey(),
+    bagId: uuid('bag_id')
+      .notNull()
+      .references(() => bloodBags.id),
+    reason: text('reason').notNull(),
+    disposalRoute: text('disposal_route').notNull(),
+    note: text('note'),
+    discardedBy: uuid('discarded_by').references(() => users.id),
+    discardedAt: timestamp('discarded_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // A bag is discarded once.
+    uniqueIndex('bag_discards_bag_idx').on(table.bagId),
+    index('bag_discards_when_idx').on(table.discardedAt.desc()),
+    check('bag_discards_route_check', sql`length(trim(disposal_route)) > 0`),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Case 3 — the discrepancy (§4, §7.5)                                         */
+/* -------------------------------------------------------------------------- */
+
+export const DISCREPANCY_STATUSES = ['open', 'resolved'] as const;
+export const DISCREPANCY_FINDINGS = ['duplicate_tag', 'bag_missing', 'mis_scan'] as const;
+export type DiscrepancyFinding = (typeof DISCREPANCY_FINDINGS)[number];
+
+/**
+ * A tag presented as new whose bag the register believes is on the shelf.
+ *
+ * One of: the register is stale, two bags carry the same tag, or the tag is
+ * cloned — and every one of those can put the wrong unit into a patient. So it
+ * stops and makes a person go and look.
+ *
+ * **Never auto-resolves and never expires** (§4). No job touches this table, and
+ * that absence is deliberate: the expiry sweep, the quarantine escalation and
+ * every other scheduled thing leave it alone. It is the one alarm in this module
+ * worth being loud.
+ */
+export const tagDiscrepancies = hospitalSchema.table(
+  'tag_discrepancies',
+  {
+    id: uuid('id').primaryKey(),
+    tagUid: text('tag_uid')
+      .notNull()
+      .references(() => rfidTags.tagUid),
+    presentedAt: timestamp('presented_at', { withTimezone: true }).notNull().defaultNow(),
+    presentedBy: uuid('presented_by').references(() => users.id),
+    /** The bag the register thinks is on the shelf. Somebody must go and look. */
+    conflictingBagId: uuid('conflicting_bag_id')
+      .notNull()
+      .references(() => bloodBags.id),
+    status: text('status').notNull().default('open'),
+    finding: text('finding'),
+    note: text('note'),
+    resolvedBy: uuid('resolved_by').references(() => users.id),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // The centre overview reads this, and it stays visible until a person
+    // closes it.
+    index('tag_discrepancies_open_idx').on(table.status, table.presentedAt),
+    check('tag_discrepancies_status_check', sql`status IN ('open', 'resolved')`),
+    check(
+      'tag_discrepancies_finding_check',
+      sql`finding IS NULL OR finding IN ('duplicate_tag', 'bag_missing', 'mis_scan')`,
+    ),
+    /**
+     * Resolved means a person, a finding and a note — all three.
+     *
+     * §4 gives three findings and three fixed actions, "each requiring the
+     * resolver's identity and a note". A row closed without them records that
+     * somebody made it go away, not what they found.
+     */
+    check(
+      'tag_discrepancies_resolved_check',
+      sql`(status = 'resolved') = (resolved_at IS NOT NULL AND finding IS NOT NULL
+                                    AND resolved_by IS NOT NULL AND note IS NOT NULL)`,
+    ),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
 /* Decisions                                                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -464,6 +659,19 @@ export const donorDemandConfirmations = hospitalSchema.table(
     /* --- the centre, at the counter --- */
     donatedAt: date('donated_at'),
     bagIdentifier: text('bag_identifier'),
+    /**
+     * The group the counter actually typed, which is not the same claim as the
+     * group the donor believes they are.
+     *
+     * Added in P6 because without it nothing could ever set
+     * `bot.donors.blood_group_verified_at`: §7.7 excludes an unverified donor
+     * from every wave, the centre is the authority on a group, and `app_web`
+     * holds no grant on the bot's schema at all. So a donor who registered
+     * could never be recruited, and there was no path out of that except
+     * trusting a self-declaration — which is exactly what the column exists to
+     * prevent. An additive column, so a minor contract bump (§11.8).
+     */
+    donatedBloodGroup: text('donated_blood_group'),
     markedBy: uuid('marked_by'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -484,6 +692,55 @@ export const donorDemandConfirmations = hospitalSchema.table(
     check(
       'donor_demand_confirmations_donated_check',
       sql`donated_at IS NULL OR status = 'completed'`,
+    ),
+    check(
+      'donor_demand_confirmations_typed_group_check',
+      sql`donated_blood_group IS NULL OR donated_blood_group IN
+            ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')`,
+    ),
+  ],
+);
+
+/**
+ * Somebody who gave blood without ever being in the bot (§4).
+ *
+ * **Not a confirmation row.** §5.1 gives the centre no INSERT on
+ * `donor_demand_confirmations` at all: the bot creates the roster, the centre
+ * marks what happened at the counter, and that split is a grant rather than a
+ * convention. The first version of `recordWalkIn` inserted a confirmation and
+ * was refused by the database the moment it ran as `app_web` — correctly, and
+ * that refusal is the reason this table exists.
+ *
+ * It is the centre's own record, in the centre's own half. The bot may read it,
+ * because a unit already collected is a unit it must stop recruiting for
+ * (contract 1.2.0): without that, a demand covered by walk-ins would keep
+ * calling real people in for blood the shelf already has.
+ */
+export const walkInDonations = hospitalSchema.table(
+  'walk_in_donations',
+  {
+    id: uuid('id').primaryKey(),
+    demandId: uuid('demand_id')
+      .notNull()
+      .references(() => donorDemand.id),
+
+    donorName: text('donor_name').notNull(),
+    donorPhone: text('donor_phone').notNull(),
+    /** The group the unit **typed as** — the only group anybody here measured. */
+    bloodGroup: text('blood_group').notNull(),
+    bagIdentifier: text('bag_identifier').notNull(),
+    donatedOn: date('donated_on').notNull(),
+
+    recordedBy: uuid('recorded_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // The bot's poll: how many units this demand has already collected outside
+    // the roster.
+    index('walk_in_donations_demand_idx').on(table.demandId),
+    check(
+      'walk_in_donations_group_check',
+      sql`blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')`,
     ),
   ],
 );
@@ -511,4 +768,5 @@ export const centreDecisionRelations = relations(centreDecisions, ({ one, many }
 
 export const donorDemandRelations = relations(donorDemand, ({ many }) => ({
   confirmations: many(donorDemandConfirmations),
+  walkIns: many(walkInDonations),
 }));
