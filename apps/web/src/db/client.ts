@@ -18,8 +18,12 @@ const connectionString = (): string => {
   const url = process.env['DATABASE_URL'];
   if (!url) {
     // Secrets are validated at boot and the process refuses to start on a
-    // missing one (§13). A default here would be a silent misconfiguration.
-    throw new Error('DATABASE_URL is not set. Copy .env.example to .env.');
+    // missing one (§13). A default here would be a silent misconfiguration —
+    // and the worst kind, because it would quietly connect somewhere.
+    throw new Error(
+      'DATABASE_URL is not set. From the workspace root: `cp .env.example .env`, ' +
+        'then `pnpm up` to start Postgres. The root .env is loaded by next.config.ts.',
+    );
   }
   return url;
 };

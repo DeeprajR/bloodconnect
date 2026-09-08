@@ -211,6 +211,38 @@ export function decideAccess(pathname: string, actor: Actor): AccessDecision {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* CSRF                                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The same-origin comparison behind every mutating request (§3).
+ *
+ * Pure, and here rather than in the adapter, so it can be tested without a
+ * request. `sameSite=lax` already blocks the cross-site POST that carries the
+ * cookie; this is the second of two independent controls.
+ *
+ * A missing `Origin` is **not** same-origin. Every browser that can run this
+ * app sends it on a POST, and treating absence as trustworthy is how these
+ * checks get quietly bypassed.
+ */
+export function isSameOrigin(
+  origin: string | null | undefined,
+  host: string | null | undefined,
+): boolean {
+  if (!origin || !host) return false;
+
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    // An unparseable Origin is not a matching one.
+    return false;
+  }
+
+  return originHost === host;
+}
+
 /**
  * Where a role lands after signing in. Never a generic page: the invite flow
  * ends "signed in on the dashboard for their role", not on a menu (§3).

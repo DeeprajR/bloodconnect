@@ -72,8 +72,12 @@ pnpm up                    # Postgres, Mailpit, MinIO
 pnpm db:migrate            # apply db/migrations as the migrator role
 pnpm db:seed               # locations, and one account per role
 pnpm verify                # typecheck, lint, boundaries, tests
-pnpm --filter @blood-connect/web dev
+pnpm dev                   # http://localhost:3000
 ```
+
+There is one `.env`, at the workspace root, shared by the web app, the worker, the bot and the
+seed runner — `apps/web/next.config.ts` loads it, because Next otherwise reads `.env` only from
+the application directory. Two copies of a connection string are two things to keep in step.
 
 | Service | Where |
 |---|---|

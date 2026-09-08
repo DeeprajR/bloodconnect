@@ -7,6 +7,7 @@ import {
   actorHas,
   anonymousActor,
   decideAccess,
+  isSameOrigin,
   landingFor,
   permissionsFor,
   roleHas,
@@ -303,5 +304,34 @@ describe('the route table itself', () => {
     for (const rule of ROUTE_RULES) {
       expect(rule.prefix.startsWith('/'), rule.prefix).toBe(true);
     }
+  });
+});
+
+describe('the same-origin check (§3)', () => {
+  it('accepts a request from the same host', () => {
+    expect(isSameOrigin('http://localhost:3000', 'localhost:3000')).toBe(true);
+    expect(isSameOrigin('https://blood.example.in', 'blood.example.in')).toBe(true);
+  });
+
+  it('refuses another origin, including one that merely starts the same', () => {
+    expect(isSameOrigin('http://evil.example', 'localhost:3000')).toBe(false);
+    // A different port is a different origin.
+    expect(isSameOrigin('http://localhost:3001', 'localhost:3000')).toBe(false);
+    // And a suffix match is not a match.
+    expect(isSameOrigin('https://blood.example.in.evil.test', 'blood.example.in')).toBe(false);
+  });
+
+  it('refuses a missing Origin rather than trusting the absence', () => {
+    // Every browser that can run this app sends it on a POST. Treating absence
+    // as trustworthy is how these checks get quietly bypassed.
+    expect(isSameOrigin(null, 'localhost:3000')).toBe(false);
+    expect(isSameOrigin(undefined, 'localhost:3000')).toBe(false);
+    expect(isSameOrigin('', 'localhost:3000')).toBe(false);
+  });
+
+  it('refuses a missing or unparseable value on either side', () => {
+    expect(isSameOrigin('http://localhost:3000', null)).toBe(false);
+    expect(isSameOrigin('not a url', 'localhost:3000')).toBe(false);
+    expect(isSameOrigin('null', 'localhost:3000')).toBe(false);
   });
 });

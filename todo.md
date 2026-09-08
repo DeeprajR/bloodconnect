@@ -1,0 +1,1 @@
+to the plan add the super admin dashboard where I can see health of all APIs, metrics, to the granular details. 

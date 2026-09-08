@@ -3,7 +3,7 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 
 import { db } from '@/db/client';
-import { nodeTokens, resolveActor, type Actor } from '@/modules/platform';
+import { isSameOrigin, nodeTokens, resolveActor, type Actor } from '@/modules/platform';
 
 /**
  * The session cookie (§3, §13).
@@ -63,19 +63,10 @@ export async function assertSameOrigin(): Promise<void> {
   const origin = headerList.get('origin');
   const host = headerList.get('host');
 
-  if (!origin || !host) {
-    throw new Error('CSRF: refusing a mutating request with no Origin or Host header');
-  }
-
-  let originHost: string;
-  try {
-    originHost = new URL(origin).host;
-  } catch {
-    throw new Error(`CSRF: unparseable Origin "${origin}"`);
-  }
-
-  if (originHost !== host) {
-    throw new Error(`CSRF: Origin ${originHost} does not match Host ${host}`);
+  if (!isSameOrigin(origin, host)) {
+    // The message names neither value: it reaches a log, and an error page is
+    // not the place to tell a caller what would have been accepted.
+    throw new Error('CSRF: refusing a mutating request that is not same-origin');
   }
 }
 

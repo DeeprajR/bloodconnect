@@ -15,6 +15,7 @@ export {
   actorHas,
   anonymousActor,
   decideAccess,
+  isSameOrigin,
   landingFor,
   permissionsFor,
   roleHas,
