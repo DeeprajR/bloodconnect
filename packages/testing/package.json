@@ -1,0 +1,22 @@
+{
+  "name": "@blood-connect/testing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@blood-connect/domain": "workspace:*",
+    "@blood-connect/ids": "workspace:*",
+    "postgres": "^3.4.9"
+  }
+}

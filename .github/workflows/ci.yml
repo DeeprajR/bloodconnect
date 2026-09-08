@@ -1,0 +1,106 @@
+name: CI
+
+# The CI gates are the reviewer (build plan, "Standing rules for a solo build"):
+# no second reader looks at a commit here, so the boundary check, the contract
+# tests, the wording regression and the role matrix are what catch what a
+# reviewer would.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MIGRATION_DATABASE_URL: postgres://postgres:postgres@localhost:5432/blood_connect
+  DATABASE_URL: postgres://app_web:app_web@localhost:5432/blood_connect
+  BOT_DATABASE_URL: postgres://app_bot:app_bot@localhost:5432/blood_connect
+  TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/blood_connect_test
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # 16+ is load-bearing (§11.3), so CI must not drift to whatever is
+        # newest and quietly stop testing what production runs.
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blood_connect
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # ---------------------------------------------------------------- static
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Import boundaries (§11.2)
+        run: pnpm boundaries
+
+      - name: Prove the boundary check rejects a deep import
+        run: pnpm boundaries:prove
+
+      # -------------------------------------------------------------- database
+      - name: Provision roles
+        run: psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f db/docker/init.sql
+
+      - name: Migrations apply cleanly to an empty database (§5.9)
+        run: pnpm db:migrate
+
+      - name: Seed
+        run: pnpm db:seed
+
+      - name: Migrations are idempotent against an already-migrated database
+        # The second half of §5.9's requirement: clean against empty, and clean
+        # against a database seeded from the previous release.
+        run: pnpm db:migrate
+
+      - name: The bot's migrations never mention the shared tables (§2.1)
+        run: |
+          if [ -d db/migrations-bot ] && grep -riE 'donor_demand' db/migrations-bot; then
+            echo "::error::db/migrations-bot references a shared contract table. Only db/migrations may create them (§2.1)."
+            exit 1
+          fi
+
+      # ------------------------------------------------------------------ test
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # `db:push` must be impossible here. It is guarded by NODE_ENV and CI, and
+      # this asserts the guard rather than trusting it (§5.9).
+      - name: db:push is refused in CI
+        run: |
+          if pnpm db:push; then
+            echo "::error::db:push succeeded in CI. The guard in db/src/push-guard.ts is not working."
+            exit 1
+          fi
+          echo "db:push correctly refused"

@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/result" },
+    { "path": "packages/ids" },
+    { "path": "packages/domain" },
+    { "path": "packages/config" },
+    { "path": "packages/contract" },
+    { "path": "packages/testing" },
+    { "path": "db" }
+  ]
+}

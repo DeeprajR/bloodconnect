@@ -1,0 +1,35 @@
+{
+  "name": "blood-connect",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty && tsc -p tsconfig.test.json",
+    "clean": "tsc -b --clean",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "boundaries": "depcruise packages db --config .dependency-cruiser.cjs",
+    "boundaries:prove": "node scripts/prove-boundary-check.mjs",
+    "db:generate": "pnpm --filter @blood-connect/db generate",
+    "db:migrate": "pnpm --filter @blood-connect/db migrate",
+    "db:seed": "pnpm --filter @blood-connect/db seed",
+    "db:push": "pnpm --filter @blood-connect/db push",
+    "up": "docker compose up -d",
+    "down": "docker compose down",
+    "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.5.0",
+    "dependency-cruiser": "^18.2.0",
+    "eslint": "^10.10.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.0"
+  }
+}

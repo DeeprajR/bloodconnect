@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'db'
+
+# Build scripts are opt-in. esbuild is a native binary that vitest and
+# drizzle-kit both need; nothing else in the tree is allowed to run install
+# scripts, which is the default worth keeping.
+allowBuilds:
+  esbuild: true

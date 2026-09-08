@@ -1,0 +1,119 @@
+# Blood Connect
+
+A blood request and donor recruitment system for a medical-college hospital: doctors raise
+requests, the blood centre answers them from stock, and a chat bot recruits donors for whatever
+the shelf could not cover — then tells everyone how it ended, including when it ends badly.
+
+**Everything here runs on synthetic data.** No real donor, patient or staff record enters this
+system at any point. That is a property of the build, not a limitation of the demonstration.
+
+> **Not a medical device.** This software does not make clinical decisions. Blood-group
+> compatibility, donor eligibility and screening answers are screening aids only; the
+> pre-donation assessment and the pre-transfusion compatibility test always happen on site.
+
+## The documents
+
+| Document | What it says |
+|---|---|
+| [blood-connect-spec.md](docs/blood-connect-spec.md) | The system's behaviour — the source of truth |
+| [modules-spec.md](docs/modules-spec.md) | The four modules, flow by flow |
+| [input-fields.md](docs/input-fields.md) | Every screen that accepts input, and every field on it |
+| [backend-architecture.md](docs/backend-architecture.md) | How it is built: processes, schema, transactions, ports |
+| [build-plan.md](docs/build-plan.md) | In what order, and by when |
+| [docs/adr/](docs/adr/) | Decisions taken along the way, and why |
+
+Section references written as §n point at the specification.
+
+## Where the build is
+
+**Phase 0 — foundations. Complete.**
+
+```
+P0  Foundations                  ✅ this repository
+P1  Identity and access, thin    ← next
+P2  The request, thin
+P3  The centre decision, thin
+P4  The bot loop, thin              ▲ Milestone A — the loop closes
+…
+```
+
+What Phase 0 delivered: the pnpm workspace and its strict TypeScript settings; the import
+boundary and a CI job that proves it rejects a deep import; Docker Compose with Postgres, Mailpit
+and MinIO; three schemas, three roles and the grants of §5.1; Drizzle with the first migrations
+and a seed runner; the six shared packages; and the Kozhikode location hierarchy seeded and
+versioned. No feature, and no UI.
+
+## Getting started
+
+Needs Node 20+, pnpm and Docker.
+
+```bash
+pnpm install
+cp .env.example .env       # everything already points at the local stack
+pnpm up                    # Postgres, Mailpit, MinIO
+pnpm db:migrate            # apply db/migrations as the migrator role
+pnpm db:seed               # the location hierarchy
+pnpm verify                # typecheck, lint, boundaries, tests
+```
+
+| Service | Where |
+|---|---|
+| Postgres | `localhost:5433` — **not** 5432, so a natively installed server cannot be reached by accident ([ADR 0001](docs/adr/0001-phase-0-decisions.md)) |
+| Mailpit inbox | http://localhost:8025 |
+| MinIO console | http://localhost:9001 (`minioadmin` / `minioadmin`) |
+
+Roles come from `db/docker/init.sql`, which Postgres runs on first start. A database that already
+exists will not re-run it — `docker compose down -v` then `pnpm up` to start clean.
+
+### Commands
+
+| Command | Does |
+|---|---|
+| `pnpm verify` | Everything CI runs, in the same order |
+| `pnpm typecheck` | `tsc -b`, plus the no-emit project that covers the test files |
+| `pnpm lint` | ESLint, type-aware |
+| `pnpm boundaries` | The import boundary of §11.2 |
+| `pnpm boundaries:prove` | Writes a deliberate deep import and asserts the check rejects it |
+| `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
+| `pnpm db:generate` | Generate a migration from the Drizzle schema |
+| `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed reference data |
+| `pnpm db:push` | Refused unless the target database is named as a scratch one |
+
+## Layout
+
+```
+packages/
+  domain/     the clinical rules — pure, no clock, no I/O, imported by web and bot alike
+  contract/   the two shared tables: schemas, column ownership, writer-scoped transitions
+  config/     clinical thresholds as data, with defaults and a 60-second cache
+  result/     Result<T, E> — expected failures are values, not exceptions
+  ids/        branded UUIDv7 identifiers
+  testing/    fake clock, deterministic ids, the real-Postgres harness
+db/
+  migrations/ hospital + reference. The only creator of the shared contract tables
+  seeds/      the location hierarchy
+  src/        Drizzle schema, migration runner, seed runner, the db:push guard
+docs/         the specification set and the decision log
+```
+
+`apps/web`, `apps/bot` and `apps/vision` arrive with the phases that need them.
+
+### The rules the build enforces mechanically
+
+Because there is no second reader on a commit here, CI is the reviewer:
+
+- **`packages/domain` imports nothing outside itself.** The clinical rules exist once, shared by
+  the web app and the bot, so the two can never disagree about who may donate to whom (§11.3).
+- **No deep imports across packages.** A package's entry point is its contract (§11.2).
+- **The full 8×8 compatibility matrix is tested against a table written out by hand**, not
+  derived from the implementation.
+- **Migrations only.** `db:push` is refused outside a scratch database, and in CI (§5.9).
+- **The grants are asserted, not reviewed.** Tests connect as `app_web` and `app_bot` and check
+  what they *cannot* do.
+- **Every state machine's table is checked for states with no way out** — the failure §8 exists
+  to prevent.
+
+## Licence
+
+Apache-2.0 (§12.7). The `LICENSE` and `NOTICE` files land in P12 with the rest of the
+demonstration packaging.

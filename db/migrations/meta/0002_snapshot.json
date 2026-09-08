@@ -1,0 +1,284 @@
+{
+  "id": "ff77d73e-8d88-45c1-8f28-d913b4a7e659",
+  "prevId": "b2ef80e0-b1fe-40eb-b525-724510240a85",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "reference.location_aliases": {
+      "name": "location_aliases",
+      "schema": "reference",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias_normalised": {
+          "name": "alias_normalised",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "location_aliases_alias_node_idx": {
+          "name": "location_aliases_alias_node_idx",
+          "columns": [
+            {
+              "expression": "alias_normalised",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "node_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "location_aliases_node_id_location_nodes_id_fk": {
+          "name": "location_aliases_node_id_location_nodes_id_fk",
+          "tableFrom": "location_aliases",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "location_aliases_node_id_alias_normalised_pk": {
+          "name": "location_aliases_node_id_alias_normalised_pk",
+          "columns": [
+            "node_id",
+            "alias_normalised"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "reference.location_dataset_versions": {
+      "name": "location_dataset_versions",
+      "schema": "reference",
+      "columns": {
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "reference.location_nodes": {
+      "name": "location_nodes",
+      "schema": "reference",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_normalised": {
+          "name": "name_normalised",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dataset_version": {
+          "name": "dataset_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "location_nodes_parent_name_idx": {
+          "name": "location_nodes_parent_name_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name_normalised",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "location_nodes_level_idx": {
+          "name": "location_nodes_level_idx",
+          "columns": [
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "location_nodes_dataset_version_location_dataset_versions_version_fk": {
+          "name": "location_nodes_dataset_version_location_dataset_versions_version_fk",
+          "tableFrom": "location_nodes",
+          "columnsFrom": [
+            "dataset_version"
+          ],
+          "tableTo": "location_dataset_versions",
+          "schemaTo": "reference",
+          "columnsTo": [
+            "version"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "location_nodes_parent_id_fk": {
+          "name": "location_nodes_parent_id_fk",
+          "tableFrom": "location_nodes",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "location_nodes_level_check": {
+          "name": "location_nodes_level_check",
+          "value": "level IN ('district', 'city', 'town', 'locality')"
+        },
+        "location_nodes_kind_check": {
+          "name": "location_nodes_kind_check",
+          "value": "kind IN ('district', 'taluk', 'corporation', 'municipality', 'grama_panchayat', 'zone')"
+        },
+        "location_nodes_root_check": {
+          "name": "location_nodes_root_check",
+          "value": "(level = 'district') = (parent_id IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "reference": "reference"
+  },
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

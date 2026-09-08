@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "types": ["node"],
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts", "seeds/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "seeds/**/*.test.ts"],
+  "references": [
+    { "path": "../packages/config" },
+    { "path": "../packages/contract" },
+    { "path": "../packages/domain" },
+    { "path": "../packages/ids" }
+  ]
+}
