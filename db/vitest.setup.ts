@@ -1,5 +1,5 @@
 /**
- * Global test setup: bring the test database up to the current migrations.
+ * Global test setup: bring the test database up to both migration sets.
  *
  * The suite runs against real Postgres (§17), and the schema it runs against
  * must be the one the migrations produce — not one a test built for itself. So
@@ -31,8 +31,16 @@ export async function setup(): Promise<void> {
 
   const sql = postgres(url, { max: 1, onnotice: () => undefined });
   try {
+    // Both sets, in release order. The bot's migrations are a separate set
+    // applied by a separate release (§5.9), and the suite has to run against
+    // the same two schemas production does.
     await migrate(drizzle(sql), {
       migrationsFolder: path.resolve(import.meta.dirname, 'migrations'),
+    });
+    await migrate(drizzle(sql), {
+      migrationsFolder: path.resolve(import.meta.dirname, 'migrations-bot'),
+      migrationsSchema: 'bot',
+      migrationsTable: '__drizzle_migrations',
     });
   } finally {
     await sql.end({ timeout: 5 });

@@ -78,11 +78,11 @@ medical disclaimer (§12.6) stays prominent regardless of the audience.
 ## Shape of the build
 
 ```
-P0  Foundations                  5d  ────────────────────────────────────────────
-P1  Identity and access, thin    5d
-P2  The request, thin            5d
-P3  The centre decision, thin    6d
-P4  The bot loop, thin           8d   ▲ MILESTONE A — the loop closes (day ~29)
+P0  Foundations                  5d  ✅ ─────────────────────────────────────────
+P1  Identity and access, thin    5d  ✅
+P2  The request, thin            5d  ✅
+P3  The centre decision, thin    6d  ✅
+P4  The bot loop, thin           8d  ✅ ▲ MILESTONE A — the loop closes (day ~29)
 P5  Module 1 depth               7d
 P6  Centre depth — collisions    8d
 P7  Bot depth — the interview    9d

@@ -78,6 +78,13 @@
       "when": 1788878818510,
       "tag": "0010_centre_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788878819510,
+      "tag": "0011_bot_reads_config",
+      "breakpoints": true
     }
   ]
 }

@@ -22,8 +22,13 @@ export default defineConfig({
       '@blood-connect/platform': pkg('platform'),
       '@blood-connect/hospital': pkg('hospital'),
       '@blood-connect/centre': pkg('centre'),
+      '@blood-connect/bot': pkg('bot'),
       // The web app's own path alias, so its module tests import exactly what
       // the app imports.
+      // The longer alias first: Vite matches by prefix, so `@blood-connect/db`
+      // would otherwise swallow `@blood-connect/db/bot` and resolve it to a
+      // path that does not exist.
+      '@blood-connect/db/bot': path.resolve(import.meta.dirname, 'db/src/schema-bot/index.ts'),
       '@blood-connect/db': path.resolve(import.meta.dirname, 'db/src/index.ts'),
 
     },

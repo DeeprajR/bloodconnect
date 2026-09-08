@@ -57,6 +57,25 @@ module.exports = {
       to: { path: '^(packages/(?!contract|domain)|apps/|db/)' },
     },
     {
+      name: 'the-bot-is-its-own-side',
+      comment:
+        'packages/bot integrates with the centre through two shared tables and no function call ' +
+        '(§1). It may not import platform, hospital or centre — those are the web release, on a ' +
+        'different database role, and an import would make the two deployables one.',
+      severity: 'error',
+      from: { path: '^packages/bot/' },
+      to: { path: '^packages/(platform|hospital|centre)/' },
+    },
+    {
+      name: 'the-web-release-does-not-import-the-bot',
+      comment:
+        'The other direction, for the same reason. What the centre knows about a donor arrives ' +
+        'on a roster row in `hospital`, put there by the bot (§7).',
+      severity: 'error',
+      from: { path: '^packages/(platform|hospital|centre)/' },
+      to: { path: '^packages/bot/' },
+    },
+    {
       name: 'no-production-code-in-testing',
       comment:
         'packages/testing holds fakes and harnesses. Nothing outside a test may import it, so ' +

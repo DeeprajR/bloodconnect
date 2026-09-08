@@ -1,0 +1,20 @@
+{
+  "name": "@blood-connect/bot-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b && node dist/main.js",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@blood-connect/bot": "workspace:*",
+    "@blood-connect/config": "workspace:*",
+    "@blood-connect/contract": "workspace:*",
+    "@blood-connect/db": "workspace:*",
+    "@blood-connect/domain": "workspace:*",
+    "@blood-connect/ids": "workspace:*"
+  }
+}

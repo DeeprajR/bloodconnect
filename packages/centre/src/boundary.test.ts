@@ -46,6 +46,28 @@ const CENTRE_TABLES = [
   'centre_decisions',
 ] as const;
 
+/** Module 3's tables. Nothing in the web release may name one. */
+const BOT_TABLES = [
+  'donorChannels',
+  'donorPhones',
+  'botRequests',
+  'donorRequests',
+  'conversationState',
+  'messageOutbox',
+  'bot.donors',
+] as const;
+
+/**
+ * One matcher, built once, so every check here is escaped the same way.
+ *
+ * `String.raw` because `\b` inside an ordinary template literal is a backspace
+ * character, not a word boundary — which is how the bot check below was first
+ * written. It passed against every file, and would have passed against a
+ * violation too.
+ */
+const wordMatch = (identifier: string): RegExp =>
+  new RegExp(String.raw`\b${identifier.replace(/[.]/g, String.raw`\.`)}\b`);
+
 function sourceFiles(root: string): string[] {
   const found: string[] = [];
 
@@ -80,7 +102,7 @@ describe('module boundaries (§11.2)', () => {
     for (const file of sourceFiles(path.join(packages, 'centre', 'src'))) {
       const code = codeOf(file);
       for (const table of HOSPITAL_TABLES) {
-        if (new RegExp(`\\b${table}\\b`).test(code)) {
+        if (wordMatch(table).test(code)) {
           offences.push(`${path.relative(packages, file)} names ${table}`);
         }
       }
@@ -95,7 +117,7 @@ describe('module boundaries (§11.2)', () => {
     for (const file of sourceFiles(path.join(packages, 'hospital', 'src'))) {
       const code = codeOf(file);
       for (const table of CENTRE_TABLES) {
-        if (new RegExp(`\\b${table}\\b`).test(code)) {
+        if (wordMatch(table).test(code)) {
           offences.push(`${path.relative(packages, file)} names ${table}`);
         }
       }
@@ -114,13 +136,38 @@ describe('module boundaries (§11.2)', () => {
     expect(entry).toContain('listRequestsAwaitingDecision');
   });
 
-  it('proves the check can fail', () => {
-    // A green boundary test that cannot go red is worse than none: it reports
-    // safety it never established. This asserts the matcher itself works.
-    const violating = 'import { bloodRequests } from "@blood-connect/db";';
-    const clean = 'import { bloodBags } from "@blood-connect/db";';
+  it('never lets the web release name a bot table', () => {
+    // §1: the bot is a separate deployable on a different database role, and
+    // `app_web` holds no grant on the `bot` schema at all. A name appearing
+    // here would be code that cannot run — and the reason it cannot is the
+    // privacy boundary of §5.1, so it is worth failing the build over.
+    const offences: string[] = [];
 
-    expect(new RegExp('\\bbloodRequests\\b').test(violating)).toBe(true);
-    expect(new RegExp('\\bbloodRequests\\b').test(clean)).toBe(false);
+    for (const module of ['centre', 'hospital', 'platform']) {
+      const root = path.join(packages, module, 'src');
+      for (const file of sourceFiles(root)) {
+        const code = codeOf(file);
+        for (const table of BOT_TABLES) {
+          if (wordMatch(table).test(code)) {
+            offences.push(`${path.relative(packages, file)} names ${table}`);
+          }
+        }
+      }
+    }
+
+    expect(offences).toEqual([]);
+  });
+
+  it('proves the checks can fail', () => {
+    // A green boundary test that cannot go red is worse than none: it reports
+    // safety it never established. This asserts the matcher itself works, on
+    // the exact strings the checks above are looking for.
+    expect(wordMatch('bloodRequests').test('import { bloodRequests } from "x";')).toBe(true);
+    expect(wordMatch('bloodRequests').test('import { bloodBags } from "x";')).toBe(false);
+    expect(wordMatch('botRequests').test('import { botRequests } from "x/bot";')).toBe(true);
+
+    // And not a partial match: `donorDemand` is the centre's table, not a
+    // donor table, and confusing the two would fail every file in the repo.
+    expect(wordMatch('donorRequests').test('import { donorDemand } from "x";')).toBe(false);
   });
 });

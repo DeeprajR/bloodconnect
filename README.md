@@ -26,16 +26,23 @@ Section references written as §n point at the specification.
 
 ## Where the build is
 
-**Phase 1 — identity and access. Complete.**
+**Milestone A reached — the loop in §1 closes.**
 
 ```
 P0  Foundations                  ✅
 P1  Identity and access, thin    ✅
 P2  The request, thin            ✅
-P3  The centre decision, thin    ← next
-P4  The bot loop, thin              ▲ Milestone A — the loop closes
+P3  The centre decision, thin    ✅
+P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
+P5  Module 1 depth               ← next
 …
 ```
+
+A doctor raises a request; the centre answers it from the shelf and whatever stock cannot cover
+becomes demand **in the same transaction**; the bot recruits the nearest eligible donors; one is
+screened and confirmed; the counter records the donation; the donor is thanked with a
+next-eligible date, and everyone still holding a place is stood down. Every step of that is
+proven against real Postgres across both database roles.
 
 **P0** delivered the workspace and its strict TypeScript settings; the import boundary and a CI
 job that proves it rejects a deep import; Docker Compose with Postgres, Mailpit and MinIO; three
@@ -64,6 +71,24 @@ transactional counter of §7.1 that gives two doctors submitting in the same mil
 consecutive identifiers with no gap. Both snapshots are frozen at submit, so editing a patient
 record later never rewrites what the centre was told. The administrator's patients-per-doctor
 view is wired up, and every read of it is audited by record.
+
+**P3** delivered Module 2: the register (`blood_bags`, `rfid_tags`, typed intake with the expiry
+derived from collection), the request queue with stock on hand, and the decision transaction of
+§7.2 — `FOR UPDATE SKIP LOCKED` oldest-expiry-first, one decision per request enforced by a unique
+constraint, and a shortfall raising demand in the same transaction. Plus the stock floor, and
+"recruit for groups below floor" that cannot double-raise. ([ADR 0005](docs/adr/0005-the-centre-decision.md))
+
+**P4** delivered Module 3 and closed the loop: the `bot` schema as its own migration set and its
+own deployable, the channel port with a Telegram adapter and an in-memory one, minimal onboarding
+that commits nothing until consent, wave selection by proximity (§7.7) with the mandatory
+agreement test between its SQL and its TypeScript twin, the six screening questions, the last-unit
+conditional UPDATE of §7.3 with waitlisting and promotion, and the outbox that makes §7.6's
+stand-down guarantee real. ([ADR 0006](docs/adr/0006-the-bot-loop-and-milestone-a.md))
+
+**Running the bot.** `pnpm bot`. With no `TELEGRAM_BOT_TOKEN` it runs on the in-memory channel and
+the whole loop still works — §10 requires the system to be demonstrable when the chat platform is
+unreachable, so that is a supported mode rather than a test shortcut. Put a token from @BotFather
+in `.env` to talk to a real account.
 
 Run `pnpm db:seed` and sign in as any of:
 
@@ -121,8 +146,10 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
 | `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
 | `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |
-| `pnpm db:generate` | Generate a migration from the Drizzle schema |
-| `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed reference data |
+| `pnpm bot` | The donor bot: long-polls the channel and ticks. `CHANNEL=memory` needs no token |
+| `pnpm check:bot-migrations` | Greps the bot's migrations for a table the web release owns (§2.1) |
+| `pnpm db:generate` / `pnpm db:generate:bot` | Generate a migration from the Drizzle schema, for either set |
+| `pnpm db:migrate` / `pnpm db:migrate:bot` / `pnpm db:seed` | Apply either migration set / seed reference data |
 | `pnpm db:push` | Refused unless the target database is named as a scratch one |
 
 ## Layout
@@ -131,6 +158,8 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 packages/
   platform/   accounts, sessions, authorization, audit, email, config — shared by both apps
   hospital/   Module 1: patients, admissions, requests, and its narrow read API
+  centre/     Module 2: the register, the §7.2 decision, demand and the stock floor
+  bot/        Module 3: onboarding, waves, screening, the outbox and the stand-down
   domain/     the clinical rules — pure, no clock, no I/O, imported by web and bot alike
   contract/   the two shared tables: schemas, column ownership, writer-scoped transitions
   config/     clinical thresholds as data, with defaults and a 60-second cache
@@ -139,13 +168,15 @@ packages/
   testing/    fake clock, deterministic ids, the real-Postgres harness
 db/
   migrations/ hospital + reference. The only creator of the shared contract tables
-  seeds/      the location hierarchy
+  migrations-bot/ the bot schema, applied by the bot release. Never mentions donor_demand
+  seeds/      the location hierarchy, synthetic stock and a synthetic donor pool
   src/        Drizzle schema, migration runner, seed runner, the db:push guard
 docs/         the specification set and the decision log
 ```
 
-`apps/web` is the staff application and `apps/admin` is administration. `apps/bot` and
-`apps/vision` arrive with the phases that need them.
+`apps/web` is the staff application, `apps/admin` is administration, and `apps/bot` is the donor
+bot — three deployables on three database roles. `apps/vision` arrives with the phase that needs
+it.
 
 ### The rules the build enforces mechanically
 

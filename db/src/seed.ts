@@ -20,6 +20,7 @@ import { count, eq, sql as raw } from 'drizzle-orm';
 import postgres from 'postgres';
 
 import { CONTRACT_VERSION, CONTRACT_VERSION_CONFIG_KEY } from '@blood-connect/contract';
+import { newId } from '@blood-connect/ids';
 
 import { databaseUrl, nodeEnv, redact } from './env.js';
 import { SEED_PASSWORD, buildAccountSeeds } from '../seeds/accounts.js';
@@ -29,6 +30,13 @@ import {
   readLocationSeed,
 } from '../seeds/locations.js';
 import { buildStockSeed } from '../seeds/stock.js';
+import { buildDonorSeed, type PlaceSeed } from '../seeds/donors.js';
+import {
+  donorChannels,
+  donorConsents,
+  donorPhones,
+  donors as donorTable,
+} from './schema-bot/index.js';
 import {
   appConfig,
   bloodBags,
@@ -193,6 +201,117 @@ async function seedStock(db: Database): Promise<void> {
   );
 }
 
+/**
+ * The synthetic donor pool.
+ *
+ * Placed across the real seeded hierarchy so the wave ordering of §7.7 is
+ * visible on the first demand raised — the nearest locality first, then the
+ * town, then the taluk. A pool that all sits in one place shows none of that.
+ *
+ * Idempotent through the unique `(channel, channel_user_id)` index: re-running
+ * adds nobody, and a donor who has since given blood keeps their interval.
+ */
+async function seedDonors(db: Database): Promise<void> {
+  const nodes = await db
+    .select({ id: locationNodes.id, level: locationNodes.level, parentId: locationNodes.parentId })
+    .from(locationNodes);
+
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const parentAt = (id: string | null, level: string): string | null => {
+    let current = id;
+    while (current) {
+      const node = byId.get(current);
+      if (!node) return null;
+      if (node.level === level) return node.id;
+      current = node.parentId;
+    }
+    return null;
+  };
+
+  // Prefer localities, so the nearest tier is populated; fall back to towns.
+  const leaves = nodes.filter((node) => node.level === 'locality');
+  const source = leaves.length > 0 ? leaves : nodes.filter((node) => node.level === 'town');
+
+  const places: PlaceSeed[] = source.map((node) => ({
+    districtId: parentAt(node.id, 'district') ?? 'KL_KKD',
+    cityId: parentAt(node.id, 'city'),
+    townId: parentAt(node.id, 'town'),
+    localityId: node.level === 'locality' ? node.id : null,
+  }));
+
+  if (places.length === 0) {
+    process.stdout.write(
+      '  donors:    skipped — no location hierarchy to place them in\n',
+    );
+    return;
+  }
+
+  const pool = buildDonorSeed(places);
+  const now = new Date();
+
+  for (const donor of pool) {
+    const inserted = await db
+      .insert(donorTable)
+      .values({
+        id: donor.id,
+        name: donor.name,
+        dob: donor.dob,
+        sex: donor.sex,
+        bloodGroup: donor.bloodGroup,
+        // Verified, because an unverified donor is never selected into a wave
+        // (§7.7) and a demo pool nobody can be recruited from shows nothing.
+        bloodGroupVerifiedAt: now,
+        weightBand: donor.weightBand,
+        weightKg: donor.weightKg,
+        districtId: donor.districtId,
+        cityId: donor.cityId,
+        townId: donor.townId,
+        localityId: donor.localityId,
+        lastDonatedOn: donor.lastDonatedOn,
+        nextEligibleOn: donor.nextEligibleOn,
+        durableFlagStatus: 'clear',
+        consentCurrentAt: now,
+      })
+      .onConflictDoNothing()
+      .returning({ id: donorTable.id });
+
+    if (inserted.length === 0) continue;
+
+    await db
+      .insert(donorChannels)
+      .values({
+        donorId: donor.id,
+        channel: 'memory',
+        channelUserId: donor.channelUserId,
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(donorPhones)
+      .values({ donorId: donor.id, e164: donor.phone, verified: true, verifiedAt: now })
+      .onConflictDoNothing();
+
+    await db.insert(donorConsents).values({
+      id: newId(),
+      donorId: donor.id,
+      consentedAt: now,
+      wordingVersion: '1.0.0',
+      valuesSnapshot: { seeded: true, note: 'Synthetic donor, consent recorded by the seed.' },
+    });
+  }
+
+  const [held] = await db.select({ n: count() }).from(donorTable);
+  const [eligible] = await db
+    .select({ n: count() })
+    .from(donorTable)
+    .where(raw`next_eligible_on IS NULL OR next_eligible_on <= current_date`);
+
+  process.stdout.write(
+    `  donors:    ${held?.n ?? 0} synthetic, ${eligible?.n ?? 0} eligible today
+`,
+  );
+}
+
 async function seedConfig(db: Database): Promise<void> {
   // Both processes assert their compiled contract version against this at boot
   // and refuse to start on a major mismatch (§6).
@@ -230,6 +349,7 @@ async function main(): Promise<void> {
     await seedAccounts(db);
     await seedCentreSettings(db);
     await seedStock(db);
+    await seedDonors(db);
     await seedConfig(db);
     process.stdout.write('seed complete\n');
   } finally {

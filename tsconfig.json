@@ -26,10 +26,16 @@
       "path": "packages/centre"
     },
     {
+      "path": "packages/bot"
+    },
+    {
       "path": "packages/testing"
     },
     {
       "path": "db"
+    },
+    {
+      "path": "apps/bot"
     }
   ]
 }

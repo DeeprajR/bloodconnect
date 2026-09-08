@@ -1,22 +1,38 @@
 {
-  "$comment": "Test files are excluded from the emitted build but must still typecheck — a test that does not compile is a test that is not run.",
+  "$comment": "Test files are excluded from the emitted build but must still typecheck \u2014 a test that does not compile is a test that is not run.",
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@blood-connect/platform": ["./packages/platform/src/index.ts"],
-      "@blood-connect/hospital": ["./packages/hospital/src/index.ts"]
+      "@blood-connect/platform": [
+        "./packages/platform/src/index.ts"
+      ],
+      "@blood-connect/hospital": [
+        "./packages/hospital/src/index.ts"
+      ],
+      "@blood-connect/centre": [
+        "./packages/centre/src/index.ts"
+      ],
+      "@blood-connect/bot": [
+        "./packages/bot/src/index.ts"
+      ],
+      "@blood-connect/db/bot": [
+        "./db/src/schema-bot/index.ts"
+      ]
     },
     "noEmit": true,
     "composite": false,
     "declaration": false,
     "declarationMap": false,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "packages/**/*.test.ts",
     "db/**/*.test.ts",
     "vitest.config.ts",
     "db/drizzle.config.ts",
-    "db/vitest.setup.ts"
+    "db/vitest.setup.ts",
+    "db/drizzle-bot.config.ts"
   ]
 }
