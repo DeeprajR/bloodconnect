@@ -14,7 +14,7 @@ realistic solo pace, multiply by roughly 1.5 for calendar time.
 | Existing code | **Greenfield** | Nothing is ported. Phase 0 carries the whole scaffold, and the earlier implementation's divergences (`blood_bank`, PolyForm, local-disk seals) never enter the codebase |
 | Team | **Solo** | Strictly sequential. One thing in flight at a time, and the web app and the bot are never open at once. The shared packages land in P0 so neither side needs reworking later |
 | Target | **Academic / demo milestone** | The deliverable is **the loop in §1 closing on synthetic data**, so the plan reaches a working loop at day ~29 and deepens afterwards, instead of finishing Module 1 before starting Module 2. Compliance is built but never gated on legal review |
-| Hardware | **Arriving mid-build** | Procurement is a calendar track, not an effort track. Every phase before P10 uses the keyboard-entry fallback — which §10 requires anyway, so nothing is throwaway |
+| Hardware | **Arriving mid-build** | Procurement is a calendar track, not an effort track. Every phase before P11 uses the keyboard-entry fallback — which §10 requires anyway, so nothing is throwaway |
 
 **This plan supersedes §18 of the architecture document**, which gives the spec-shaped order
 (platform → M1 → M2 → M3 → M4 → vision). That order is correct for a team with a pilot ahead of
@@ -88,9 +88,10 @@ P6  Centre depth — collisions    8d
 P7  Bot depth — the interview    9d
 P8  Endings sweep                4d   ▲ MILESTONE B — every §8 flow ends (day ~57)
 P9  Volunteer + public board     4d
-P10 Tag reader integration       3d   ⟵ gated on hardware
-P11 Vision, shadow mode          8d   ⟵ gated on hardware
-P12 Demo readiness               5d   ▲ MILESTONE C — demonstrable (day ~77)
+P10 Control panel                5d
+P11 Tag reader integration       3d   ⟵ gated on hardware
+P12 Vision, shadow mode          8d   ⟵ gated on hardware
+P13 Demo readiness               5d   ▲ MILESTONE C — demonstrable (day ~82)
 ```
 
 Two milestones matter more than the total. **Milestone A is the one that de-risks the project**:
@@ -108,12 +109,12 @@ Runs on the calendar, not on your effort. Nothing in P0–P9 waits for it.
 | **Decide the counting approach** | Before any order | One shelf/tray/bin per blood group and calibrate regions, **or** a printed high-contrast group marker on the tag label. §14 names this as the single most likely reason the vision feature fails, and it dictates the shelving you buy |
 | Order readers | Any time; they are the cheaper, lower-risk item | A barcode reader that presents as a keyboard is enough to demonstrate the scan path |
 | Order camera + enclosure | After the decision above | Sealed, heated-window, rated for the storage temperature; prefer a wired run (§4) |
-| Reader arrives | → **P10**, 3 days | Slots in wherever it lands; the fallback path already works |
-| Camera arrives | → **P11**, 8 days | Shadow mode only. Never promoted to raising tasks during a demo |
+| Reader arrives | → **P11**, 3 days | Slots in wherever it lands; the fallback path already works |
+| Camera arrives | → **P12**, 8 days | Shadow mode only. Never promoted to raising tasks during a demo |
 
 **If the hardware never arrives, the demo is unaffected.** Typed bag identifiers and "no
 observations" are the spec's required degraded modes (§10), not workarounds — so the fallback
-path is what you build anyway, and P10/P11 are additive.
+path is what you build anyway, and P11/P12 are additive.
 
 ---
 
@@ -312,7 +313,72 @@ by a test that fails if any new column appears (§14).
 
 ---
 
-### P10 · Tag reader integration — 3d · *gated on hardware*
+### P10 · Control panel — 5d
+
+**Goal.** One screen an operator can open at 3am and know, without asking anyone, whether the
+system is working — and if it is not, which part.
+
+§11.9 already names what to alert on and §14 says the correlation id spans request → decision →
+demand → wave → confirmation. Neither has a surface. This is that surface, and it is deliberately
+sequenced **after** the loop rather than before it: a health board built before there is anything
+to be unhealthy shows green because nothing runs, which is worse than no board.
+
+**Who it is for.** The blood centre in-charge and whoever operates the deployment. It is
+administrator-only, lives in the administration application (§1), and holds **no clinical
+function** — it can read that a demand is stuck; it cannot answer a request.
+
+**Build.**
+
+- **Health, not liveness** (§11.9). Each dependency checked by doing its actual job, not by
+  pinging it: a database round trip, an SMTP handshake, an object-storage `HEAD`, a Telegram
+  `getMe`, and the contract-version assertion both processes make at boot (§6). Each reports
+  ok / degraded / down, its last check, its latency, **and what to do about it** — a red tile that
+  does not say what broke is a pager that wakes someone up for nothing.
+- **The silent-failure board**, which is §11.9's alert list made visible rather than emailed:
+  demands closed with unsent stand-downs (§7.6), waves that did not fire (`next_wave_at` in the
+  past), outbox backlog and age, `email_deliveries` stuck or rejecting, jobs failing repeatedly,
+  quarantined bags and reconciliation tasks past their ageing threshold, cameras that stopped
+  reporting. Each row links to the record, so the panel is a way in rather than a dead end.
+- **Metrics, granular.** Counters and latency per surface — the staff app, the admin app,
+  `/api/device/*`, the signed demand API, the chat adapter — with error rate, p50/p95, and volume
+  over a window. Per **route and status class**, because "the API is slow" and "one route 500s for
+  one role" need different answers. Sourced from a request-scoped middleware that records what it
+  already has (§14's correlation id), not from a new agent.
+- **Follow one unit of blood end to end.** Paste a correlation id, a `BR-YYYY-NNNNNN`, or a demand
+  id and get the whole chain — request, decision, bags issued, demand, waves, confirmations — from
+  `audit_log`, `event_log` and `jobs`. §14 says one query should do this; this is the screen that
+  proves it can.
+- **Configuration and versions**, read-only: the resolved `app_config` with which values are
+  overridden and which are defaults (§12), the contract version each process compiled against, the
+  applied migration list, and the build identifier. "Which config is this deployment actually
+  running" is the first question of most incidents.
+- `/api/health` for a load balancer — shallow, unauthenticated, no detail — kept separate from the
+  panel, which is authenticated and detailed. A public endpoint that enumerates dependencies is a
+  reconnaissance endpoint.
+
+**Prove.**
+
+- Stopping Mailpit, MinIO and Postgres in turn each turns exactly one tile red, with a message
+  naming the dependency — asserted by a test that stops the container, not by inspection.
+- **No personal or health data anywhere on the panel or in its logs** (§11.9, §12): donor ids not
+  names, request ids not patient names. Asserted by a test that inspects the response body against
+  the name and phone columns, in the same shape as the volunteer dashboard's check (§14).
+- Every role that is not `admin` gets nothing in the body, not merely a redirect (§9's matrix).
+- The trace screen is audited by subject id, like every other read that can reach a record.
+
+**Defer.** Alert *delivery* — email or chat on threshold breach. The board makes the state visible;
+routing it to a person is a deployment decision that needs somewhere to send it, and a demo has
+nobody on call. Long-horizon metric storage is also out: a rolling window in the database is
+enough to answer "is it broken now", and anything longer wants a time-series store this deployment
+does not have.
+
+**Why 5 days and not 2.** The tiles are quick. The metrics middleware, the trace query across
+three append-only tables, and the container-stopping tests are not, and without the last one the
+panel is decoration.
+
+---
+
+### P11 · Tag reader integration — 3d · *gated on hardware*
 
 **Build.** The reader endpoint with a device token, scan-to-resolve on the intake screen, and the
 label print path if a printer arrives with it.
@@ -321,7 +387,7 @@ label print path if a printer arrives with it.
 
 ---
 
-### P11 · Vision, shadow mode — 8d · *gated on hardware*
+### P12 · Vision, shadow mode — 8d · *gated on hardware*
 
 **Build.** Device registration with a token shown once; the calibration screen's backend
 (regions, versioning, reference frame); the Python service; observation ingest with the
@@ -336,7 +402,7 @@ a demonstration timeline cannot produce honestly.
 
 ---
 
-### P12 · Demo readiness — 5d · **Milestone C**
+### P13 · Demo readiness — 5d · **Milestone C**
 
 **Build.** The synthetic dataset — staff, patients, admissions, a stocked fridge, a donor pool
 spread across localities so wave ordering is visible; a one-command bring-up; the scripted
@@ -364,12 +430,13 @@ the last week.
 
 | Cut | Cost | Keep instead |
 |---|---|---|
-| P11 vision | The camera half of §4 | Say plainly it is shadow-mode-only by design and not demonstrated |
-| P10 reader | Nothing visible | The typed path is spec-required and complete |
+| P12 vision | The camera half of §4 | Say plainly it is shadow-mode-only by design and not demonstrated |
+| P11 reader | Nothing visible | The typed path is spec-required and complete |
 | P9 volunteer dashboard | Module 4 | The public board alone, which is cheaper and shows the same data |
+| P10 control panel, all but the health tiles | The metrics and the trace screen | Keep the dependency health checks — they are ten lines and they answer the question a demo audience actually asks when something stalls |
 | P7 bot depth | The interview quality | P4's minimal onboarding still closes the loop |
 
-**P0–P4 plus P12 is a complete demonstration of the loop in about 38 days.** Everything else is
+**P0–P4 plus P13 is a complete demonstration of the loop in about 38 days.** Everything else is
 depth. Do not cut P8 — a system full of flows with no endings is the failure mode §8 exists to
 prevent, and it is visible to anyone who looks past the happy path.
 
@@ -382,7 +449,7 @@ prevent, and it is visible to anyone who looks past the happy path.
 - **Write the concurrency test when you write the transaction**, not later. You cannot click your
   way to a race condition, and §7's seven transactions are where correctness actually lives.
 - **Seed before UI.** Every phase starts by extending the seed script, so there is data to build
-  against and the demo dataset grows continuously instead of being invented in P12.
+  against and the demo dataset grows continuously instead of being invented in P13.
 - **The domain package is the only place a rule lives.** The moment an eligibility check or a
   compatibility test appears in a route handler, it will diverge.
 - **Keep a decisions log** as you go (`docs/adr/`). §11.8 asks for it, and solo work is where the
@@ -398,7 +465,7 @@ prevent, and it is visible to anyone who looks past the happy path.
 | Risk | Why it applies here | Mitigation |
 |---|---|---|
 | P4 slips and the loop never closes | It is the widest phase and the first integration point | Its scope is already minimal; if it slips, cut the interview further (drop weight and screening to P7) rather than cutting the stand-down |
-| Hardware arrives late, or wrong | Ordered mid-build, and the camera decision dictates shelving | The fallback paths are the spec's own; P10/P11 are additive and cuttable |
+| Hardware arrives late, or wrong | Ordered mid-build, and the camera decision dictates shelving | The fallback paths are the spec's own; P11/P12 are additive and cuttable |
 | The demo is judged on the happy path, so the ⚠︎ endings feel optional | They are invisible until they fail | P8 is a phase with a milestone attached, not a cleanup task |
 | Solo review blindness | No second reader on any commit | The CI gates are the reviewer: boundary checks, contract tests, the wording regression, the role matrix |
 | Scope creep from the spec's depth | The specification describes a production system; this is a demonstration of it | The cut line above is decided in advance |
