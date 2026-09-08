@@ -69,6 +69,12 @@ export type SettingsIncomplete = {
 
 export type DemandNotFound = { readonly kind: 'DemandNotFound'; readonly message: string };
 
+export type CancelRequestError =
+  | NotAuthorized
+  | RequestNotFound
+  | RequestNotDecidable
+  | InvalidBag;
+
 export type DecideError =
   | NotAuthorized
   | RequestNotFound
@@ -92,10 +98,12 @@ export const requestNotDecidable = (status: string): RequestNotDecidable => ({
   status,
   message:
     status === 'cancelled'
-      ? 'The doctor cancelled this request. There is nothing to answer.'
+      ? 'This request has already been cancelled.'
       : status === 'draft'
         ? 'This request has not been submitted yet.'
-        : 'This request has already been answered.',
+        : status === 'declined'
+          ? 'The centre declined this request; there is nothing left to cancel.'
+          : 'This request has already been answered.',
 });
 
 export const requestAlreadyDecided = (): RequestAlreadyDecided => ({

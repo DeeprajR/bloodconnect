@@ -9,9 +9,15 @@ import {
   createDraft,
   createPatient,
   dischargeAdmission,
+  findPossibleDuplicates,
+  recordSample,
   submitRequest,
   updateDraft,
+  type PossibleDuplicate,
 } from '@blood-connect/hospital';
+import { cancelRequest } from '@blood-connect/centre';
+
+import { actorHas } from '@blood-connect/platform';
 
 import { useCaseContext } from '@/lib/guards';
 import { assertSameOrigin, currentActor } from '@/lib/session';
@@ -85,6 +91,24 @@ export async function createPatientAction(
 
   revalidatePath('/patients');
   redirect(`/admissions/new?patientId=${result.value.patientId}`);
+}
+
+/**
+ * Patients who look like the one being typed (§3).
+ *
+ * **A warning, never a block.** Two people genuinely called Anitha Menon do
+ * arrive at the same hospital, and refusing the second admission at 3am is a
+ * far worse failure than recording a duplicate — so this returns candidates and
+ * the form shows them beside the field.
+ *
+ * It returns name, hospital ID, group and whether they are on a ward, which is
+ * what tells a doctor "this is the same person". Deliberately not the diagnosis
+ * or the history: enough to recognise somebody, and no more (§2.10).
+ */
+export async function findDuplicatesAction(name: string): Promise<PossibleDuplicate[]> {
+  const ctx = await useCaseContext(await currentActor());
+  if (!actorHas(ctx.actor, 'patients:manage')) return [];
+  return findPossibleDuplicates(ctx, name);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -178,4 +202,65 @@ export async function submitRequestAction(
 
   revalidatePath('/dashboard');
   redirect(`/requests/${requestUuid}`);
+}
+
+/**
+ * The doctor's one post-submit action (§3, §8).
+ *
+ * It reaches into `@blood-connect/centre` rather than `hospital`, because
+ * cancelling releases reserved bags and withdraws an open demand — three
+ * modules' tables, one transaction, and only that module may see all of them.
+ * The permission it checks is still the doctor's.
+ */
+export async function cancelRequestAction(
+  requestUuid: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await assertSameOrigin();
+
+  const reason = value(formData, 'reason');
+  if (reason.length === 0) {
+    return { error: 'Say why. The centre is told, and so is any donor who agreed to come.' };
+  }
+
+  const ctx = await useCaseContext(await currentActor());
+  const result = await cancelRequest(ctx, requestUuid, reason);
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath('/dashboard');
+  revalidatePath(`/requests/${requestUuid}`);
+  return { error: null, done: true };
+}
+
+/**
+ * Associating a compatibility testing sample (§3, §15).
+ *
+ * The identifier is globally unique across the hospital, and a duplicate is
+ * refused rather than accepted: the label travels on a physical tube to the
+ * laboratory, and two tubes carrying the same one is the mix-up the
+ * compatibility test exists to catch.
+ */
+export async function recordSampleAction(
+  requestUuid: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await assertSameOrigin();
+
+  const collectedRaw = value(formData, 'collectedAt');
+  const collectedAt = collectedRaw === '' ? new Date() : new Date(collectedRaw);
+  if (Number.isNaN(collectedAt.getTime())) return { error: 'Give a valid collection time.' };
+
+  const ctx = await useCaseContext(await currentActor());
+  const result = await recordSample(ctx, requestUuid, {
+    sampleIdentifier: value(formData, 'sampleIdentifier'),
+    collectedAt,
+    note: optional(formData, 'note'),
+  });
+
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath(`/requests/${requestUuid}`);
+  return { error: null, done: true };
 }

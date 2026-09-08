@@ -67,13 +67,33 @@ describe('blood request', () => {
     expect(canTransition(bloodRequestTransitions, 'submitted', 'draft')).toBe(false);
   });
 
-  it('ends in exactly four places', () => {
-    expect(terminalStates(bloodRequestTransitions).sort()).toEqual([
-      'approved',
-      'cancelled',
-      'declined',
-      'partially_approved',
-    ]);
+  it('ends in exactly two places', () => {
+    /**
+     * A **decided** request is not a finished one.
+     *
+     * This pinned four terminal states until the cancel use case was written,
+     * which is when the contradiction showed: §3 says cancelling "releases any
+     * reserved bags", and bags are only ever reserved *by* a decision. If
+     * `approved` were terminal, that sentence could never fire and units would
+     * stay held for a patient who has improved, died or been referred.
+     */
+    expect(terminalStates(bloodRequestTransitions).sort()).toEqual(['cancelled', 'declined']);
+  });
+
+  it('lets a decided request still be cancelled, and a declined one not (§3)', () => {
+    expect(canTransition(bloodRequestTransitions, 'approved', 'cancelled')).toBe(true);
+    expect(canTransition(bloodRequestTransitions, 'partially_approved', 'cancelled')).toBe(true);
+    // Nothing is held for a declined request, so there is nothing to release —
+    // the ward raises a new one rather than reopening this.
+    expect(canTransition(bloodRequestTransitions, 'declined', 'cancelled')).toBe(false);
+    // And a draft is left to age, never cancelled (§8).
+    expect(canTransition(bloodRequestTransitions, 'draft', 'cancelled')).toBe(false);
+  });
+
+  it('does not let a cancelled request be decided afterwards', () => {
+    for (const status of ['approved', 'partially_approved', 'declined'] as const) {
+      expect(canTransition(bloodRequestTransitions, 'cancelled', status)).toBe(false);
+    }
   });
 
   it('counts only the three decisions as decided', () => {

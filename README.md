@@ -34,7 +34,8 @@ P1  Identity and access, thin    ✅
 P2  The request, thin            ✅
 P3  The centre decision, thin    ✅
 P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
-P5  Module 1 depth               ← next
+P5  Module 1 depth               ✅
+P6  Centre depth — collisions    ← next
 …
 ```
 
@@ -90,6 +91,13 @@ the whole loop still works — §10 requires the system to be demonstrable when 
 unreachable, so that is a supported mode rather than a test shortcut. Put a token from @BotFather
 in `.env` to talk to a real account.
 
+**P5** closed Module 1's endings. **Cancelling a submitted request** is the one the
+loop is judged on: it releases any units the centre was holding, withdraws the donor demand, and
+the bot stands down every donor who had agreed to come — one transaction across three modules,
+because a request showing cancelled while units stay held for it is worse than not cancelling.
+Plus the duplicate-patient warning, draft ageing, and the compatibility testing sample with its
+globally unique identifier. ([ADR 0007](docs/adr/0007-module-1-depth-and-a-query-that-lied.md))
+
 Run `pnpm db:seed` and sign in as any of:
 
 | Role | Email | Lands on |
@@ -143,6 +151,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `pnpm lint` | ESLint, type-aware |
 | `pnpm boundaries` | The import boundary of §11.2 |
 | `pnpm boundaries:prove` | Writes a deliberate deep import and asserts the check rejects it |
+| `pnpm check:gates` | Every page decides access (§13); every mutating use case records what it did (§14) |
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
 | `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
 | `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |

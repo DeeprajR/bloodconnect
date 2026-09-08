@@ -87,9 +87,18 @@ export async function standingFor(
       confirmedCount: botRequests.confirmedCount,
       neededBy: botRequests.neededBy,
       hospitalSnapshot: botRequests.hospitalSnapshot,
+      /**
+       * `bot.bot_requests.id` written out, not interpolated.
+       *
+       * Drizzle renders a column reference inside a select-list `sql` without
+       * its table, so `${botRequests.id}` became a bare `"id"` that resolved to
+       * `r.id` inside the subquery — `r.bot_request_id = r.id`, never true.
+       * This flag was silently always false. The same mistake was in Module 1's
+       * duplicate-patient query, and one test caught both.
+       */
       alreadyAsked: sql<boolean>`EXISTS (
         SELECT 1 FROM bot.donor_requests r
-         WHERE r.bot_request_id = ${botRequests.id} AND r.donor_id = ${donorId}
+         WHERE r.bot_request_id = bot.bot_requests.id AND r.donor_id = ${donorId}
       )`,
     })
     .from(botRequests)

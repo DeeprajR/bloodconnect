@@ -7,9 +7,9 @@
  * leaves `draft`.
  */
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { err, ok, type Result } from '@blood-connect/result';
-import { admissions, bloodRequests, patients } from '@blood-connect/db';
+import { admissions, bloodRequests, bloodSamples, patients, users } from '@blood-connect/db';
 import {
   isBloodGroup,
   isProduct,
@@ -404,6 +404,205 @@ export async function listAdmissions(ctx: UseCaseContext) {
     .innerJoin(patients, eq(patients.id, admissions.patientId))
     .orderBy(desc(admissions.admittedAt))
     .limit(100);
+}
+
+/**
+ * How long a draft has been sitting, in whole days.
+ *
+ * §8: an abandoned draft "ages visibly on the dashboard, never auto-deleted".
+ * Deleting one would throw away a half-written clinical request that somebody
+ * may be part-way through; showing its age is what makes the ward notice it.
+ */
+export const draftAgeDays = (
+  row: { status: string; updatedAt: Date },
+  now: Date,
+): number =>
+  row.status !== 'draft'
+    ? 0
+    : Math.max(0, Math.floor((now.getTime() - row.updatedAt.getTime()) / 86_400_000));
+
+/** Past the configured threshold, so the dashboard can say so (§12). */
+export const isStaleDraft = (
+  row: { status: string; updatedAt: Date },
+  now: Date,
+  afterDays: number,
+): boolean => row.status === 'draft' && draftAgeDays(row, now) >= afterDays;
+
+/* -------------------------------------------------------------------------- */
+/* The compatibility testing sample (§3, §15)                                  */
+/* -------------------------------------------------------------------------- */
+
+export type SampleRow = {
+  readonly id: string;
+  readonly sampleIdentifier: string;
+  readonly collectedAt: Date;
+  readonly collectedBy: string | null;
+  readonly note: string | null;
+};
+
+/**
+ * Associates a sample with a submitted request (§3).
+ *
+ * The identifier is globally unique, and the refusal on a duplicate is the
+ * point rather than an inconvenience: it travels on a physical tube between the
+ * ward and the laboratory, and two tubes with the same label for different
+ * patients is exactly the mix-up the compatibility test exists to prevent.
+ *
+ * **Only on a request that has been submitted.** A sample drawn against a draft
+ * belongs to nothing the centre can see, and the tube would arrive at the
+ * laboratory ahead of the request it is for.
+ */
+export async function recordSample(
+  ctx: UseCaseContext,
+  requestUuid: string,
+  input: { sampleIdentifier: string; collectedAt: Date; note: string | null },
+): Promise<Result<{ sampleId: string }, DraftError | InvalidPatient>> {
+  if (!actorHas(ctx.actor, 'requests:manage')) return err(notAuthorized('requests:manage'));
+
+  const identifier = input.sampleIdentifier.trim();
+  if (identifier.length === 0) {
+    return err(invalidPatient('Enter the identifier printed on the tube.'));
+  }
+  if (input.collectedAt.getTime() > ctx.clock.now().getTime()) {
+    return err(invalidPatient('The collection time cannot be in the future.'));
+  }
+
+  const now = ctx.clock.now();
+  const sampleId = ctx.ids.next<'SampleId'>();
+  const actorId = ctx.actor.kind === 'user' ? ctx.actor.userId : null;
+
+  return ctx.db.transaction(async (tx) => {
+    const [request] = await tx
+      .select({ status: bloodRequests.status, doctorId: bloodRequests.doctorId })
+      .from(bloodRequests)
+      .where(eq(bloodRequests.id, requestUuid));
+
+    if (!request) return err(requestNotFound());
+    if (actorId !== null && request.doctorId !== actorId) return err(requestNotFound());
+    if (request.status === 'draft') return err(requestNotADraft('draft'));
+
+    const inserted = await tx
+      .insert(bloodSamples)
+      .values({
+        id: sampleId,
+        requestId: requestUuid,
+        sampleIdentifier: identifier,
+        collectedAt: input.collectedAt,
+        // From the session, never the form (§2.5) — who drew the tube is part
+        // of the chain of custody.
+        collectedByDoctorId: actorId,
+        note: input.note,
+      })
+      .onConflictDoNothing()
+      .returning({ id: bloodSamples.id });
+
+    if (inserted.length === 0) {
+      return err(
+        invalidPatient(
+          `Sample ${identifier} is already recorded. Identifiers are unique across the ` +
+            'hospital, so check the tube in your hand against the label.',
+        ),
+      );
+    }
+
+    const audit = createAuditWriter(tx, ctx.actor, ctx.correlationId, now);
+    await audit({
+      action: 'sample.recorded',
+      subjectType: 'blood_request',
+      subjectId: requestUuid,
+      metadata: { sampleId, sampleIdentifier: identifier },
+    });
+
+    return ok({ sampleId });
+  });
+}
+
+/** Every sample drawn for a request, newest first. Shown on its view (§3). */
+export async function listSamples(
+  ctx: UseCaseContext,
+  requestUuid: string,
+): Promise<SampleRow[]> {
+  return ctx.db
+    .select({
+      id: bloodSamples.id,
+      sampleIdentifier: bloodSamples.sampleIdentifier,
+      collectedAt: bloodSamples.collectedAt,
+      collectedBy: users.fullName,
+      note: bloodSamples.note,
+    })
+    .from(bloodSamples)
+    .leftJoin(users, eq(users.id, bloodSamples.collectedByDoctorId))
+    .where(eq(bloodSamples.requestId, requestUuid))
+    .orderBy(desc(bloodSamples.collectedAt));
+}
+
+/* -------------------------------------------------------------------------- */
+/* The duplicate-patient warning (§3)                                          */
+/* -------------------------------------------------------------------------- */
+
+export type PossibleDuplicate = {
+  readonly patientId: string;
+  readonly name: string;
+  readonly uhid: string | null;
+  readonly bloodGroup: string;
+  readonly similarity: number;
+  readonly openAdmission: string | null;
+};
+
+/**
+ * Patients who look like the one being recorded (§3).
+ *
+ * **A warning, never a block.** Two people genuinely called Anitha Menon arrive
+ * at the same hospital, and refusing the second admission at 3am is a far worse
+ * failure than recording a duplicate. So this returns candidates and the screen
+ * shows them; the doctor decides.
+ *
+ * Trigram similarity rather than an exact match, because human-entered names
+ * are misspelled, transliterated and abbreviated — `patients_name_trgm_idx`
+ * exists for exactly this query, and an exact index would find none of it.
+ */
+export async function findPossibleDuplicates(
+  ctx: UseCaseContext,
+  name: string,
+  limit = 5,
+): Promise<PossibleDuplicate[]> {
+  const trimmed = name.trim();
+  if (trimmed.length < 3) return [];
+
+  const rows = await ctx.db
+    .select({
+      patientId: patients.id,
+      name: patients.name,
+      uhid: patients.uhid,
+      bloodGroup: patients.bloodGroup,
+      similarity: sql<number>`similarity(${patients.name}, ${trimmed})`,
+      /**
+       * The column is named **fully**, not interpolated.
+       *
+       * Drizzle renders `${patients.id}` inside a select-list `sql` as a bare
+       * `"id"`, which inside this subquery resolves to `a.id` — the admission's
+       * own id. `a.patient_id = a.id` is never true, so every patient came back
+       * with no open admission and nothing errored. A silent null, found by a
+       * test that expected an IP number.
+       *
+       * In a `where` clause Drizzle qualifies the same expression properly; it
+       * is the select list that does not. Writing the name out is the reliable
+       * form.
+       */
+      openAdmission: sql<string | null>`(
+        SELECT a.ip_no FROM hospital.admissions a
+         WHERE a.patient_id = hospital.patients.id AND a.status = 'admitted'
+         ORDER BY a.admitted_at DESC LIMIT 1
+      )`,
+    })
+    .from(patients)
+    // 0.3 is Postgres' own default threshold for `%`. Lower finds noise; higher
+    // misses the transliteration differences this is here to catch.
+    .where(sql`similarity(${patients.name}, ${trimmed}) > 0.3`)
+    .orderBy(sql`similarity(${patients.name}, ${trimmed}) DESC`)
+    .limit(limit);
+
+  return rows;
 }
 
 /** True when the required day has passed and no decision exists (§3). */

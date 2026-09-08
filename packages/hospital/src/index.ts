@@ -12,14 +12,21 @@ export {
   createDraft,
   createPatient,
   dischargeAdmission,
+  draftAgeDays,
+  findPossibleDuplicates,
   getRequest,
   isOverdue,
+  isStaleDraft,
+  listSamples,
+  recordSample,
   listAdmissions,
   listRequestsForDoctor,
   updateDraft,
   type AdmissionInput,
   type DraftInput,
   type PatientInput,
+  type PossibleDuplicate,
+  type SampleRow,
   type RequestListRow,
 } from './use-cases/records.js';
 
@@ -33,11 +40,14 @@ export {
 } from './read.js';
 
 export {
+  doctorOf,
   getRequestForDecision,
   isAdmissionOpen,
+  markRequestCancelled,
   listDecidedRequests,
   listRequestsAwaitingDecision,
   markRequestDecided,
+  type CancelOutcome,
   type DecidedStatus,
   type DoctorSnapshot,
   type PatientSnapshot,

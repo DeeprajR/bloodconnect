@@ -194,3 +194,62 @@ export async function markRequestDecided(
 
   return rows.length > 0;
 }
+
+export type CancelOutcome =
+  | { readonly moved: true; readonly from: string }
+  | { readonly moved: false; readonly status: string | undefined };
+
+/**
+ * Cancels a submitted or decided request, inside somebody else's transaction.
+ *
+ * §3 gives the doctor exactly one post-submit action, and it has consequences in
+ * two other modules: reserved bags go back on the shelf and an open demand is
+ * withdrawn. Those must commit with the cancellation or not at all — a request
+ * showing cancelled while units stay held for it is how the centre ends up
+ * chasing blood nobody needs.
+ *
+ * So this takes a `Transaction`, like `markRequestDecided`. It reports the
+ * status it moved *from*, because the caller needs to know whether there were
+ * bags to release: only a decided request ever reserved any.
+ */
+export async function markRequestCancelled(
+  tx: Transaction,
+  requestUuid: string,
+  reason: string,
+  at: Date,
+): Promise<CancelOutcome> {
+  const [current] = await tx
+    .select({ status: bloodRequests.status })
+    .from(bloodRequests)
+    .where(eq(bloodRequests.id, requestUuid));
+
+  const rows = await tx
+    .update(bloodRequests)
+    .set({ status: 'cancelled', cancelledAt: at, cancelReason: reason })
+    .where(
+      and(
+        eq(bloodRequests.id, requestUuid),
+        // Guarded on the statuses §3 allows it from (§7.4). A draft is not
+        // cancelled — it is left, and ages visibly on the dashboard (§8).
+        inArray(bloodRequests.status, ['submitted', 'approved', 'partially_approved']),
+      ),
+    )
+    .returning({ id: bloodRequests.id });
+
+  return rows.length > 0
+    ? { moved: true, from: current?.status ?? 'submitted' }
+    : { moved: false, status: current?.status };
+}
+
+/** Who raised it, so a cancellation can be refused to anybody else. */
+export async function doctorOf(
+  ctx: UseCaseContext,
+  requestUuid: string,
+): Promise<string | undefined> {
+  const [row] = await ctx.db
+    .select({ doctorId: bloodRequests.doctorId })
+    .from(bloodRequests)
+    .where(eq(bloodRequests.id, requestUuid));
+
+  return row?.doctorId;
+}

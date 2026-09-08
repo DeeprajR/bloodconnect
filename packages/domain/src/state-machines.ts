@@ -50,8 +50,23 @@ export const bloodRequestTransitions: Transitions<BloodRequestStatus> = {
   // (§8), so there is no edge out of a draft other than submitting it.
   draft: ['submitted'],
   submitted: ['approved', 'partially_approved', 'declined', 'cancelled'],
-  approved: [],
-  partially_approved: [],
+  /**
+   * A decided request can still be cancelled, and it has to be.
+   *
+   * §3: "Cancelling releases any reserved bags, cancels an open donor demand,
+   * and requires a reason. It is the one post-submit action a doctor has, and
+   * without it the centre chases units nobody needs." Bags are only ever
+   * reserved *by* a decision — so if these were terminal, the sentence about
+   * releasing them could never fire, and units would sit held for a patient who
+   * has improved, died or been referred.
+   *
+   * These two were written as terminal in P0, from reading the status list
+   * rather than the flow. The cancel use case is what found it.
+   */
+  approved: ['cancelled'],
+  partially_approved: ['cancelled'],
+  // A declined request holds nothing and needs nothing released; the ward
+  // raises a new one rather than reopening this.
   declined: [],
   cancelled: [],
 };

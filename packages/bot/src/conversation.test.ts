@@ -215,6 +215,32 @@ describe.skipIf(!testUrl)('the conversation', () => {
     expect(said[0]).not.toContain('O−');
   });
 
+  it('marks a request this donor has already been messaged about', async () => {
+    await register();
+    await openRequest('O-', 2, 'Kozhikode General');
+
+    const [request] = await db.select().from(bot.botRequests);
+    const [donor] = await db.select().from(bot.donors);
+    await db.insert(bot.donorRequests).values({
+      id: newId(),
+      botRequestId: request?.id ?? '',
+      donorId: donor?.id ?? '',
+      status: 'NOTIFIED',
+      waveNo: 1,
+      notifiedAt: clock.now(),
+    });
+
+    /**
+     * This flag was silently always false.
+     *
+     * The correlated subquery interpolated the column through Drizzle, which
+     * renders it unqualified inside a select-list `sql` — so it compared the
+     * journey row's id against itself and never matched. Nothing errored.
+     */
+    const said = await say('needs');
+    expect(said[0]).toContain('already messaged you');
+  });
+
   it('says why it is quiet when the donor is inside their interval', async () => {
     await register();
     await db

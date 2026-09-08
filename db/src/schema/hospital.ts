@@ -245,6 +245,39 @@ export const bloodRequests = hospitalSchema.table(
 );
 
 /**
+ * The pre-transfusion compatibility testing sample (§5.4, §15).
+ *
+ * §2.7 calls it that, never "blood sample" — the wording table exists because
+ * the imprecise term is what somebody reaches for under pressure.
+ *
+ * `sample_identifier` is unique **on its own**, not per request. §15 wants it
+ * globally unique because the identifier travels on a physical tube between the
+ * ward and the laboratory: two tubes carrying the same label, for different
+ * patients, is exactly the mix-up the compatibility test exists to prevent.
+ */
+export const bloodSamples = hospitalSchema.table(
+  'blood_samples',
+  {
+    id: uuid('id').primaryKey(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => bloodRequests.id),
+    sampleIdentifier: text('sample_identifier').notNull(),
+    collectedAt: timestamp('collected_at', { withTimezone: true }).notNull(),
+    /** The authenticated doctor who drew it, from the session (§2.5). */
+    collectedByDoctorId: uuid('collected_by_doctor_id').references(() => users.id),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Globally unique, deliberately — see above.
+    uniqueIndex('blood_samples_identifier_idx').on(table.sampleIdentifier),
+    index('blood_samples_request_idx').on(table.requestId, table.collectedAt.desc()),
+  ],
+);
+
+/**
  * The transactional allocator of §7.1.
  *
  * One row per year, incremented inside the submit transaction. Not a sequence:

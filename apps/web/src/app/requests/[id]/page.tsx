@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AppShell } from '../../shell';
-import { DraftForm } from '../../hospital-forms';
+import { CancelRequestForm, DraftForm, SampleForm } from '../../hospital-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
-import { getRequest } from '@blood-connect/hospital';
+import { getRequest, listSamples } from '@blood-connect/hospital';
+import { getDecisionForRequest } from '@blood-connect/centre';
 import {
   WORDING,
   bloodGroupLabel,
@@ -23,6 +24,9 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   declined: 'Declined',
   cancelled: 'Cancelled',
 };
+
+/** The statuses §3 lets a doctor cancel from. A draft is left, not cancelled. */
+const CANCELLABLE = ['submitted', 'approved', 'partially_approved'];
 
 /**
  * A draft is editable; anything else is a record.
@@ -81,6 +85,19 @@ export default async function RequestPage({
   // record — that is the whole point of freezing it (§2.6).
   const patient = (request.patientSnapshot ?? {}) as Record<string, string | null>;
   const doctor = (request.doctorSnapshot ?? {}) as Record<string, string | null>;
+
+  // The centre's answer, once there is one. Read through Module 2's own API.
+  const decision = await getDecisionForRequest(ctx, id);
+  const samples = await listSamples(ctx, id);
+  const canCancel = CANCELLABLE.includes(request.status);
+
+  const when = new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+  });
 
   return (
     <AppShell actor={actor} title={request.requestId ?? 'Blood request'}>
@@ -161,14 +178,103 @@ export default async function RequestPage({
         </section>
       </div>
 
-      <div className="ux4g-alert ux4g-alert-info" role="status">
-        <div className="ux4g-alert-content">
-          <p className="ux4g-alert-message">
-            The {WORDING.crossmatchSample.toLowerCase()} is associated in phase 5, and the
-            centre’s answer arrives on this screen from phase 3.
+      {decision ? (
+        <section className="ux4g-card ux4g-card-outline">
+          <div className="ux4g-card-header">
+            <h2 className="ux4g-card-title">What the {WORDING.bloodCentre.toLowerCase()} answered</h2>
+            <p className="ux4g-card-sub-title app-figure">
+              {decision.unitsIssued} of {decision.unitsRequested} {WORDING.units.toLowerCase()}
+            </p>
+          </div>
+          <div className="ux4g-card-body app-stack-tight">
+            {decision.note ? (
+              <p className="ux4g-body-s-default">{decision.note}</p>
+            ) : null}
+            {decision.demandId ? (
+              <p className="ux4g-body-s-default">
+                {/*
+                  The shortfall recruits donors, and the doctor should know it —
+                  cancelling now reaches real people who agreed to come in.
+                */}
+                Donors are being asked for the units the shelf could not cover.
+              </p>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="ux4g-card ux4g-card-outline">
+        <div className="ux4g-card-header">
+          <h2 className="ux4g-card-title">{WORDING.crossmatchSample}</h2>
+          <p className="ux4g-card-sub-title">
+            {/*
+              §15: the identifier is unique across the hospital, because it
+              travels on a tube between the ward and the laboratory.
+            */}
+            The identifier is unique across the hospital. More than one sample can
+            be recorded against a request.
           </p>
         </div>
-      </div>
+
+        {samples.length > 0 ? (
+          <div className="ux4g-card-body app-scroll-x">
+            <table className="ux4g-table">
+              <thead>
+                <tr>
+                  <th scope="col">Identifier</th>
+                  <th scope="col">Collected</th>
+                  <th scope="col">By</th>
+                  <th scope="col">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {samples.map((sample) => (
+                  <tr key={sample.id}>
+                    <td className="app-figure">{sample.sampleIdentifier}</td>
+                    <td className="app-figure">{when.format(sample.collectedAt)}</td>
+                    <td>{sample.collectedBy ?? '—'}</td>
+                    <td>{sample.note ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {request.status !== 'cancelled' ? (
+          <div className="ux4g-card-body">
+            <SampleForm requestUuid={request.id} />
+          </div>
+        ) : null}
+      </section>
+
+      {request.status === 'cancelled' ? (
+        <div className="ux4g-alert ux4g-alert-warning" role="status">
+          <div className="ux4g-alert-content">
+            <p className="ux4g-alert-message">
+              Cancelled: {request.cancelReason}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {canCancel ? (
+        <section className="ux4g-card ux4g-card-outline">
+          <div className="ux4g-card-header">
+            <h2 className="ux4g-card-title">No longer needed?</h2>
+            <p className="ux4g-card-sub-title">
+              {/*
+                §3: the one post-submit action a doctor has, "and without it the
+                centre chases units nobody needs".
+              */}
+              The patient improved, died, was referred, or it was raised in error.
+            </p>
+          </div>
+          <div className="ux4g-card-body">
+            <CancelRequestForm requestUuid={request.id} hasDecision={decision !== undefined} />
+          </div>
+        </section>
+      ) : null}
 
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/dashboard">
         Back to the dashboard

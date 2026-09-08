@@ -11,6 +11,8 @@
  * appears in it.
  */
 
+export { cancelRequest, type CancelResult } from './use-cases/cancel.js';
+
 export {
   decideRequest,
   type DecisionAction,
@@ -66,6 +68,7 @@ export {
   settingsIncomplete,
   tagUnavailable,
   unitNumberTaken,
+  type CancelRequestError,
   type DecideError,
   type RegisterBagError,
   type TagCase,

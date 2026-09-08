@@ -6,12 +6,16 @@ import { useFormStatus } from 'react-dom';
 import { BLOOD_GROUPS, PRODUCTS, WORDING, bloodGroupLabel, productLabel } from '@blood-connect/domain';
 
 import {
+  cancelRequestAction,
   createAdmissionAction,
+  findDuplicatesAction,
+  recordSampleAction,
   createPatientAction,
   saveDraftAction,
   submitRequestAction,
   type FormState,
 } from './hospital-actions';
+import type { PossibleDuplicate } from '@blood-connect/hospital';
 
 const initial: FormState = { error: null };
 
@@ -165,17 +169,87 @@ const productOptions = PRODUCTS.map((p) => ({ value: p, label: productLabel(p) }
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Patients who look like this one (§3).
+ *
+ * **Shown, never enforced.** Two people genuinely called Anitha Menon arrive at
+ * the same hospital, and refusing the second admission at 3am is a far worse
+ * failure than recording a duplicate. So this is a panel beside the field with
+ * enough to recognise somebody — and the doctor decides.
+ */
+function DuplicateWarning({ matches }: { matches: readonly PossibleDuplicate[] }) {
+  if (matches.length === 0) return null;
+
+  return (
+    <div className="ux4g-alert ux4g-alert-warning" role="status">
+      <div className="ux4g-alert-content">
+        <p className="ux4g-alert-message">
+          {matches.length === 1
+            ? 'A patient with a similar name is already recorded:'
+            : `${String(matches.length)} patients with similar names are already recorded:`}
+        </p>
+        <ul>
+          {matches.map((match) => (
+            <li key={match.patientId} className="ux4g-body-s-default">
+              <strong>{match.name}</strong>
+              {match.uhid ? <span className="app-figure"> · {match.uhid}</span> : null}
+              <span className="app-figure"> · {match.bloodGroup}</span>
+              {match.openAdmission ? (
+                <span> · on a ward now, {WORDING.ipNumber} {match.openAdmission}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <p className="ux4g-label-m-default">
+          If one of these is the same person, use their existing record. If not,
+          carry on — this is only a check.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function PatientForm() {
   const [state, action] = useActionState(createPatientAction, initial);
   // The reaction field exists only where there was a previous transfusion —
   // asking about a reaction to something that never happened is noise.
   const [previous, setPrevious] = useState('unknown');
+  const [duplicates, setDuplicates] = useState<PossibleDuplicate[]>([]);
+
+  /**
+   * Checked when the field is left, not on every keystroke.
+   *
+   * A lookup per character would query the patient table dozens of times for
+   * one name, and the warning is only useful once there is a whole name to
+   * compare.
+   */
+  const checkName = (event: React.FocusEvent<HTMLInputElement>): void => {
+    const name = event.target.value.trim();
+    if (name.length < 3) {
+      setDuplicates([]);
+      return;
+    }
+    void findDuplicatesAction(name).then(setDuplicates);
+  };
 
   return (
     <form action={action} className="app-stack" noValidate>
       <Problem message={state.error} />
 
-      <Field id="name" label={WORDING.patientName} required />
+      <div className="ux4g-form-group app-stack-tight">
+        <label className="ux4g-label-l-strong" htmlFor="name">
+          {WORDING.patientName}
+        </label>
+        <input
+          className="ux4g-input ux4g-input-lg"
+          id="name"
+          name="name"
+          type="text"
+          required
+          onBlur={checkName}
+        />
+      </div>
+      <DuplicateWarning matches={duplicates} />
 
       <Field
         id="dob"
@@ -333,6 +407,144 @@ export function SubmitForm({ requestUuid }: { requestUuid: string }) {
     <form action={action} className="app-stack" noValidate>
       <Problem message={state.error} />
       <Submit label="Submit to the blood centre" busy="Submitting…" />
+    </form>
+  );
+}
+
+/**
+ * Cancelling a submitted request (§3).
+ *
+ * Behind a disclosure rather than a button on the page, because this is the one
+ * post-submit action and it reaches people: the centre may already have pulled
+ * units, and a donor may already have agreed to come in. Opening it first is a
+ * moment to be sure.
+ *
+ * The reason is required by the use case, not only by the form — but asking for
+ * it here, before the button, is what makes it a sentence somebody writes rather
+ * than a field they fill.
+ */
+export function CancelRequestForm({
+  requestUuid,
+  hasDecision,
+}: {
+  requestUuid: string;
+  hasDecision: boolean;
+}) {
+  const [state, action] = useActionState(
+    cancelRequestAction.bind(null, requestUuid),
+    initial,
+  );
+  const [open, setOpen] = useState(false);
+
+  if (state.done === true) {
+    return (
+      <div className="ux4g-alert ux4g-alert-success" role="status">
+        <div className="ux4g-alert-content">
+          <p className="ux4g-alert-message">
+            Cancelled. The centre has been told
+            {hasDecision ? ', any units held for it are back on the shelf,' : ''} and
+            every donor who had agreed to come is being stood down.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        Cancel this request
+      </button>
+    );
+  }
+
+  return (
+    <form action={action} className="app-stack" noValidate>
+      <Problem message={state.error} />
+
+      <div className="ux4g-alert ux4g-alert-warning" role="status">
+        <div className="ux4g-alert-content">
+          <p className="ux4g-alert-message">
+            {hasDecision
+              ? 'Any units the centre is holding go back on the shelf, and every donor who agreed to give for this patient is told not to travel.'
+              : 'The centre stops working on this, and every donor who agreed to give for this patient is told not to travel.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="ux4g-form-group app-stack-tight">
+        <label className="ux4g-label-l-strong" htmlFor="reason">
+          Why is it being cancelled?
+        </label>
+        <textarea
+          className="ux4g-input ux4g-input-lg"
+          id="reason"
+          name="reason"
+          rows={2}
+          required
+          aria-describedby="reason-hint"
+        />
+        <p className="ux4g-label-m-default" id="reason-hint">
+          {/* The centre reads this, so "n/a" costs somebody a phone call. */}
+          The blood centre sees this. The patient improved, died, was referred, or
+          it was raised in error.
+        </p>
+      </div>
+
+      <div className="app-row">
+        <Submit label="Cancel the request" busy="Cancelling…" />
+        <button
+          type="button"
+          className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md app-target"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          Keep it
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Recording a compatibility testing sample (§3).
+ *
+ * The identifier field is first and alone, because it is the one thing that has
+ * to be copied exactly off the tube. The collection time defaults to now, which
+ * is right almost always and editable when a tube is registered late.
+ */
+export function SampleForm({ requestUuid }: { requestUuid: string }) {
+  const [state, action] = useActionState(
+    recordSampleAction.bind(null, requestUuid),
+    initial,
+  );
+
+  return (
+    <form action={action} className="app-stack" noValidate key={state.done ? 'done' : 'new'}>
+      <Problem message={state.error} />
+
+      <Field
+        id="sampleIdentifier"
+        label="Sample identifier"
+        required
+        hint="Exactly as printed on the tube. It is unique across the whole hospital."
+      />
+      <Field
+        id="collectedAt"
+        label="Collected at"
+        type="datetime-local"
+        hint="Leave blank for now."
+      />
+      <Field id="note" label="Note" />
+
+      <Submit label="Record the sample" busy="Recording…" />
     </form>
   );
 }

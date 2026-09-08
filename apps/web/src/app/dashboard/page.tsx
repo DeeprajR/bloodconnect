@@ -3,7 +3,13 @@ import Link from 'next/link';
 
 import { AppShell } from '../shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
-import { isOverdue, listAdmissions, listRequestsForDoctor } from '@blood-connect/hospital';
+import {
+  draftAgeDays,
+  isOverdue,
+  isStaleDraft,
+  listAdmissions,
+  listRequestsForDoctor,
+} from '@blood-connect/hospital';
 import {
   WORDING,
   bloodGroupLabel,
@@ -23,12 +29,6 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   cancelled: 'Cancelled',
 };
 
-const day = new Intl.DateTimeFormat('en-IN', {
-  day: '2-digit',
-  month: 'short',
-  timeZone: 'Asia/Kolkata',
-});
-
 export default async function DashboardPage() {
   // Layer 2 of §13. The proxy already decided this; the page decides it again.
   const actor = await requireAccess('/dashboard');
@@ -41,6 +41,8 @@ export default async function DashboardPage() {
   ]);
 
   const today = ctx.clock.today();
+  const now = ctx.clock.now();
+  const staleAfter = ctx.config.ageing.draftDays;
   const drafts = requests.filter((r) => r.status === 'draft');
   const live = requests.filter((r) => r.status !== 'draft');
   const open = admissions.filter((a) => a.status === 'admitted');
@@ -73,7 +75,8 @@ export default async function DashboardPage() {
               they sit at the top rather than quietly at the bottom of a list.
             */}
             <p className="ux4g-card-sub-title">
-              Not yet sent to the {WORDING.bloodCentre.toLowerCase()}.
+              Not yet sent to the {WORDING.bloodCentre.toLowerCase()}. They are never
+              deleted for you — an unfinished request is somebody part-way through one.
             </p>
           </div>
           <div className="ux4g-card-body app-scroll-x">
@@ -83,7 +86,7 @@ export default async function DashboardPage() {
                   <th scope="col">Patient</th>
                   <th scope="col">{WORDING.ipNumber}</th>
                   <th scope="col">Wanted</th>
-                  <th scope="col">Last edited</th>
+                  <th scope="col">Waiting</th>
                 </tr>
               </thead>
               <tbody>
@@ -97,7 +100,18 @@ export default async function DashboardPage() {
                       {request.units ?? '—'} ×{' '}
                       {request.product ? productLabel(request.product) : '—'}
                     </td>
-                    <td className="app-figure">{day.format(request.updatedAt)}</td>
+                    <td className="app-figure">
+                      {/*
+                        §8: an abandoned draft ages visibly and is never
+                        auto-deleted. The age is the signal, not the timestamp.
+                      */}
+                      {draftAgeDays(request, now) === 0
+                        ? 'today'
+                        : `${String(draftAgeDays(request, now))} days`}
+                      {isStaleDraft(request, now, staleAfter) ? (
+                        <span className="ux4g-badge-digit-danger"> Stale</span>
+                      ) : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>
