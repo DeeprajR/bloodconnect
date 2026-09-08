@@ -32,7 +32,7 @@ export default async function DoctorsPage() {
 
   return (
     <AppShell actor={actor} title="Doctors">
-      <div className="app-row" style={{ justifyContent: 'space-between' }}>
+      <div className="app-row-split">
         <div className="app-stack-tight">
           <h1 className="ux4g-heading-l-strong">Doctors</h1>
           <p className="ux4g-body-m-default app-figure">
@@ -56,7 +56,7 @@ export default async function DoctorsPage() {
           </div>
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="app-scroll-x">
           <table className="ux4g-table">
             <thead>
               <tr>

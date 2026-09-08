@@ -113,6 +113,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `pnpm boundaries` | The import boundary of §11.2 |
 | `pnpm boundaries:prove` | Writes a deliberate deep import and asserts the check rejects it |
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
+| `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
 | `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |
 | `pnpm db:generate` | Generate a migration from the Drizzle schema |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed reference data |
@@ -153,6 +154,9 @@ Because there is no second reader on a commit here, CI is the reviewer:
   what they *cannot* do.
 - **Every state machine's table is checked for states with no way out** — the failure §8 exists
   to prevent.
+- **Both applications are installable PWAs**, and the service worker caches the shell and
+  **never** data — a cached stock figure is a wrong stock figure, and on a shared ward device a
+  cached page is somebody else's page ([ADR 0004](docs/adr/0004-pwa-and-a-spacing-token-that-does-not-exist.md)).
 - **§9's role matrix is a test**, transcribed row by row, asserted for every role — and the 403
   response is checked for carrying *no data*, which is the mistake §14 names.
 

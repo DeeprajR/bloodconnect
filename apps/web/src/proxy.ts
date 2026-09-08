@@ -27,7 +27,8 @@ import { AUDIENCE, SESSION_COOKIE } from '@/lib/session';
  * Assets, not routes. Skipped before the session lookup so a page load does not
  * pay for a database round trip per image.
  */
-const SKIP = /^\/(?:_next\/static|_next\/image|favicon\.ico|manifest\.webmanifest|icons\/)/;
+const SKIP =
+  /^\/(?:_next\/static|_next\/image|favicon\.ico|manifest\.webmanifest|sw\.js|icons\/)/;
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;

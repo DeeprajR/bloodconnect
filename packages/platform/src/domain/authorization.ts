@@ -147,6 +147,8 @@ export const STAFF_ROUTE_RULES: readonly RouteRule[] = [
   { prefix: '/sign-in', access: { kind: 'public' } },
   { prefix: '/sign-out', access: { kind: 'authenticated' } },
   { prefix: '/offline', access: { kind: 'public' } },
+  { prefix: '/manifest.webmanifest', access: { kind: 'public' } },
+  { prefix: '/sw.js', access: { kind: 'public' } },
   { prefix: '/board', access: { kind: 'public' } },
   { prefix: '/reset', access: { kind: 'public' } },
   // The invite link and the address-change confirmation both arrive by email
@@ -181,6 +183,9 @@ export const ADMIN_ROUTE_RULES: readonly RouteRule[] = [
   { prefix: '/reset', access: { kind: 'public' } },
   { prefix: '/invite', access: { kind: 'public' } },
   { prefix: '/confirm-email', access: { kind: 'public' } },
+  { prefix: '/offline', access: { kind: 'public' } },
+  { prefix: '/manifest.webmanifest', access: { kind: 'public' } },
+  { prefix: '/sw.js', access: { kind: 'public' } },
 
   { prefix: '/doctors', access: { kind: 'roles', roles: ['admin'] } },
   { prefix: '/profile', access: { kind: 'roles', roles: ['admin'] } },

@@ -11,6 +11,16 @@ import tseslint from 'typescript-eslint';
  * not a lint rule — it needs to reason about package entry points, which is a
  * graph question rather than a file one.
  */
+/** Everything linted without type information: it belongs to no tsconfig. */
+const UNTYPED = [
+  'scripts/**/*.mjs',
+  '**/*.config.js',
+  '**/*.cjs',
+  'apps/*/next.config.ts',
+  // The service worker runs in its own global scope.
+  'apps/*/public/**/*.js',
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -85,16 +95,23 @@ export default tseslint.config(
 
   {
     // Node scripts, linted without type information.
-    files: ['scripts/**/*.mjs', '**/*.config.js', '**/*.cjs'],
+    files: UNTYPED,
     languageOptions: {
       globals: {
+        // Node scripts.
         process: 'readonly',
         console: 'readonly',
         module: 'writable',
-        // Node 20+ globals these scripts use.
         fetch: 'readonly',
         FormData: 'readonly',
         URL: 'readonly',
+        Buffer: 'readonly',
+        // Service worker scope.
+        self: 'readonly',
+        caches: 'readonly',
+        document: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
       },
     },
   },
@@ -110,7 +127,10 @@ export default tseslint.config(
   },
 
   {
-    files: ['scripts/**/*.mjs', '*.config.js', '*.cjs'],
+    // Last, deliberately: this clears the type-aware parser options, and a
+    // later block supplying its own `languageOptions` would replace the reset
+    // rather than merge with it.
+    files: UNTYPED,
     ...tseslint.configs.disableTypeChecked,
   },
 );
