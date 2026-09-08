@@ -8,6 +8,27 @@
  * rather than quietly succeed with more privilege than it should have.
  */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { tryFindUp } from './paths.js';
+
+
+/**
+ * Load the workspace root `.env` before anything reads a variable from it.
+ *
+ * These scripts run as plain Node, not through a framework, so nothing loads
+ * `.env` for them — and the file lives at the workspace root rather than in
+ * `db/`, because the same connection strings serve the applications, the worker
+ * and the seed runner. Two copies of a connection string are two things to keep
+ * in step.
+ *
+ * `loadEnvFile` does not overwrite a variable that is already set, so a value
+ * exported in the shell or supplied by CI still wins.
+ */
+const envFile = tryFindUp('.env', path.dirname(fileURLToPath(import.meta.url)));
+if (envFile) process.loadEnvFile(envFile);
+
 export type Role = 'migrator' | 'app_web' | 'app_bot';
 
 const VARIABLE: Readonly<Record<Role, string>> = {

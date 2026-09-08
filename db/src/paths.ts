@@ -21,3 +21,12 @@ export function findUp(relative: string, from: string): string {
     directory = parent;
   }
 }
+
+/** The same walk, but absence is an answer rather than an error. */
+export function tryFindUp(relative: string, from: string): string | undefined {
+  try {
+    return findUp(relative, from);
+  } catch {
+    return undefined;
+  }
+}

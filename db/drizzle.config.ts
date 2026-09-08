@@ -1,4 +1,11 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { defineConfig } from 'drizzle-kit';
+
+// drizzle-kit runs with this package as its working directory, and the shared
+// `.env` lives one level up at the workspace root.
+const rootEnv = path.resolve(process.cwd(), '..', '.env');
+if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 /**
  * Migrations only, never auto-create (§11.5). `drizzle-kit push` is guarded by

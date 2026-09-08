@@ -75,15 +75,20 @@ Password `BloodConnect!Demo2026`, printed by the seed. These are synthetic accou
 
 Needs Node 20+, pnpm and Docker.
 
-```bash
-pnpm install
-cp .env.example .env       # everything already points at the local stack
-pnpm up                    # Postgres, Mailpit, MinIO
-pnpm db:migrate            # apply db/migrations as the migrator role
-pnpm db:seed               # locations, and one account per role
-pnpm verify                # typecheck, lint, boundaries, tests
-pnpm dev                   # staff :3000, administration :3001
+Run these one at a time. **Do not chain them with `&&`** — Windows PowerShell 5.1, which is
+what `pnpm` opens by default on Windows, does not accept it as a statement separator.
+
 ```
+pnpm install
+cp .env.example .env    # everything already points at the local stack
+pnpm bootstrap          # Docker up, migrations, seed — the three in order
+pnpm verify             # typecheck, lint, boundaries, tests
+pnpm dev                # staff :3000, administration :3001
+```
+
+`pnpm bootstrap` is one command precisely so no chaining is needed. It is not called `setup`,
+because that is one of pnpm's own commands and a script by that name is shadowed by the CLI —
+which reconfigures your PATH instead of running the project.
 
 There is one `.env`, at the workspace root, shared by the web app, the worker, the bot and the
 seed runner — `apps/web/next.config.ts` loads it, because Next otherwise reads `.env` only from

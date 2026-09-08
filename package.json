@@ -7,23 +7,24 @@
     "node": ">=20"
   },
   "scripts": {
+    "bootstrap": "pnpm up && pnpm db:migrate && pnpm db:seed",
+    "dev": "pnpm --parallel --filter @blood-connect/web --filter @blood-connect/admin dev",
     "build": "tsc -b && pnpm --filter @blood-connect/web build && pnpm --filter @blood-connect/admin build",
     "typecheck": "tsc -b --pretty && tsc -p tsconfig.test.json && pnpm --filter @blood-connect/web typecheck && pnpm --filter @blood-connect/admin typecheck",
-    "clean": "tsc -b --clean",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "boundaries": "depcruise packages db --config .dependency-cruiser.cjs && depcruise apps/web --config .dependency-cruiser.cjs --ts-config tsconfig.depcruise-web.json && depcruise apps/admin --config .dependency-cruiser.cjs --ts-config tsconfig.depcruise-admin.json",
     "boundaries:prove": "node scripts/prove-boundary-check.mjs",
+    "smoke:signin": "node scripts/signin-smoke.mjs",
     "db:generate": "pnpm --filter @blood-connect/db generate",
     "db:migrate": "pnpm --filter @blood-connect/db migrate",
     "db:seed": "pnpm --filter @blood-connect/db seed",
     "db:push": "pnpm --filter @blood-connect/db push",
     "up": "docker compose up -d",
     "down": "docker compose down",
-    "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm test",
-    "dev": "pnpm --parallel --filter @blood-connect/web --filter @blood-connect/admin dev",
-    "smoke:signin": "node scripts/signin-smoke.mjs"
+    "clean": "tsc -b --clean",
+    "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
