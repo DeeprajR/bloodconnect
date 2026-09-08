@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { AppShell } from '../shell';
 import { currentActor } from '@/lib/session';
-import { landingFor } from '@/modules/platform';
+import { landingFor } from '@blood-connect/platform';
 import { SignInForm } from './form';
 
 export const metadata: Metadata = { title: 'Sign in · Blood Connect' };

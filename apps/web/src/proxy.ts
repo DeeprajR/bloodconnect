@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { db } from '@/db/client';
-import { decideAccess, nodeTokens, resolveActor } from '@/modules/platform';
-import { SESSION_COOKIE } from '@/lib/session';
+import { db } from '@blood-connect/platform';
+import { decideAccess, nodeTokens, resolveActor } from '@blood-connect/platform';
+import { AUDIENCE, SESSION_COOKIE } from '@/lib/session';
 
 /**
  * Layer 1 of §13: route protection.
@@ -38,9 +38,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     db,
     token ? nodeTokens.fingerprint(token) : undefined,
     new Date(),
+    AUDIENCE,
   );
 
-  const decision = decideAccess(pathname, actor);
+  const decision = decideAccess(pathname, actor, AUDIENCE);
   if (decision.allowed) return NextResponse.next();
 
   if (decision.reason === 'unauthenticated') {

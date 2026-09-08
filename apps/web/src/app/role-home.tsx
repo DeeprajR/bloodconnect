@@ -1,10 +1,11 @@
-import { permissionsFor, type Actor, type Permission } from '@/modules/platform';
+import { permissionsFor, type Actor, type Permission } from '@blood-connect/platform';
 
 const PERMISSION_LABELS: Readonly<Record<Permission, string>> = {
   'requests:manage': 'Raise and track blood requests',
   'patients:manage': 'Record patients and admissions',
   'profile:manage': 'Manage your own profile',
-  'accounts:manage': 'Provision accounts and work the update queue',
+  'doctors:manage': 'Create and manage doctor records',
+  'patients:read_all': 'See every doctor’s patients',
   'centre:operate': 'Answer requests from stock and raise demand',
   'centre:configure': 'Configure the centre and its storage',
   'volunteer:view': 'See where the pressure is',

@@ -1,0 +1,12 @@
+{
+  "$comment": "Read only by dependency-cruiser. Each application maps @/* to its own src, so the two are cruised separately — one shared mapping would resolve the admin app's imports into the staff app and report violations that are not there.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": { "@/*": ["apps/web/src/*"] }
+  }
+}

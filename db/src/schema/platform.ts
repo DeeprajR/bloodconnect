@@ -100,6 +100,16 @@ export const sessions = hospitalSchema.table(
      * database dump does not hand anyone a live session.
      */
     tokenHash: text('token_hash').notNull(),
+    /**
+     * Which application issued this session (§1).
+     *
+     * The staff app and the admin app are separate deployments over one `users`
+     * table, and in development they share `localhost` — where cookies are not
+     * isolated by port. Binding the session to its issuer means a staff cookie
+     * presented to the admin app resolves to nobody, rather than relying on the
+     * role check alone to notice.
+     */
+    audience: text('audience').notNull().default('staff'),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
     ip: text('ip'),
@@ -109,6 +119,7 @@ export const sessions = hospitalSchema.table(
   },
   (table) => [
     uniqueIndex('sessions_token_hash_idx').on(table.tokenHash),
+    check('sessions_audience_check', sql`audience IN ('staff', 'admin')`),
     // A password reset revokes every session for the account (§3), and this is
     // the index that walk does.
     index('sessions_live_by_user_idx').on(table.userId).where(sql`revoked_at IS NULL`),

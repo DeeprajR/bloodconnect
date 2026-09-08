@@ -1,12 +1,29 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/result" },
-    { "path": "packages/ids" },
-    { "path": "packages/domain" },
-    { "path": "packages/config" },
-    { "path": "packages/contract" },
-    { "path": "packages/testing" },
-    { "path": "db" }
+    {
+      "path": "packages/result"
+    },
+    {
+      "path": "packages/ids"
+    },
+    {
+      "path": "packages/domain"
+    },
+    {
+      "path": "packages/config"
+    },
+    {
+      "path": "packages/contract"
+    },
+    {
+      "path": "packages/platform"
+    },
+    {
+      "path": "packages/testing"
+    },
+    {
+      "path": "db"
+    }
   ]
 }

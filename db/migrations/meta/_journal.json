@@ -36,6 +36,20 @@
       "when": 1788862006467,
       "tag": "0004_platform_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788872411775,
+      "tag": "0005_account_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788872420156,
+      "tag": "0006_account_lifecycle_grants",
+      "breakpoints": true
     }
   ]
 }

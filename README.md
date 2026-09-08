@@ -42,21 +42,31 @@ job that proves it rejects a deep import; Docker Compose with Postgres, Mailpit 
 schemas, three roles and the grants of §5.1; Drizzle with the first migrations and a seed runner;
 the six shared packages; and the Kozhikode location hierarchy, seeded and versioned.
 
-**P1** delivered the Next.js app and the platform module: `users`, `sessions`,
+**P1+** delivered the two applications and the shared platform package: `users`, `sessions`,
 `auth_rate_limits`, `audit_log` and `app_config`; Argon2id passwords and an httpOnly session
 cookie storing only a hash; login throttling per IP and per account, in the database; the three
 authorization layers of §13 reading one decision function; the audit writer wired into the
 use-case context; and a seeded account for each of the four roles. Sign in, sign out, and four
 role dashboards, built on UX4G.
 
+**Administration is a separate application** ([ADR 0003](docs/adr/0003-administration-as-a-separate-application.md)).
+The staff app runs on :3000 and holds the clinical roles; administration runs on :3001 and holds
+only `admin`, which can manage doctor records and nothing clinical. Sessions name the application
+that issued them, so a cookie from one is inert in the other.
+
+An administrator adds a doctor, who receives an emailed link, sets their own password and is
+signed in. Doctors reset a password with a six-digit code, and change their address by confirming
+it from the new inbox — no administrator approves it. Mail lands in Mailpit at
+http://localhost:8025.
+
 Run `pnpm db:seed` and sign in as any of:
 
 | Role | Email | Lands on |
 |---|---|---|
 | Doctor | `doctor@blood-connect.invalid` | `/dashboard` |
-| Administrator | `admin@blood-connect.invalid` | `/dashboard` |
 | Blood centre | `centre@blood-connect.invalid` | `/centre` |
 | Volunteer admin | `volunteer@blood-connect.invalid` | `/volunteer` |
+| Administrator | `admin@blood-connect.invalid` | `/doctors` **on :3001** |
 
 Password `BloodConnect!Demo2026`, printed by the seed. These are synthetic accounts on a
 `.invalid` domain, and the seed refuses to run with `NODE_ENV=production`.
@@ -72,7 +82,7 @@ pnpm up                    # Postgres, Mailpit, MinIO
 pnpm db:migrate            # apply db/migrations as the migrator role
 pnpm db:seed               # locations, and one account per role
 pnpm verify                # typecheck, lint, boundaries, tests
-pnpm dev                   # http://localhost:3000
+pnpm dev                   # staff :3000, administration :3001
 ```
 
 There is one `.env`, at the workspace root, shared by the web app, the worker, the bot and the
@@ -107,6 +117,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 
 ```
 packages/
+  platform/   accounts, sessions, authorization, audit, email, config — shared by both apps
   domain/     the clinical rules — pure, no clock, no I/O, imported by web and bot alike
   contract/   the two shared tables: schemas, column ownership, writer-scoped transitions
   config/     clinical thresholds as data, with defaults and a 60-second cache
@@ -120,7 +131,8 @@ db/
 docs/         the specification set and the decision log
 ```
 
-`apps/web`, `apps/bot` and `apps/vision` arrive with the phases that need them.
+`apps/web` is the staff application and `apps/admin` is administration. `apps/bot` and
+`apps/vision` arrive with the phases that need them.
 
 ### The rules the build enforces mechanically
 

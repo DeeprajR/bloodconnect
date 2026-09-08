@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { AppShell } from './shell';
 import { currentActor } from '@/lib/session';
-import { landingFor } from '@/modules/platform';
+import { landingFor } from '@blood-connect/platform';
 
 export const metadata: Metadata = { title: 'Blood Connect' };
 

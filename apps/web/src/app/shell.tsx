@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import type { Actor, UserRole } from '@/modules/platform';
+import type { Actor, UserRole } from '@blood-connect/platform';
 import { SignOutButton } from './sign-out-button';
 
 const ROLE_LABELS: Readonly<Record<UserRole, string>> = {

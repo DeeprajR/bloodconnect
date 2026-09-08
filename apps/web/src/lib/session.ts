@@ -2,8 +2,8 @@ import 'server-only';
 
 import { cookies, headers } from 'next/headers';
 
-import { db } from '@/db/client';
-import { isSameOrigin, nodeTokens, resolveActor, type Actor } from '@/modules/platform';
+import { db } from '@blood-connect/platform';
+import { isSameOrigin, nodeTokens, resolveActor, type Actor } from '@blood-connect/platform';
 
 /**
  * The session cookie (§3, §13).
@@ -13,6 +13,9 @@ import { isSameOrigin, nodeTokens, resolveActor, type Actor } from '@/modules/pl
  * randomness; only its SHA-256 is stored.
  */
 export const SESSION_COOKIE = 'bc_session';
+
+/** This application. Sessions issued elsewhere do not resolve here (§1). */
+export const AUDIENCE = 'staff' as const;
 
 export const sessionCookieOptions = (expiresAt: Date) =>
   ({
@@ -38,7 +41,7 @@ export async function readSessionToken(): Promise<string | undefined> {
 export async function currentActor(): Promise<Actor> {
   const token = await readSessionToken();
   if (!token) return { kind: 'anonymous' };
-  return resolveActor(db, nodeTokens.fingerprint(token), new Date());
+  return resolveActor(db, nodeTokens.fingerprint(token), new Date(), AUDIENCE);
 }
 
 /* -------------------------------------------------------------------------- */

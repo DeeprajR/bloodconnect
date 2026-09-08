@@ -93,8 +93,8 @@ module.exports = {
         'A module may not import from app/. Routes and server actions call modules, never the ' +
         'reverse: the application layer must not know about HTTP, cookies or React (§3).',
       severity: 'error',
-      from: { path: '^apps/web/src/modules/' },
-      to: { path: '^apps/web/src/app/' },
+      from: { path: '^apps/[^/]+/src/modules/' },
+      to: { path: '^apps/[^/]+/src/app/' },
     },
     {
       name: 'no-rule-in-a-route',
@@ -104,6 +104,16 @@ module.exports = {
       severity: 'error',
       from: { path: '^apps/web/src/app/' },
       to: { path: '^apps/web/src/modules/[^/]+/(?!index\\.ts$)' },
+    },
+    {
+      name: 'no-app-reaches-into-another',
+      comment:
+        'The staff application and the administration application are separate deployments ' +
+        '(§1). Anything they share lives in packages/ — platform, in this case — so that the ' +
+        'shared surface is an entry point rather than whatever one app happens to expose.',
+      severity: 'error',
+      from: { path: '^apps/([^/]+)/' },
+      to: { path: '^apps/([^/]+)/', pathNot: ['^apps/$1/'] },
     },
     {
       name: 'no-circular',
@@ -144,10 +154,11 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '(^|/)(dist|coverage|\\.next|node_modules)/' },
     tsPreCompilationDeps: true,
-    // Carries the web app's @/* path mapping. Without it every `@/...` import
-    // resolves to nothing and the module rules below check an empty graph — a
-    // boundary check that passes for want of edges reads as a green tick.
-    tsConfig: { fileName: 'tsconfig.depcruise.json' },
+    // No tsConfig here: each application is cruised with its own, passed on the
+    // command line, because both map `@/*` to their own src. One shared mapping
+    // would resolve the admin app's imports into the staff app and report
+    // violations that are not there.
+    tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
       conditionNames: ['import', 'require', 'node', 'types', 'default'],
