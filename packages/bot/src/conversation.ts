@@ -117,7 +117,7 @@ async function standingMessage(
           need.unitsOutstanding,
           need.neededBy,
           need.hospital,
-        ) + (need.alreadyAsked ? ' (already messaged you)' : ''),
+        ) + (need.alreadyAsked ? ` — ${MESSAGES.alreadyAsked}` : ''),
       );
     }
     if (standing.pausedUntil === null && standing.eligibleFrom === null) {

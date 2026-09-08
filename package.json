@@ -24,11 +24,12 @@
     "up": "docker compose up -d",
     "down": "docker compose down",
     "clean": "tsc -b --clean",
-    "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm check:bot-migrations && pnpm test",
+    "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm check:bot-migrations && pnpm check:gates && pnpm test",
     "db:generate:bot": "pnpm --filter @blood-connect/db generate:bot",
     "db:migrate:bot": "pnpm --filter @blood-connect/db migrate:bot",
     "check:bot-migrations": "node scripts/check-bot-migrations.mjs",
-    "bot": "pnpm --filter @blood-connect/bot-app dev"
+    "bot": "pnpm --filter @blood-connect/bot-app dev",
+    "check:gates": "node scripts/check-gates.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -204,7 +204,8 @@ export const MESSAGES = {
   ): string =>
     `• ${String(units)} × ${group(bloodGroup)} by ${readableDay(neededBy)} — ${hospital.hospitalName}`,
 
-  alreadyAsked: 'We have already messaged you about this one.',
+  /** Appended to a line on the needs list, so it reads as part of it. */
+  alreadyAsked: 'we have already messaged you about this one',
 
   notEligibleYet: (until: string): string =>
     `You can give again from ${readableDay(until)}. We will not ask before then.`,
