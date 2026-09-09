@@ -17,6 +17,7 @@ import type { BotDatabase } from './db.js';
 import { handleUpdate } from './conversation.js';
 import { drainOutbox } from './outbox.js';
 import { remindAbandonedSignups } from './use-cases/reminders.js';
+import { tellUnansweredItIsCovered } from './use-cases/close-demand.js';
 import type { IncomingUpdate, OutgoingMessage } from './ports/channel.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
@@ -563,6 +564,163 @@ describe.skipIf(!testUrl)('the conversation', () => {
 
     // The bug this file was written for.
     expect(said.join('\n')).not.toContain('not registered');
+  });
+
+  /* ==================================================================== */
+  /* "Not now" — the ending §8 calls dormant                               */
+  /* ==================================================================== */
+
+  describe('declining the acknowledgement', () => {
+    it('keeps everything and says how to turn it on', async () => {
+      await walkToSummary();
+      const said = await tap('sum:decline');
+
+      // Not the abandoned message: nothing was lost, and saying so would be
+      // untrue (§5).
+      expect(said[0]).toContain('details are saved');
+      expect(said[0]).toContain('resume');
+      expect(said[0]).not.toContain('nothing was saved');
+    });
+
+    it('registers them, dormant', async () => {
+      await walkToSummary();
+      await tap('sum:decline');
+
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.name).toBe('Priya');
+      /**
+       * The one thing missing is the acknowledgement. §7.7 recruits nobody
+       * whose consent is not current, so a dormant registration is dormant by
+       * the same rule that governs everybody else.
+       */
+      expect(donor?.consentCurrentAt).toBeNull();
+      // And no consent row, because they did not consent — the table that is
+      // the evidence of consent must not contain a record of a refusal.
+      expect(await db.select().from(bot.donorConsents)).toHaveLength(0);
+    });
+
+    it('turns on with one word, with nothing to retype', async () => {
+      await walkToSummary();
+      await tap('sum:decline');
+
+      const said = await say('resume');
+      expect(said[0]).toBeTruthy();
+
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.consentCurrentAt).not.toBeNull();
+      // Still one donor: coming back is not a second registration.
+      expect(await db.select().from(bot.donors)).toHaveLength(1);
+    });
+  });
+
+  /* ==================================================================== */
+  /* Filled before they answered                                           */
+  /* ==================================================================== */
+
+  describe('a request that fills without them', () => {
+    it('tells them it is covered and stops offering Accept', async () => {
+      await register();
+      const [donor] = await db.select().from(bot.donors);
+
+      const botRequestId = newId();
+      await db.insert(bot.botRequests).values({
+        id: botRequestId,
+        demandId: newId(),
+        publicId: 'covered-1',
+        bloodGroup: 'O-',
+        product: 'whole_blood',
+        unitsNeeded: 1,
+        neededBy: addDays(clock.today(), 2),
+        hospitalSnapshot: { hospitalName: 'Test centre', hospitalAddress: 'Somewhere' },
+        // Filled, but not yet closed — the window this exists for.
+        status: 'fulfilled',
+      });
+      const journeyId = newId();
+      await db.insert(bot.donorRequests).values({
+        id: journeyId,
+        botRequestId,
+        donorId: donor?.id ?? '',
+        status: 'NOTIFIED',
+        waveNo: 1,
+        notifiedAt: clock.now(),
+      });
+
+      const before = channel.sent.length;
+      const result = await tellUnansweredItIsCovered(context());
+      await drainOutbox(context(), 50);
+      const sent = channel.sent.slice(before).map((m) => m.message.text);
+
+      expect(result.told).toBe(1);
+      // One line, and it thanks them: they did nothing wrong (§8).
+      expect(sent.join('\n')).toContain('covered');
+      expect(sent.join('\n')).toContain('thank you');
+
+      const [journey] = await db.select().from(bot.donorRequests);
+      // The card stops offering Accept because the journey is over.
+      expect(journey?.status).toBe('CANCELLED');
+    });
+
+    it('says it once, however often the ticker runs', async () => {
+      await register();
+      const [donor] = await db.select().from(bot.donors);
+      const botRequestId = newId();
+      await db.insert(bot.botRequests).values({
+        id: botRequestId,
+        demandId: newId(),
+        publicId: 'covered-2',
+        bloodGroup: 'O-',
+        product: 'whole_blood',
+        unitsNeeded: 1,
+        neededBy: addDays(clock.today(), 2),
+        hospitalSnapshot: { hospitalName: 'Test centre', hospitalAddress: 'Somewhere' },
+        status: 'fulfilled',
+      });
+      await db.insert(bot.donorRequests).values({
+        id: newId(),
+        botRequestId,
+        donorId: donor?.id ?? '',
+        status: 'NOTIFIED',
+        waveNo: 1,
+        notifiedAt: clock.now(),
+      });
+
+      const first = await tellUnansweredItIsCovered(context());
+      const second = await tellUnansweredItIsCovered(context());
+
+      // The status move is the guard: the second pass finds nobody NOTIFIED.
+      expect(first.told).toBe(1);
+      expect(second.told).toBe(0);
+    });
+
+    it('leaves somebody mid-journey alone', async () => {
+      await register();
+      const [donor] = await db.select().from(bot.donors);
+      const botRequestId = newId();
+      await db.insert(bot.botRequests).values({
+        id: botRequestId,
+        demandId: newId(),
+        publicId: 'covered-3',
+        bloodGroup: 'O-',
+        product: 'whole_blood',
+        unitsNeeded: 1,
+        neededBy: addDays(clock.today(), 2),
+        hospitalSnapshot: { hospitalName: 'Test centre', hospitalAddress: 'Somewhere' },
+        status: 'fulfilled',
+      });
+      await db.insert(bot.donorRequests).values({
+        id: newId(),
+        botRequestId,
+        donorId: donor?.id ?? '',
+        // Already answering the questions: cancelling them out from under it
+        // would be worse than saying nothing.
+        status: 'SCREENING',
+        waveNo: 1,
+        notifiedAt: clock.now(),
+      });
+
+      const result = await tellUnansweredItIsCovered(context());
+      expect(result.told).toBe(0);
+    });
   });
 
   /* ==================================================================== */

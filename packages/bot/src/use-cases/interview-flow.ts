@@ -236,7 +236,8 @@ export type AnswerResult =
       readonly returnToRequest?: string | undefined;
     }
   | { readonly kind: 'saved'; readonly donorId: string }
-  | { readonly kind: 'declined' };
+  /** Registered and dormant: "not now" is not "delete me" (§5). */
+  | { readonly kind: 'declined'; readonly donorId: string; readonly name: string };
 
 /**
  * Why a registered donor might still not be matched (§5).
@@ -594,7 +595,17 @@ async function handleSummary(
     return { kind: 'next', state: next };
   }
 
-  if (value === 'sum:confirm') return commit(ctx, address, state);
+  if (value === 'sum:confirm') return commit(ctx, address, state, true);
+
+  /**
+   * "Not now" — kept, dormant, reversible (§5, §8).
+   *
+   * The profile is written exactly as it would have been, and the one thing
+   * missing is the acknowledgement: no consent row, and `consent_current_at`
+   * left null, which is what §7.7's wave query reads. So they are registered and
+   * never contacted until they say so.
+   */
+  if (value === 'sum:decline') return commit(ctx, address, state, false);
 
   /* --- a row number, typed or tapped: jump straight to that field ------ */
   const row = Number(value.replace('sum:row:', ''));
@@ -689,6 +700,7 @@ async function commit(
   ctx: BotContext,
   address: ChannelAddress,
   state: InterviewState,
+  acknowledged: boolean,
 ): Promise<AnswerResult> {
   const { draft } = state;
   const now = ctx.clock.now();
@@ -742,8 +754,15 @@ async function commit(
       lastDonatedOn: lastDonated,
       nextEligibleOn: eligible,
       durableFlagStatus: flagged.length > 0 ? 'flagged' : 'clear',
-      // The acknowledgement is what makes every later message lawful (§5).
-      consentCurrentAt: now,
+      /**
+       * The acknowledgement is what makes every later message lawful (§5).
+       *
+       * Null when they said "not now": the row exists, and §7.7 recruits nobody
+       * whose consent is not current, so a dormant registration is dormant by
+       * the same rule that governs everybody else rather than by a second flag
+       * somewhere that could disagree with it.
+       */
+      consentCurrentAt: acknowledged ? now : null,
     };
 
     if (state.donorId) {
@@ -789,17 +808,30 @@ async function commit(
         .onConflictDoNothing();
     }
 
-    await tx.insert(donorConsents).values({
-      id: ctx.ids.next<'ConsentId'>(),
-      donorId,
-      consentedAt: now,
-      wordingVersion: WORDING_VERSION,
-      valuesSnapshot: snapshot,
-    });
+    /**
+     * No consent row when they declined, because they did not consent.
+     *
+     * Writing one with a "declined" flag on it would put a record of consent in
+     * the table that is the evidence of consent, and the first person to query
+     * it for "who agreed" would get the wrong answer.
+     */
+    if (acknowledged) {
+      await tx.insert(donorConsents).values({
+        id: ctx.ids.next<'ConsentId'>(),
+        donorId,
+        consentedAt: now,
+        wordingVersion: WORDING_VERSION,
+        valuesSnapshot: snapshot,
+      });
+    }
 
     const event = createEventWriter(tx, ctx.correlationId, now);
     await event({
-      event: state.donorId ? 'donor.profile_updated' : 'donor.registered',
+      event: state.donorId
+        ? 'donor.profile_updated'
+        : acknowledged
+          ? 'donor.registered'
+          : 'donor.registered_dormant',
       subjectType: 'donor',
       subjectId: donorId,
       // Counts and flags only. No name, no number, no health datum (§11.9).
@@ -815,6 +847,7 @@ async function commit(
   await clearInterview(ctx, address);
 
   if (state.donorId) return { kind: 'saved', donorId };
+  if (!acknowledged) return { kind: 'declined', donorId, name: draft.name ?? '' };
 
   return {
     kind: 'registered',

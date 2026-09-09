@@ -1280,6 +1280,11 @@ enforces: **every flow ends somewhere named, including when it goes wrong, and w
 waiting is told.** ⚠︎ marks the endings that are easiest to leave unbuilt, because they fire on paths
 nobody demonstrates.
 
+**Drafts are not in this table any more.** ADR 0010 removed them: a four-field form is submitted
+or it never existed, so "draft abandoned → ages on the dashboard" describes a state that can no
+longer occur. What replaced it is the row below it — a request whose ID nobody ever brings to the
+counter, which ages there instead.
+
 ### Module 1 — doctor and admin
 
 | Flow | Way in | Ways out |
@@ -1287,8 +1292,9 @@ nobody demonstrates.
 | Account activation | Admin creates account → invite email | Password set → signed in on their dashboard · link expired → re-send · ⚠︎ never activated → ages visibly in the admin list |
 | Password reset | "Forgot password" on sign-in | Reset → signed in · ⚠︎ OTP expired or exhausted → back to step one with a way to retry · abandoned → old password still works |
 | Account update request | *Request update* on the profile page | Approved and applied · rejected with a reason, resubmittable · withdrawn · ⚠︎ untouched → ages visibly in the admin queue |
-| Patient → admission | Dashboard, or the start of a request | Patient recorded; admission open until discharged |
-| Blood request | New draft from an admission | Submitted → decided by the centre · ⚠︎ cancelled by the doctor with a reason · ⚠︎ draft abandoned → ages on the dashboard, never auto-deleted · ⚠︎ need date passes undecided → flagged overdue, never silently aged out |
+| Patient → admission | The blood centre counter (§4), or the doctor's optional section | Patient recorded; admission open until discharged |
+| Blood request | Four fields on the doctor's one screen | Submitted → decided by the centre · ⚠︎ cancelled by the doctor with a reason · ⚠︎ need date passes undecided → flagged overdue, never silently aged out · ⚠︎ nobody ever brings the ID in → ages on the centre queue as *awaiting the bystander* |
+| Completing a request | The bystander arrives with the ID | Patient attached → the request can be answered · ⚠︎ answered first under the emergency exception → shown as outstanding until completed |
 | Sample association | The submitted request's view | Sample recorded against the request |
 | Seal upload | Profile | Stored, or rejected with the reason (type, size) |
 

@@ -631,7 +631,13 @@ async function showInterview(
   }
 
   if (result.kind === 'declined') {
-    await reply(ctx, address, [{ text: MESSAGES.abandoned }], updateId);
+    /**
+     * Registered and dormant (§5, §8).
+     *
+     * Not the abandoned message: nothing was lost, and saying so would be
+     * untrue. What they need is the one word that turns it on later.
+     */
+    await reply(ctx, address, [{ text: MESSAGES.registeredDormant(result.name) }], updateId);
     return;
   }
 

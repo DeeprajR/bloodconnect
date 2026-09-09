@@ -37,8 +37,9 @@ P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
 P5  Module 1 depth               ✅
 P6  Centre depth — collisions    ✅
 P7  Bot depth — the interview    ✅
-P7b The request slip             ← next  (ADR 0010)
-P8  Endings sweep
+P7b The request slip             ✅  (ADR 0010)
+P8  Endings sweep                ◐  Milestone B, one row short (ADR 0011)
+P9  Volunteer + public board     ← next
 …
 ```
 

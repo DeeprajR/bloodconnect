@@ -20,9 +20,11 @@
  *  6. Counter outcomes, which roll intervals forward and thank people.
  *  7. Completions, which stand down whoever is left.
  *  8. Progress written back to the centre.
- *  9. One nudge for an abandoned signup — the least urgent thing here, so it
+ *  9. Anybody still holding a card for a request that has filled, told it is
+ *     covered — after the promotions, since a freed place may still be theirs.
+ * 10. One nudge for an abandoned signup — the least urgent thing here, so it
  *     never delays a stand-down.
- * 10. The outbox drain, last, so everything queued this tick goes out in it.
+ * 11. The outbox drain, last, so everything queued this tick goes out in it.
  */
 
 import type { BotContext } from './context.js';
@@ -31,6 +33,7 @@ import {
   closeDemand,
   findCancelledDemands,
   findExpiredDemands,
+  tellUnansweredItIsCovered,
 } from './use-cases/close-demand.js';
 import { importOpenDemands, writeBackProgress } from './use-cases/import-demand.js';
 import { applyCounterOutcomes, findCompletedRequests } from './use-cases/outcomes.js';
@@ -50,6 +53,7 @@ export type TickResult = {
   readonly promoted: number;
   readonly walkInsCounted: number;
   readonly signupsReminded: number;
+  readonly toldItIsCovered: number;
   readonly standDownsQueued: number;
   readonly drain: DrainResult;
 };
@@ -138,14 +142,22 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     }
   }
 
-  /* --- 9. one nudge for an abandoned signup ----------------------------- */
+  /* --- 9. filled before they answered ------------------------------------ */
+  /**
+   * After the promotions, because a freed place may still be theirs — telling
+   * somebody it is covered and then promoting them would be two contradictory
+   * messages in one tick.
+   */
+  const covered = await tellUnansweredItIsCovered(ctx);
+
+  /* --- 10. one nudge for an abandoned signup ---------------------------- */
   /**
    * Last of the work, and deliberately after everything else: a reminder is the
    * least urgent thing this loop does, and it must never delay a stand-down.
    */
   const reminders = await remindAbandonedSignups(ctx);
 
-  /* --- 10. tell the centre, then send ----------------------------------- */
+  /* --- 11. tell the centre, then send ----------------------------------- */
   for (const id of touched) await writeBackProgress(ctx, id);
 
   const drain = await drainOutbox(ctx);
@@ -161,6 +173,7 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     promoted,
     walkInsCounted: walkIns.updated,
     signupsReminded: reminders.reminded,
+    toldItIsCovered: covered.told,
     standDownsQueued,
     drain,
   };

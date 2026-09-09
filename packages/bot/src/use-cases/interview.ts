@@ -498,6 +498,13 @@ export async function summaryMessage(
     choices: [
       choice('Yes, this is correct', 'sum:confirm'),
       choice('Fix something', 'sum:fix'),
+      /*
+        The third ending §5 asks for: "not now" is not "delete me". The
+        registration is kept and dormant, and turning it on later is one word —
+        making somebody retype ten answers to change their mind loses them
+        twice.
+      */
+      choice('Not now', 'sum:decline'),
     ],
   };
 }

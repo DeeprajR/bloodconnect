@@ -87,7 +87,7 @@ P5  Module 1 depth               7d  ✅
 P6  Centre depth — collisions    8d  ✅
 P7  Bot depth — the interview    9d  ✅
 P7b The request slip             4d   ⟵ ADR 0010, inserted after P7
-P8  Endings sweep                4d   ▲ MILESTONE B — every §8 flow ends (day ~61)
+P8  Endings sweep                4d  ◐ MILESTONE B — one row short (ADR 0011)
 P9  Volunteer + public board     4d
 P10 Control panel                5d
 P11 Tag reader integration       3d   ⟵ gated on hardware
@@ -359,6 +359,16 @@ ageing; invites that were never used; the demand that expires unmet.
 **Prove.** One test per ⚠︎ row in §8. A demand cannot close without its stand-downs enqueued.
 
 > **Milestone B.** Every flow in the specification has a named ending, and each has a test.
+
+**Reached for every flow but one.** The account update-request flow was never built — P5 listed
+it and it did not happen — so its ⚠︎ ending cannot be closed, because the flow has no beginning
+either. Recorded in [ADR 0011](adr/0011-the-endings-sweep-and-one-milestone-short.md) rather than
+counted as done; roughly a day to close.
+
+Two endings were genuinely missing and are now built: declining the acknowledgement leaves a
+donor **registered and dormant** rather than nothing at all, and somebody still holding a card
+for a request that has filled is told it is covered — at the moment it fills, not hours later
+when it closes.
 
 ---
 

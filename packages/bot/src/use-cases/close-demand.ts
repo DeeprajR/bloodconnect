@@ -219,3 +219,99 @@ export async function findExpiredDemands(
     )
     .limit(limit);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Filled before they answered (§8)                                            */
+/* -------------------------------------------------------------------------- */
+
+export type CoveredResult = { readonly told: number };
+
+/**
+ * Telling the people still holding a card that the request is covered.
+ *
+ * §8: *"`NOTIFIED`, request fills without them → one line: it is covered, thank
+ * you, nothing to do. The card stops offering Accept."*
+ *
+ * **A different moment from the stand-down.** `closeDemand` fires when a demand
+ * ends; this fires when it *fills*, which can be hours earlier. Between the two
+ * a donor was holding a live card for a request that no longer needs them, and
+ * tapping it would have put them on a waiting list they never asked to join.
+ *
+ * Moved to `CANCELLED` first, in the same transaction as the message. That is
+ * also what stops a later closure telling them a second thing: `CANCELLED` is
+ * not in `STANDS_DOWN_ON_CLOSURE`, so the closure passes over somebody who has
+ * already been told.
+ */
+export async function tellUnansweredItIsCovered(
+  ctx: BotContext,
+  limit = 100,
+): Promise<CoveredResult> {
+  const now = ctx.clock.now();
+
+  const waiting = await ctx.db
+    .select({
+      journeyId: donorRequests.id,
+      donorId: donorRequests.donorId,
+      bloodGroup: botRequests.bloodGroup,
+    })
+    .from(donorRequests)
+    .innerJoin(botRequests, eq(botRequests.id, donorRequests.botRequestId))
+    .where(
+      and(
+        eq(donorRequests.status, 'NOTIFIED'),
+        // Filled, but not yet closed — the window this exists for.
+        eq(botRequests.status, 'fulfilled'),
+      ),
+    )
+    .limit(limit);
+
+  if (waiting.length === 0) return { told: 0 };
+
+  let told = 0;
+
+  for (const row of waiting) {
+    const done = await ctx.db.transaction(async (tx) => {
+      /**
+       * Guarded on `NOTIFIED` (§7.4). A donor who answered between the select
+       * and here is mid-journey, and must not be cancelled out from under it.
+       */
+      const moved = await tx
+        .update(donorRequests)
+        .set({ status: 'CANCELLED', terminalAt: now })
+        .where(and(eq(donorRequests.id, row.journeyId), eq(donorRequests.status, 'NOTIFIED')))
+        .returning({ id: donorRequests.id });
+
+      if (moved.length === 0) return false;
+
+      const [channel] = await tx
+        .select({ channel: donorChannels.channel, channelUserId: donorChannels.channelUserId })
+        .from(donorChannels)
+        .where(eq(donorChannels.donorId, row.donorId));
+
+      if (channel) {
+        const messages: QueuedMessage[] = [
+          {
+            to: channel,
+            kind: 'stand_down',
+            message: { text: MESSAGES.covered(row.bloodGroup) },
+            dedupeKey: `covered:${row.journeyId}`,
+          },
+        ];
+        await enqueue(tx, ctx.ids, messages, now);
+      }
+
+      const event = createEventWriter(tx, ctx.correlationId, now);
+      await event({
+        event: 'journey.covered',
+        subjectType: 'donor_request',
+        subjectId: row.journeyId,
+      });
+
+      return true;
+    });
+
+    if (done) told += 1;
+  }
+
+  return { told };
+}

@@ -87,7 +87,9 @@ export {
   closeDemand,
   findCancelledDemands,
   findExpiredDemands,
+  tellUnansweredItIsCovered,
   type CloseResult,
+  type CoveredResult,
   type ClosureReason,
 } from './use-cases/close-demand.js';
 

@@ -169,6 +169,29 @@ ${why}`;
 
   /** Saved from the profile editor, re-acknowledged (§5). */
   profileSaved: 'Saved. Thank you for keeping it up to date.',
+
+  /**
+   * "Not now" — kept, dormant, and one word from being on (§5, §8).
+   *
+   * It thanks them and says exactly how to change their mind, because somebody
+   * who declines today and cannot find the way back tomorrow is lost twice.
+   * Nothing here asks them to reconsider now; that is what makes it an ending.
+   */
+  registeredDormant: (name: string): string =>
+    `Thank you, ${name}. Your details are saved and we will not message you.
+
+` +
+    'Send "resume" whenever you want to be asked — nothing to fill in again.',
+
+  /**
+   * Asked, and it filled before they answered (§8).
+   *
+   * One line, and it thanks them: they did nothing wrong, and the card they are
+   * holding is about to stop working.
+   */
+  covered: (bloodGroup: string): string =>
+    `That ${group(bloodGroup)} request is covered now — enough people came ` +
+    'forward. Nothing to do, and thank you for being there.',
   askSex:
     'And are you male or female?\n\n' +
     'This only sets how long you wait between donations.',
