@@ -15,46 +15,12 @@ import {
 } from '@blood-connect/platform';
 
 import {
-  draftAgeDays,
   findPossibleDuplicates,
-  isStaleDraft,
   listSamples,
   recordSample,
 } from './records.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
-
-describe('draft ageing (§8)', () => {
-  const at = (iso: string): Date => new Date(iso);
-  const now = at('2026-09-09T09:00:00.000Z');
-
-  it('counts whole days a draft has been sitting', () => {
-    expect(draftAgeDays({ status: 'draft', updatedAt: now }, now)).toBe(0);
-    expect(draftAgeDays({ status: 'draft', updatedAt: at('2026-09-06T09:00:00Z') }, now)).toBe(3);
-  });
-
-  it('ages nothing that has been submitted', () => {
-    // A submitted request is not abandoned — it is waiting on the centre, and
-    // "overdue" is the flag that belongs to it instead (§3).
-    expect(
-      draftAgeDays({ status: 'submitted', updatedAt: at('2026-01-01T09:00:00Z') }, now),
-    ).toBe(0);
-  });
-
-  it('marks one stale at the configured threshold, not before', () => {
-    const threshold = CONFIG_DEFAULTS.ageing.draftDays;
-    const justUnder = at('2026-09-07T10:00:00Z');
-    const justOver = at('2026-09-06T08:00:00Z');
-
-    expect(isStaleDraft({ status: 'draft', updatedAt: justUnder }, now, threshold)).toBe(false);
-    expect(isStaleDraft({ status: 'draft', updatedAt: justOver }, now, threshold)).toBe(true);
-  });
-
-  it('never goes negative when a clock moves backwards', () => {
-    // Two servers, one slightly ahead. A negative age would render as "-1 days".
-    expect(draftAgeDays({ status: 'draft', updatedAt: at('2026-09-10T09:00:00Z') }, now)).toBe(0);
-  });
-});
 
 describe.skipIf(!testUrl)('the duplicate-patient warning (§3)', () => {
   const client = postgres(testUrl ?? '', { max: 4, onnotice: () => undefined });
@@ -263,11 +229,13 @@ describe.skipIf(!testUrl)('the compatibility testing sample (§3, §15)', () => 
     submittedId = newId();
     await db.insert(bloodRequests).values({
       id: submittedId,
-      requestId: 'BR-2026-000900',
+      requestId: '090926-00900',
       centreId: CENTRE_ID,
       admissionId,
       doctorId,
       status: 'submitted',
+      // Required of every non-draft request since ADR 0010.
+      urgency: 'routine',
       indication: 'Surgery',
       dateRequired: clock.today(),
       bloodGroup: 'A+',
@@ -321,7 +289,8 @@ describe.skipIf(!testUrl)('the compatibility testing sample (§3, §15)', () => 
     const otherId = newId();
     await db.insert(bloodRequests).values({
       id: otherId,
-      requestId: 'BR-2026-000901',
+      requestId: '090926-00901',
+      urgency: 'routine',
       centreId: CENTRE_ID,
       admissionId: (await db.select().from(admissions))[0]?.id ?? '',
       doctorId,

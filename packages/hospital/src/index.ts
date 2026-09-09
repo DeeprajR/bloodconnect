@@ -9,28 +9,22 @@
 
 export {
   createAdmission,
-  createDraft,
   createPatient,
   dischargeAdmission,
-  draftAgeDays,
   findPossibleDuplicates,
   getRequest,
   isOverdue,
-  isStaleDraft,
   listSamples,
   recordSample,
   listAdmissions,
   listRequestsForDoctor,
-  updateDraft,
   type AdmissionInput,
-  type DraftInput,
   type PatientInput,
   type PossibleDuplicate,
   type SampleRow,
   type RequestListRow,
 } from './use-cases/records.js';
 
-export { submitRequest, type SubmitResult } from './use-cases/submit.js';
 
 export {
   getDoctorActivity,
@@ -65,3 +59,12 @@ export {
   type DraftError,
   type SubmitError,
 } from './errors.js';
+
+export {
+  raiseRequest,
+  type RaiseError,
+  type RaiseInput,
+  type RaiseResult,
+  type RequestEssentials,
+  type RequestExtras,
+} from './use-cases/raise.js';

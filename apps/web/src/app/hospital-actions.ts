@@ -6,13 +6,11 @@ import { z } from 'zod';
 
 import {
   createAdmission,
-  createDraft,
   createPatient,
   dischargeAdmission,
   findPossibleDuplicates,
+  raiseRequest,
   recordSample,
-  submitRequest,
-  updateDraft,
   type PossibleDuplicate,
 } from '@blood-connect/hospital';
 import { cancelRequest } from '@blood-connect/centre';
@@ -31,6 +29,15 @@ import { assertSameOrigin, currentActor } from '@/lib/session';
  */
 
 export type FormState = { readonly error: string | null; readonly done?: boolean };
+
+/**
+ * The single centre this deployment serves.
+ *
+ * Multi-tenant is not a retrofit (§5) — the column is on every request from day
+ * one — but there is one hospital, and asking a doctor which one they are in
+ * would be a fifth field for no information.
+ */
+const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
 
 function value(form: FormData, name: string): string {
   const raw = form.get(name);
@@ -153,56 +160,100 @@ export async function dischargeAction(admissionId: string): Promise<void> {
 /* Requests                                                                    */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * From an admission straight to the request form, with the patient prefilled.
+ *
+ * The one path that still starts from a patient: a doctor already looking at an
+ * admitted patient should not retype them into the collapsed section.
+ */
 export async function startRequestAction(admissionId: string): Promise<void> {
   await assertSameOrigin();
-
-  const ctx = await useCaseContext(await currentActor());
-  const result = await createDraft(ctx, admissionId);
-  if (!result.ok) return;
-
-  redirect(`/requests/${result.value.requestUuid}`);
+  redirect(`/requests/new?admission=${encodeURIComponent(admissionId)}`);
 }
 
-export async function saveDraftAction(
-  requestUuid: string,
+/* -------------------------------------------------------------------------- */
+/* Raising a request — the whole of what a doctor does (ADR 0010)              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The four fields, and everything else optional.
+ *
+ * Validation is split the same way the form is: the four are required and
+ * refused individually, and the collapsed half is only looked at when the
+ * doctor opened it. A doctor at a bedside must never be stopped by a field
+ * they were never asked to fill.
+ */
+const raiseSchema = z.object({
+  bloodGroup: z.string().min(2, 'Choose a blood group.'),
+  product: z.string().min(2, 'Choose a product.'),
+  units: z.coerce.number().int().min(1, 'At least one unit.'),
+  urgency: z.enum(['emergency', 'very_urgent', 'urgent', 'routine']),
+});
+
+export async function raiseRequestAction(
   _previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
   await assertSameOrigin();
 
-  const ctx = await useCaseContext(await currentActor());
-  const result = await updateDraft(ctx, requestUuid, {
-    indication: value(formData, 'indication'),
-    dateRequired: value(formData, 'dateRequired'),
+  const parsed = raiseSchema.safeParse({
     bloodGroup: value(formData, 'bloodGroup'),
     product: value(formData, 'product'),
-    units: Number(value(formData, 'units') || '0'),
+    units: value(formData, 'units'),
+    urgency: value(formData, 'urgency'),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Check the four fields.' };
+  }
+
+  const ctx = await useCaseContext(await currentActor());
+
+  /**
+   * The collapsed half, read only when there is a name in it.
+   *
+   * An empty patient name means the section was never opened, which is the
+   * ordinary case — the centre identifies the patient when the bystander
+   * arrives with the ID.
+   */
+  const patientName = value(formData, 'patientName');
+  const patient =
+    patientName === ''
+      ? undefined
+      : {
+          name: patientName,
+          ipNo: value(formData, 'ipNo'),
+          ward: optional(formData, 'ward') ?? undefined,
+          dob: optional(formData, 'dob') ?? undefined,
+          age: value(formData, 'age') === '' ? undefined : Number(value(formData, 'age')),
+          ageUnit: optional(formData, 'ageUnit') ?? undefined,
+          sex: optional(formData, 'sex') ?? undefined,
+          bloodGroup: optional(formData, 'patientBloodGroup') ?? undefined,
+          uhid: optional(formData, 'uhid') ?? undefined,
+          attenderName: optional(formData, 'attenderName') ?? undefined,
+          attenderPhone: optional(formData, 'attenderPhone') ?? undefined,
+          address: optional(formData, 'address') ?? undefined,
+          diagnosis: optional(formData, 'diagnosis') ?? undefined,
+          history: optional(formData, 'history') ?? undefined,
+          previousTransfusion: optional(formData, 'previousTransfusion') ?? undefined,
+          previousReaction: optional(formData, 'previousReaction') ?? undefined,
+        };
+
+  const result = await raiseRequest(ctx, CENTRE_ID, {
+    ...parsed.data,
+    indication: optional(formData, 'indication') ?? undefined,
+    admissionId: optional(formData, 'admissionId') ?? undefined,
+    patient,
   });
 
   if (!result.ok) return { error: result.error.message };
 
-  revalidatePath(`/requests/${requestUuid}`);
-  redirect(`/requests/${requestUuid}/review`);
-}
-
-/**
- * The one action §7.1 exists for. Everything it does commits together, so the
- * identifier it returns is always attached to a request that was actually made.
- */
-export async function submitRequestAction(
-  requestUuid: string,
-  _previous: FormState,
-  _formData: FormData,
-): Promise<FormState> {
-  await assertSameOrigin();
-
-  const ctx = await useCaseContext(await currentActor());
-  const result = await submitRequest(ctx, requestUuid);
-  if (!result.ok) return { error: result.error.message };
-
   revalidatePath('/dashboard');
-  redirect(`/requests/${requestUuid}`);
+  // Straight to the ID. It is the only thing the doctor came for, and the
+  // sooner it is on screen the sooner they can read it out.
+  redirect(`/requests/${result.value.requestUuid}?raised=1`);
 }
+
 
 /**
  * The doctor's one post-submit action (§3, §8).

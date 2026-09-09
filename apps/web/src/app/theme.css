@@ -211,6 +211,133 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * The request slip — the doctor's one screen (§3, ADR 0010).
+ *
+ * Speed is the requirement, and the two things that buy it are big tap targets
+ * and no scrolling past what is optional. So the four answers are grids of
+ * radio labels rather than dropdowns — one tap, no aim, no scroll inside a
+ * native select — and everything else lives behind a `<details>` that starts
+ * closed and costs one line of vertical space.
+ * ------------------------------------------------------------------------- */
+
+.app-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--ux4g-space-4, 0.5rem);
+}
+
+/*
+ * The visible control. The radio itself is hidden from sight but not from
+ * assistive technology, so the browser keeps selection, keyboard and
+ * screen-reader semantics and nothing here has to reimplement them.
+ */
+.app-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* 56px: comfortably past the 44px floor, because this is tapped in a hurry. */
+  min-block-size: 56px;
+  padding: var(--ux4g-padding-s, 0.75rem);
+  border: var(--ux4g-border-md, 1px) solid
+    var(--ux4g-border-color-neutral-default, #d9d9d9);
+  border-radius: var(--ux4g-radius-md, 0.5rem);
+  background: var(--ux4g-bg-neutral-elevated, #fff);
+  color: var(--ux4g-text-neutral-primary, #171717);
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+  cursor: pointer;
+}
+
+.app-choice input {
+  /* Off-screen rather than display:none, which would take it out of the tab
+     order and off the accessibility tree with it. */
+  position: absolute;
+  opacity: 0;
+  inline-size: 1px;
+  block-size: 1px;
+}
+
+.app-choice:hover {
+  background: var(--ux4g-bg-neutral-subtle, #e5e5e5);
+}
+
+/*
+ * Selected. A fill *and* a border, because a fill alone is the kind of
+ * distinction that disappears on a bright ward screen at arm's length.
+ */
+.app-choice:has(input:checked) {
+  background: var(--ux4g-bg-primary-soft, #dcd4ff);
+  border-color: var(--ux4g-text-brand-primary-default, #4a2bc2);
+  color: var(--ux4g-text-brand-primary-default, #4a2bc2);
+  box-shadow: inset 0 0 0 1px var(--ux4g-text-brand-primary-default, #4a2bc2);
+}
+
+/* Keyboard focus has to land on the label, since the input is off-screen. */
+.app-choice:has(input:focus-visible) {
+  outline: var(--ux4g-border-lg, 0.1875rem) solid
+    var(--ux4g-text-brand-primary-default, #4a2bc2);
+  outline-offset: 2px;
+}
+
+.app-choice-more {
+  font: inherit;
+}
+
+/* The primary action sits with the four, not at the bottom of a long page. */
+.app-raise-submit {
+  inline-size: 100%;
+  min-block-size: 56px;
+}
+
+/*
+ * Everything the centre will fill in.
+ *
+ * A native disclosure: it opens without JavaScript, so it works before
+ * hydration and on a bad hospital connection, and the fields inside stay in the
+ * form when it is collapsed again — a doctor who filled it and closed it does
+ * not lose the answers.
+ */
+.app-more {
+  border-block-start: var(--ux4g-border-md, 1px) solid
+    var(--ux4g-border-color-neutral-default, #d9d9d9);
+  padding-block-start: var(--ux4g-padding-m, 1rem);
+}
+
+.app-more-summary {
+  cursor: pointer;
+  min-block-size: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--ux4g-text-neutral-primary, #171717);
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+}
+
+.app-more-body {
+  padding-block-start: var(--ux4g-padding-m, 1rem);
+}
+
+@media (min-width: 1024px) {
+  .app-choices {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/*
+ * The ID, at handoff size.
+ *
+ * Read aloud across a bed to somebody who will carry it to another building, so
+ * it is the largest thing on the page and set in tabular figures — a `0` and an
+ * `O` must not be confusable when it is being transcribed by ear.
+ */
+.app-handoff-id {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  font-weight: var(--ux4g-font-weight-bold, 700);
+  letter-spacing: 0.05em;
+  color: var(--ux4g-text-neutral-primary, #171717);
+}
+
+/* ---------------------------------------------------------------------------
  * The centre's side navigation.
  *
  * A menu, not a drawer: three links that fit on the page at every width. On a

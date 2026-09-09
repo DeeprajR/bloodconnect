@@ -160,18 +160,33 @@ export const bloodRequests = hospitalSchema.table(
   'blood_requests',
   {
     id: uuid('id').primaryKey(),
-    /** `BR-YYYY-NNNNNN`, allocated at submit and never before (§7.1). */
+    /** `DDMMYY-NNNNN`, allocated at submit and never before (§7.1). */
     requestId: text('request_id'),
     centreId: uuid('centre_id')
       .notNull()
       .references(() => centres.id),
-    admissionId: uuid('admission_id')
-      .notNull()
-      .references(() => admissions.id),
+    /**
+     * Null until the centre attaches a patient (ADR 0010).
+     *
+     * The doctor gives four fields and an ID; the patient is identified at the
+     * counter, when the bystander arrives with it. Only an `emergency` request
+     * may be reserved against or issued while this is null, and the decision
+     * records that it was.
+     */
+    admissionId: uuid('admission_id').references(() => admissions.id),
     doctorId: uuid('doctor_id')
       .notNull()
       .references(() => users.id),
-    status: text('status').notNull().default('draft'),
+    status: text('status').notNull().default('submitted'),
+    /**
+     * How fast it needs answering, and what `date_required` was derived from.
+     *
+     * Kept alongside the derived date rather than instead of it: three of the
+     * four levels mean today, so the date cannot order the queue and the level
+     * cannot drive the expiry sweep. Each answers what the other cannot.
+     */
+    urgency: text('urgency'),
+    /** Recorded by whoever has it — the doctor if they had a moment, else the centre. */
     indication: text('indication'),
     /** The centre records a day, not an instant (§5.2). */
     dateRequired: date('date_required'),
@@ -208,25 +223,46 @@ export const bloodRequests = hospitalSchema.table(
       sql`status IN ('draft', 'submitted', 'approved', 'partially_approved', 'declined', 'cancelled')`,
     ),
     /**
-     * Everything past `draft` carries its identifier and both snapshots.
+     * Everything past `draft` carries its identifier, its four fields and the
+     * doctor who asked.
      *
-     * §5.4 states this for `submitted`; written for every non-draft status
-     * instead, because a decided request that lost its snapshot would satisfy
-     * the narrower rule.
+     * **The patient is no longer among them** (ADR 0010): a request is raised
+     * with four fields, and the patient is identified later at the counter. So
+     * `patient_snapshot` and `indication` left this list — what remains is
+     * exactly what the doctor supplies, and a request missing any of it is a
+     * request nobody could act on.
+     *
+     * `draft` survives in the status check for rows raised before ADR 0010.
+     * Nothing creates one any more; deleting them would destroy the only record
+     * that something was intended.
      */
     check(
       'blood_requests_submitted_check',
       sql`status = 'draft' OR (
         request_id IS NOT NULL
-        AND patient_snapshot IS NOT NULL
         AND doctor_snapshot IS NOT NULL
         AND submitted_at IS NOT NULL
-        AND indication IS NOT NULL
+        AND urgency IS NOT NULL
         AND date_required IS NOT NULL
         AND blood_group IS NOT NULL
         AND product IS NOT NULL
         AND units IS NOT NULL
       )`,
+    ),
+    /**
+     * The patient snapshot cannot exist without the patient.
+     *
+     * They are written together when the centre attaches one, and a snapshot
+     * without an admission would be a frozen copy of a record nothing points
+     * at — unreadable and unverifiable (§2.6).
+     */
+    check(
+      'blood_requests_patient_check',
+      sql`patient_snapshot IS NULL OR admission_id IS NOT NULL`,
+    ),
+    check(
+      'blood_requests_urgency_check',
+      sql`urgency IS NULL OR urgency IN ('emergency', 'very_urgent', 'urgent', 'routine')`,
     ),
     check('blood_requests_units_check', sql`units IS NULL OR units >= 1`),
     check(
@@ -285,8 +321,15 @@ export const bloodSamples = hospitalSchema.table(
  * commits, so a failed submit would burn an identifier and leave a visible gap
  * in a clinical record series.
  */
+/**
+ * The §7.1 allocator, keyed by **day** since ADR 0010.
+ *
+ * `DDMMYY-NNNNN` restarts its sequence each day, so the counter does too. The
+ * row per day is also the natural place to answer "how many requests did we
+ * take yesterday?" without scanning the table.
+ */
 export const bloodRequestCounters = hospitalSchema.table('blood_request_counters', {
-  year: integer('year').primaryKey(),
+  day: date('day').primaryKey(),
   nextValue: integer('next_value').notNull(),
 });
 

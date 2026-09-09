@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AppShell } from '../../shell';
-import { CancelRequestForm, DraftForm, SampleForm } from '../../hospital-forms';
+import { CancelRequestForm, SampleForm } from '../../hospital-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getRequest, listSamples } from '@blood-connect/hospital';
 import { getDecisionForRequest } from '@blood-connect/centre';
@@ -37,10 +37,15 @@ const CANCELLABLE = ['submitted', 'approved', 'partially_approved'];
  */
 export default async function RequestPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  // Straight off the form. The ID is the only thing the doctor came for.
+  const justRaised = query['raised'] === '1';
   const actor = await requireAccess(`/requests/${id}`);
   const ctx = await useCaseContext(actor);
 
@@ -49,40 +54,8 @@ export default async function RequestPage({
 
   const { request } = row;
 
-  if (request.status === 'draft') {
-    return (
-      <AppShell actor={actor} title="Blood request" narrow>
-        <div className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h1 className="ux4g-card-title">{WORDING.bloodRequest}</h1>
-            <p className="ux4g-card-sub-title">
-              {row.patient.name} · {WORDING.ipNumber} {row.admission.ipNo} ·{' '}
-              {WORDING.ward} {row.admission.ward} ·{' '}
-              {bloodGroupLabel(row.patient.bloodGroup as BloodGroup)}
-            </p>
-          </div>
-          <div className="ux4g-card-body">
-            <DraftForm
-              requestUuid={request.id}
-              indication={request.indication ?? ''}
-              dateRequired={request.dateRequired ?? ctx.clock.today()}
-              bloodGroup={request.bloodGroup ?? row.patient.bloodGroup}
-              product={request.product ?? 'whole_blood'}
-              units={request.units ?? 1}
-            />
-          </div>
-          <div className="ux4g-card-footer">
-            <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/dashboard">
-              Back to the dashboard
-            </Link>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
-
-  // Everything past draft renders from the snapshot, not from the live patient
-  // record — that is the whole point of freezing it (§2.6).
+  // Rendered from the snapshot, not from the live patient record — that is the
+  // whole point of freezing it (§2.6). Empty until the centre attaches one.
   const patient = (request.patientSnapshot ?? {}) as Record<string, string | null>;
   const doctor = (request.doctorSnapshot ?? {}) as Record<string, string | null>;
 
@@ -101,6 +74,26 @@ export default async function RequestPage({
 
   return (
     <AppShell actor={actor} title={request.requestId ?? 'Blood request'}>
+      {justRaised ? (
+        /**
+         * The handoff (ADR 0010).
+         *
+         * Big enough to read across a bed, because that is what happens next:
+         * the doctor says it to the patient's bystander, who carries it to the
+         * blood centre. Everything else on this page is for later.
+         */
+        <section className="ux4g-card ux4g-card-outline app-handoff">
+          <div className="ux4g-card-body app-stack-tight">
+            <p className="ux4g-label-l-strong">Give this to the patient’s bystander</p>
+            <p className="app-handoff-id app-figure">{request.requestId}</p>
+            <p className="ux4g-body-m-default">
+              They take it to the blood centre, who will ask them for the patient’s
+              details. Nothing else is needed from you.
+            </p>
+          </div>
+        </section>
+      ) : null}
+
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong app-figure">{request.requestId}</h1>
         <p className="ux4g-body-m-default">

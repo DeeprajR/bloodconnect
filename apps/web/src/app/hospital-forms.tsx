@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
-import { BLOOD_GROUPS, PRODUCTS, WORDING, bloodGroupLabel, productLabel } from '@blood-connect/domain';
+import { BLOOD_GROUPS, WORDING, bloodGroupLabel } from '@blood-connect/domain';
 
 import {
   cancelRequestAction,
@@ -11,8 +11,6 @@ import {
   findDuplicatesAction,
   recordSampleAction,
   createPatientAction,
-  saveDraftAction,
-  submitRequestAction,
   type FormState,
 } from './hospital-actions';
 import type { PossibleDuplicate } from '@blood-connect/hospital';
@@ -165,7 +163,6 @@ function TextArea({
 }
 
 const groupOptions = BLOOD_GROUPS.map((g) => ({ value: g, label: bloodGroupLabel(g) }));
-const productOptions = PRODUCTS.map((p) => ({ value: p, label: productLabel(p) }));
 
 /* -------------------------------------------------------------------------- */
 
@@ -337,79 +334,13 @@ export function AdmissionForm({ patientId }: { patientId: string }) {
   );
 }
 
-export function DraftForm({
-  requestUuid,
-  indication,
-  dateRequired,
-  bloodGroup,
-  product,
-  units,
-}: {
-  requestUuid: string;
-  indication: string;
-  dateRequired: string;
-  bloodGroup: string;
-  product: string;
-  units: number;
-}) {
-  const [state, action] = useActionState(saveDraftAction.bind(null, requestUuid), initial);
-
-  return (
-    <form action={action} className="app-stack" noValidate>
-      <Problem message={state.error} />
-      <TextArea
-        id="indication"
-        label={WORDING.indication}
-        defaultValue={indication}
-        required
-      />
-      <Field
-        id="dateRequired"
-        label={WORDING.dateRequired}
-        type="date"
-        defaultValue={dateRequired}
-        required
-      />
-      <Select
-        id="bloodGroup"
-        label={WORDING.requestedBloodGroup}
-        options={groupOptions}
-        defaultValue={bloodGroup}
-      />
-      <Select
-        id="product"
-        label={WORDING.product}
-        options={productOptions}
-        defaultValue={product}
-      />
-      <Field
-        id="units"
-        label={WORDING.units}
-        type="number"
-        inputMode="numeric"
-        min="1"
-        defaultValue={String(units)}
-        required
-      />
-      <Submit label="Review" busy="Saving…" />
-    </form>
-  );
-}
-
-/** The review screen takes no input beyond a single Submit (input-fields). */
-export function SubmitForm({ requestUuid }: { requestUuid: string }) {
-  const [state, action] = useActionState(
-    submitRequestAction.bind(null, requestUuid),
-    initial,
-  );
-
-  return (
-    <form action={action} className="app-stack" noValidate>
-      <Problem message={state.error} />
-      <Submit label="Submit to the blood centre" busy="Submitting…" />
-    </form>
-  );
-}
+/*
+ * `DraftForm` and `SubmitForm` lived here.
+ *
+ * A request is four fields on one screen now (`RaiseRequestForm`), so there is
+ * no draft to edit and no review step to confirm — the review was four fields
+ * shown back to somebody who had just typed them (ADR 0010).
+ */
 
 /**
  * Cancelling a submitted request (§3).

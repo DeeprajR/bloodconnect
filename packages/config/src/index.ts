@@ -69,6 +69,37 @@ export const appConfigSchema = z.object({
   }),
 
   /**
+   * How urgency becomes a date, and how long the centre has (§3, ADR 0010).
+   *
+   * The doctor picks a level; these turn it into the `date_required` everything
+   * downstream runs on, and into the minute clock the queue flags against.
+   * Exactly the numbers a centre will want to tune in its first month, which is
+   * why they are rows rather than constants (§12, §14).
+   */
+  request: z.object({
+    /** Days from today, per urgency. Three of the four are the same day. */
+    urgencyDays: z.object({
+      emergency: nonNegativeInt,
+      very_urgent: nonNegativeInt,
+      urgent: nonNegativeInt,
+      routine: nonNegativeInt,
+    }),
+    /**
+     * Minutes within which an answer is expected, or `null` for no clock.
+     *
+     * Routine has none deliberately: its needed-by is days away and the expiry
+     * sweep is the right instrument. Flagging it after four hours would train
+     * the counter to ignore the flag.
+     */
+    responseMinutes: z.object({
+      emergency: positiveInt,
+      very_urgent: positiveInt,
+      urgent: positiveInt,
+      routine: positiveInt.nullable(),
+    }),
+  }),
+
+  /**
    * Where the stock chart turns from orange to red (§4).
    *
    * The floor itself is **not** here — it is `centre_settings.min_units_per_group`,
@@ -153,6 +184,14 @@ export const CONFIG_DEFAULTS: AppConfig = {
    * centre rather than by a commit — these are the numbers a blood centre has an
    * opinion about.
    */
+  /**
+   * Emergency, very urgent and urgent all mean today; routine means this week.
+   * The minute clock is what separates the first three.
+   */
+  request: {
+    urgencyDays: { emergency: 0, very_urgent: 0, urgent: 0, routine: 7 },
+    responseMinutes: { emergency: 15, very_urgent: 60, urgent: 240, routine: null },
+  },
   stock: { lowFraction: 0.6, criticalFraction: 0.3 },
   ageing: { quarantineDays: 7, reconciliationHours: 24, inviteDays: 7, draftDays: 3 },
   retention: { framesDays: 30, journeyMonths: 24, donorTailDays: 90 },

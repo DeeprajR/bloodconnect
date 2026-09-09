@@ -15,6 +15,7 @@ export * from './blood.js';
 export * from './time.js';
 export * from './expiry.js';
 export * from './stock.js';
+export * from './urgency.js';
 export * from './donor.js';
 export * from './request-id.js';
 export * from './state-machines.js';

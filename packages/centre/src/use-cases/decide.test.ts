@@ -152,6 +152,8 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
       admissionId,
       doctorId,
       status: 'submitted',
+      // Required of every non-draft request since ADR 0010.
+      urgency: 'routine',
       indication: 'Anaemia',
       dateRequired: clock.today(),
       bloodGroup,

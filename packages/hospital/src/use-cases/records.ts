@@ -12,7 +12,6 @@ import { err, ok, type Result } from '@blood-connect/result';
 import { admissions, bloodRequests, bloodSamples, patients, users } from '@blood-connect/db';
 import {
   isBloodGroup,
-  isProduct,
   parseCalendarDay,
   type BloodGroup,
   type Product,
@@ -34,8 +33,6 @@ import {
 } from '../errors.js';
 
 /** This deployment's centre. Multi-tenant needs more rows, not a migration. */
-const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
-
 /* -------------------------------------------------------------------------- */
 /* Patients                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -207,128 +204,21 @@ export async function dischargeAdmission(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Drafts                                                                      */
+/* Drafts — removed by ADR 0010                                                */
 /* -------------------------------------------------------------------------- */
 
-export async function createDraft(
-  ctx: UseCaseContext,
-  admissionId: string,
-): Promise<Result<{ requestUuid: string }, DraftError>> {
-  if (!actorHas(ctx.actor, 'requests:manage')) return err(notAuthorized('requests:manage'));
-  if (ctx.actor.kind !== 'user') return err(notAuthorized('requests:manage'));
-
-  const now = ctx.clock.now();
-  const requestUuid = ctx.ids.next<'BloodRequestId'>();
-  const doctorId = ctx.actor.userId;
-
-  return ctx.db.transaction(async (tx) => {
-    const [admission] = await tx
-      .select({ id: admissions.id, patientId: admissions.patientId })
-      .from(admissions)
-      .where(eq(admissions.id, admissionId));
-    if (!admission) return err(admissionNotFound());
-
-    // The patient's own group is the prefill, overridable on the form.
-    const [patient] = await tx
-      .select({ bloodGroup: patients.bloodGroup })
-      .from(patients)
-      .where(eq(patients.id, admission.patientId));
-
-    await tx.insert(bloodRequests).values({
-      id: requestUuid,
-      centreId: CENTRE_ID,
-      admissionId,
-      // From the session, never from the client (§2.5).
-      doctorId,
-      status: 'draft',
-      bloodGroup: patient?.bloodGroup ?? null,
-      product: 'whole_blood',
-      units: 1,
-      dateRequired: ctx.clock.today(),
-    });
-
-    const audit = createAuditWriter(tx, ctx.actor, ctx.correlationId, now);
-    await audit({
-      action: 'request.draft_created',
-      subjectType: 'blood_request',
-      subjectId: requestUuid,
-      metadata: { admissionId },
-    });
-
-    return ok({ requestUuid });
-  });
-}
-
-export type DraftInput = {
-  readonly indication: string;
-  readonly dateRequired: string;
-  readonly bloodGroup: string;
-  readonly product: string;
-  readonly units: number;
-};
-
-/**
- * Editing a draft.
+/*
+ * `createDraft`, `updateDraft`, `draftAgeDays` and `isStaleDraft` lived here.
  *
- * Every draft endpoint refuses anything that has left `draft` (§8.2) — the
- * conditional UPDATE is what makes that true even if two tabs are open, and the
- * status is read first only so the refusal can say what happened.
+ * A request is now four fields on one screen (`raiseRequest`), so there is
+ * nothing to save and reopen and nothing to age. The stale-draft surfacing on
+ * the doctor's dashboard went with them.
+ *
+ * Rows with `status = 'draft'` raised before the change are left alone: an old
+ * draft may be the only record that something was intended, and deleting one to
+ * tidy up a state machine would destroy it.
  */
-export async function updateDraft(
-  ctx: UseCaseContext,
-  requestUuid: string,
-  input: DraftInput,
-): Promise<Result<Record<string, never>, DraftError | InvalidPatient>> {
-  if (!actorHas(ctx.actor, 'requests:manage')) return err(notAuthorized('requests:manage'));
 
-  if (!isBloodGroup(input.bloodGroup)) return err(invalidPatient('Choose a blood group.'));
-  if (!isProduct(input.product)) return err(invalidPatient('Choose a product.'));
-  if (!Number.isInteger(input.units) || input.units < 1) {
-    return err(invalidPatient('Units must be a whole number, at least 1.'));
-  }
-  const day = parseCalendarDay(input.dateRequired);
-  if (!day) return err(invalidPatient('Give the date the blood is required.'));
-  if (day < ctx.clock.today()) {
-    return err(invalidPatient('The date required cannot be in the past.'));
-  }
-  if (input.indication.trim().length === 0) {
-    return err(invalidPatient('Enter the indication for transfusion.'));
-  }
-
-  const now = ctx.clock.now();
-  const actorId = ctx.actor.kind === 'user' ? ctx.actor.userId : null;
-
-  return ctx.db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ status: bloodRequests.status, doctorId: bloodRequests.doctorId })
-      .from(bloodRequests)
-      .where(eq(bloodRequests.id, requestUuid));
-
-    if (!existing) return err(requestNotFound());
-    if (actorId !== null && existing.doctorId !== actorId) return err(requestNotFound());
-    if (existing.status !== 'draft') return err(requestNotADraft(existing.status));
-
-    await tx
-      .update(bloodRequests)
-      .set({
-        indication: input.indication.trim(),
-        dateRequired: day,
-        bloodGroup: input.bloodGroup,
-        product: input.product,
-        units: input.units,
-      })
-      .where(and(eq(bloodRequests.id, requestUuid), eq(bloodRequests.status, 'draft')));
-
-    const audit = createAuditWriter(tx, ctx.actor, ctx.correlationId, now);
-    await audit({
-      action: 'request.draft_updated',
-      subjectType: 'blood_request',
-      subjectId: requestUuid,
-    });
-
-    return ok({});
-  });
-}
 
 /* -------------------------------------------------------------------------- */
 /* Reads                                                                       */
@@ -373,6 +263,13 @@ export async function listRequestsForDoctor(
   return rows as RequestListRow[];
 }
 
+/**
+ * One request, with its patient **if it has one yet**.
+ *
+ * Left joins, not inner ones. A request is raised with four fields and no
+ * patient (ADR 0010); an inner join here would return nothing for it, and the
+ * doctor who just raised it would get a 404 on their own request.
+ */
 export async function getRequest(ctx: UseCaseContext, requestUuid: string) {
   const [row] = await ctx.db
     .select({
@@ -381,8 +278,8 @@ export async function getRequest(ctx: UseCaseContext, requestUuid: string) {
       patient: patients,
     })
     .from(bloodRequests)
-    .innerJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
-    .innerJoin(patients, eq(patients.id, admissions.patientId))
+    .leftJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
+    .leftJoin(patients, eq(patients.id, admissions.patientId))
     .where(eq(bloodRequests.id, requestUuid));
 
   return row;
@@ -405,28 +302,6 @@ export async function listAdmissions(ctx: UseCaseContext) {
     .orderBy(desc(admissions.admittedAt))
     .limit(100);
 }
-
-/**
- * How long a draft has been sitting, in whole days.
- *
- * §8: an abandoned draft "ages visibly on the dashboard, never auto-deleted".
- * Deleting one would throw away a half-written clinical request that somebody
- * may be part-way through; showing its age is what makes the ward notice it.
- */
-export const draftAgeDays = (
-  row: { status: string; updatedAt: Date },
-  now: Date,
-): number =>
-  row.status !== 'draft'
-    ? 0
-    : Math.max(0, Math.floor((now.getTime() - row.updatedAt.getTime()) / 86_400_000));
-
-/** Past the configured threshold, so the dashboard can say so (§12). */
-export const isStaleDraft = (
-  row: { status: string; updatedAt: Date },
-  now: Date,
-  afterDays: number,
-): boolean => row.status === 'draft' && draftAgeDays(row, now) >= afterDays;
 
 /* -------------------------------------------------------------------------- */
 /* The compatibility testing sample (§3, §15)                                  */

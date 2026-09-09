@@ -4,9 +4,7 @@ import Link from 'next/link';
 import { AppShell } from '../shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import {
-  draftAgeDays,
   isOverdue,
-  isStaleDraft,
   listAdmissions,
   listRequestsForDoctor,
 } from '@blood-connect/hospital';
@@ -41,9 +39,7 @@ export default async function DashboardPage() {
   ]);
 
   const today = ctx.clock.today();
-  const now = ctx.clock.now();
-  const staleAfter = ctx.config.ageing.draftDays;
-  const drafts = requests.filter((r) => r.status === 'draft');
+  // No drafts any more (ADR 0010): a request is submitted or it never existed.
   const live = requests.filter((r) => r.status !== 'draft');
   const open = admissions.filter((a) => a.status === 'admitted');
 
@@ -53,72 +49,22 @@ export default async function DashboardPage() {
         <div className="app-stack-tight">
           <h1 className="ux4g-heading-l-strong">Blood requests</h1>
           <p className="ux4g-body-m-default">
-            Identify the admitted patient, fill the request, submit it, and get an ID back.
+            {/*
+              What the doctor's job now is, in one line (ADR 0010). The patient
+              is the centre's to identify, and saying so here is what stops
+              somebody opening the optional section out of habit.
+            */}
+            Four answers and an ID. Give the ID to the patient&rsquo;s bystander — the
+            blood centre takes it from there.
           </p>
         </div>
         <Link
-          className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target"
-          href="/patients/new"
+          className="ux4g-btn ux4g-btn-primary ux4g-btn-lg app-target"
+          href="/requests/new"
         >
-          New patient
+          New request
         </Link>
       </div>
-
-      {drafts.length > 0 ? (
-        <section className="ux4g-card ux4g-card-outline" aria-labelledby="drafts">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title" id="drafts">
-              Drafts
-            </h2>
-            {/*
-              Abandoned drafts age visibly and are never auto-deleted (§8), so
-              they sit at the top rather than quietly at the bottom of a list.
-            */}
-            <p className="ux4g-card-sub-title">
-              Not yet sent to the {WORDING.bloodCentre.toLowerCase()}. They are never
-              deleted for you — an unfinished request is somebody part-way through one.
-            </p>
-          </div>
-          <div className="ux4g-card-body app-scroll-x">
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Patient</th>
-                  <th scope="col">{WORDING.ipNumber}</th>
-                  <th scope="col">Wanted</th>
-                  <th scope="col">Waiting</th>
-                </tr>
-              </thead>
-              <tbody>
-                {drafts.map((request) => (
-                  <tr key={request.id}>
-                    <td>
-                      <Link href={`/requests/${request.id}`}>{request.patientName}</Link>
-                    </td>
-                    <td className="app-figure">{request.ipNo}</td>
-                    <td>
-                      {request.units ?? '—'} ×{' '}
-                      {request.product ? productLabel(request.product) : '—'}
-                    </td>
-                    <td className="app-figure">
-                      {/*
-                        §8: an abandoned draft ages visibly and is never
-                        auto-deleted. The age is the signal, not the timestamp.
-                      */}
-                      {draftAgeDays(request, now) === 0
-                        ? 'today'
-                        : `${String(draftAgeDays(request, now))} days`}
-                      {isStaleDraft(request, now, staleAfter) ? (
-                        <span className="ux4g-badge-digit-danger"> Stale</span>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
 
       <section className="ux4g-card ux4g-card-outline" aria-labelledby="live">
         <div className="ux4g-card-header">
