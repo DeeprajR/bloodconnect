@@ -12,6 +12,7 @@ import {
   listDemands,
 } from '@blood-connect/centre';
 import { admissionStateFor, getRequestForDecision } from '@blood-connect/hospital';
+import { AttachPatientForm } from '../../../attach-patient-form';
 import {
   WORDING,
   bloodGroupLabel,
@@ -54,7 +55,7 @@ export default async function DecisionPage({
   const recruits = recruitsDonors(request.product);
 
   return (
-    <CentreShell actor={actor} title={request.requestId} narrow>
+    <CentreShell current="requests" actor={actor} title={request.requestId} narrow>
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong app-figure">{request.requestId}</h1>
         <p className="ux4g-body-m-default">
@@ -76,6 +77,28 @@ export default async function DecisionPage({
             </p>
           </div>
         </div>
+      ) : null}
+
+      {admission === 'none' ? (
+        <section className="ux4g-card ux4g-card-outline" aria-labelledby="who">
+          <div className="ux4g-card-header">
+            <h2 className="ux4g-card-title" id="who">
+              Who is this for?
+            </h2>
+            <p className="ux4g-card-sub-title">
+              {/*
+                The whole reason the bystander walked over here (ADR 0010). It
+                is the first thing on the page because until it is done the
+                request cannot be answered.
+              */}
+              The doctor gave four fields and an ID. Take the patient&rsquo;s details
+              from whoever brought it.
+            </p>
+          </div>
+          <div className="ux4g-card-body">
+            <AttachPatientForm requestUuid={id} />
+          </div>
+        </section>
       ) : null}
 
       {admission === 'none' ? (

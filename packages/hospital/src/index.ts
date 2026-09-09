@@ -37,6 +37,8 @@ export {
   doctorOf,
   getRequestForDecision,
   admissionStateFor,
+  attachPatient,
+  type AttachError,
   type AdmissionState,
   markRequestCancelled,
   listDecidedRequests,
@@ -69,3 +71,9 @@ export {
   type RequestEssentials,
   type RequestExtras,
 } from './use-cases/raise.js';
+
+export {
+  validatePatient,
+  type PatientDetails,
+  type PatientProblem,
+} from './patient-record.js';

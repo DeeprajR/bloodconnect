@@ -5,7 +5,17 @@ import { CentreShell } from '../../centre-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { stockByGroup } from '@blood-connect/centre';
 import { listRequestsAwaitingDecision } from '@blood-connect/hospital';
-import { WORDING, bloodGroupLabel, productLabel } from '@blood-connect/domain';
+import {
+  URGENCY_SHORT,
+  WORDING,
+  bloodGroupLabel,
+  isPastResponseTarget,
+  isUrgency,
+  minutesWaiting,
+  productLabel,
+  waitingLabel,
+  type Urgency,
+} from '@blood-connect/domain';
 
 export const metadata: Metadata = { title: 'Request queue · Blood Connect' };
 
@@ -30,18 +40,41 @@ export default async function QueuePage() {
   ]);
 
   const today = ctx.clock.today();
+  const now = ctx.clock.now();
+  const thresholds = ctx.config.request.responseMinutes;
   const onShelf = new Map(stock.map((row) => [row.bloodGroup, row.onShelf]));
+  const needPatient = queue.filter((row) => row.awaitingPatient).length;
 
   return (
-    <CentreShell actor={actor} title="Request queue">
+    <CentreShell actor={actor} title="Blood requests" current="requests">
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">Requests awaiting an answer</h1>
         <p className="ux4g-body-m-default">
-          Soonest needed first. The stock column is red cells and whole blood held
-          for that group, which is not the same as units of the exact component
-          asked for — open a request to see that.
+          {/*
+            Urgency first, not date: three of the four levels mean today, so a
+            date could not tell an emergency from a routine request (ADR 0010).
+          */}
+          Most urgent first, then longest waiting. The stock column is red cells
+          and whole blood held for that group, which is not the same as units of
+          the exact component asked for — open a request to see that.
         </p>
       </div>
+
+      {needPatient > 0 ? (
+        <div className="ux4g-alert ux4g-alert-warning" role="status">
+          <div className="ux4g-alert-content">
+            <p className="ux4g-alert-message">
+              {/*
+                The counter's own work, surfaced rather than discovered one row
+                at a time. A unit has to be traceable to a named person (§4).
+              */}
+              {needPatient}{' '}
+              {needPatient === 1 ? 'request has' : 'requests have'} no patient yet.
+              Take the details from the bystander before issuing.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <section className="ux4g-card ux4g-card-outline">
         <div className="ux4g-card-body app-scroll-x">
@@ -54,8 +87,9 @@ export default async function QueuePage() {
               <thead>
                 <tr>
                   <th scope="col">Request ID</th>
+                  <th scope="col">Urgency</th>
+                  <th scope="col">Waiting</th>
                   <th scope="col">Patient</th>
-                  <th scope="col">{WORDING.ward}</th>
                   <th scope="col">Wanted</th>
                   <th scope="col">{WORDING.dateRequired}</th>
                   <th scope="col">Group stock</th>
@@ -67,6 +101,19 @@ export default async function QueuePage() {
               <tbody>
                 {queue.map((request) => {
                   const overdue = request.dateRequired < today;
+                  const urgency = isUrgency(request.urgency ?? '')
+                    ? (request.urgency as Urgency)
+                    : undefined;
+                  /**
+                   * The clock the top three urgencies actually run on.
+                   *
+                   * `date_required` cannot express "within fifteen minutes", so
+                   * an unanswered emergency would not be flagged until midnight.
+                   */
+                  const late =
+                    urgency !== undefined &&
+                    isPastResponseTarget(urgency, request.submittedAt, now, thresholds);
+
                   return (
                     <tr key={request.id}>
                       <td className="app-figure">
@@ -74,8 +121,20 @@ export default async function QueuePage() {
                           {request.requestId}
                         </Link>
                       </td>
-                      <td>{request.patient.name ?? '—'}</td>
-                      <td>{request.patient.ward ?? '—'}</td>
+                      <td>{urgency ? URGENCY_SHORT[urgency] : '—'}</td>
+                      <td className="app-figure">
+                        {waitingLabel(minutesWaiting(request.submittedAt, now))}
+                        {late ? (
+                          <span className="ux4g-badge-digit-danger"> Late</span>
+                        ) : null}
+                      </td>
+                      <td>
+                        {request.awaitingPatient ? (
+                          <span className="ux4g-label-m-default">no patient yet</span>
+                        ) : (
+                          (request.patient.name ?? '—')
+                        )}
+                      </td>
                       <td>
                         {request.units} × {productLabel(request.product)}{' '}
                         <span className="app-figure">
@@ -96,7 +155,7 @@ export default async function QueuePage() {
                           className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
                           href={`/centre/requests/${request.id}`}
                         >
-                          Answer
+                          {request.awaitingPatient ? 'Take details' : 'Answer'}
                         </Link>
                       </td>
                     </tr>

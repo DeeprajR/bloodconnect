@@ -24,6 +24,8 @@ import {
   type RosterOutcome,
   type StorageBand,
 } from '@blood-connect/centre';
+import { attachPatient } from '@blood-connect/hospital';
+
 import { useCaseContext } from '@/lib/guards';
 import { assertSameOrigin, currentActor } from '@/lib/session';
 
@@ -402,5 +404,53 @@ export async function recordWalkInAction(
   if (!result.ok) return { error: result.error.message };
 
   revalidatePath('/centre/demands');
+  return { error: null, done: true };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Completing a request at the counter (ADR 0010)                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The bystander is at the desk with the ID; this is where the patient gets a
+ * name.
+ *
+ * Every field the record can hold, but only four it demands — name, IP number,
+ * the patient's own group, and either a date of birth or an age. The rest is
+ * taken while they are standing there and can be asked.
+ */
+export async function attachPatientAction(
+  requestUuid: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await assertSameOrigin();
+
+  const ctx = await useCaseContext(await currentActor());
+  const ageRaw = value(formData, 'age');
+
+  const result = await attachPatient(ctx, requestUuid, {
+    name: value(formData, 'name'),
+    ipNo: value(formData, 'ipNo'),
+    bloodGroup: value(formData, 'bloodGroup'),
+    ward: optional(formData, 'ward') ?? undefined,
+    dob: optional(formData, 'dob') ?? undefined,
+    age: ageRaw === '' ? undefined : Number(ageRaw),
+    ageUnit: optional(formData, 'ageUnit') ?? undefined,
+    sex: optional(formData, 'sex') ?? undefined,
+    uhid: optional(formData, 'uhid') ?? undefined,
+    attenderName: optional(formData, 'attenderName') ?? undefined,
+    attenderPhone: optional(formData, 'attenderPhone') ?? undefined,
+    address: optional(formData, 'address') ?? undefined,
+    diagnosis: optional(formData, 'diagnosis') ?? undefined,
+    history: optional(formData, 'history') ?? undefined,
+    previousTransfusion: optional(formData, 'previousTransfusion') ?? undefined,
+    previousReaction: optional(formData, 'previousReaction') ?? undefined,
+  });
+
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath('/centre/requests');
+  revalidatePath(`/centre/requests/${requestUuid}`);
   return { error: null, done: true };
 }

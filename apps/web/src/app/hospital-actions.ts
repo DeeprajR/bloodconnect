@@ -228,7 +228,7 @@ export async function raiseRequestAction(
           age: value(formData, 'age') === '' ? undefined : Number(value(formData, 'age')),
           ageUnit: optional(formData, 'ageUnit') ?? undefined,
           sex: optional(formData, 'sex') ?? undefined,
-          bloodGroup: optional(formData, 'patientBloodGroup') ?? undefined,
+          bloodGroup: value(formData, 'patientBloodGroup'),
           uhid: optional(formData, 'uhid') ?? undefined,
           attenderName: optional(formData, 'attenderName') ?? undefined,
           attenderPhone: optional(formData, 'attenderPhone') ?? undefined,

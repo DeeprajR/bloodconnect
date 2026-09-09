@@ -18,10 +18,16 @@ import { AppShell } from './shell';
  * client component to render eight links that never change.
  */
 
-export type CentreSection = 'dashboard' | 'donations' | 'register';
+export type CentreSection = 'dashboard' | 'requests' | 'donations' | 'register';
 
 const ITEMS: readonly { section: CentreSection; href: string; label: string }[] = [
   { section: 'dashboard', href: '/centre', label: 'Dashboard' },
+  /*
+    Second, because it is the work that arrives from outside: a doctor raised it
+    and somebody is standing at the counter with the ID. The dashboard says how
+    the shelf is doing; this says who is waiting on it.
+  */
+  { section: 'requests', href: '/centre/requests', label: 'Blood requests' },
   { section: 'donations', href: '/centre/donations', label: 'Donation status' },
   { section: 'register', href: '/centre/stock/new', label: 'Register blood bags' },
 ];

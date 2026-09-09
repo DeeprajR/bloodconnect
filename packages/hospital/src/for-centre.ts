@@ -19,10 +19,20 @@
  * transaction, which is strictly better while one process owns both.
  */
 
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { admissions, bloodRequests } from '@blood-connect/db';
+import { actorHas, createAuditWriter } from '@blood-connect/platform';
 import type { Transaction, UseCaseContext } from '@blood-connect/platform';
+import { err, ok, type Result } from '@blood-connect/result';
 import type { BloodGroup, Product } from '@blood-connect/domain';
+
+import { notAuthorized, type NotAuthorized } from './errors.js';
+import {
+  createPatientAndAdmit,
+  validatePatient,
+  type PatientDetails,
+  type PatientProblem,
+} from './patient-record.js';
 
 /** The patient details frozen onto the request at submit (§2.6). */
 export type PatientSnapshot = {
@@ -52,6 +62,10 @@ export type RequestForDecision = {
   readonly id: string;
   readonly requestId: string;
   readonly status: string;
+  /** How fast the doctor said it was needed. Null on requests raised before ADR 0010. */
+  readonly urgency: string | null;
+  /** True until the bystander brings the ID to the counter. */
+  readonly awaitingPatient: boolean;
   readonly bloodGroup: BloodGroup;
   readonly product: Product;
   readonly units: number;
@@ -67,6 +81,8 @@ function toDecisionView(row: {
   id: string;
   requestId: string | null;
   status: string;
+  urgency: string | null;
+  admissionId: string | null;
   bloodGroup: string | null;
   product: string | null;
   units: number | null;
@@ -80,6 +96,9 @@ function toDecisionView(row: {
     id: row.id,
     requestId: row.requestId ?? '',
     status: row.status,
+    urgency: row.urgency,
+    // Null means the bystander has not been to the counter yet (ADR 0010).
+    awaitingPatient: row.admissionId === null,
     bloodGroup: (row.bloodGroup ?? 'O+') as BloodGroup,
     product: (row.product ?? 'whole_blood') as Product,
     units: row.units ?? 0,
@@ -98,6 +117,8 @@ const DECISION_COLUMNS = {
   id: bloodRequests.id,
   requestId: bloodRequests.requestId,
   status: bloodRequests.status,
+  urgency: bloodRequests.urgency,
+  admissionId: bloodRequests.admissionId,
   bloodGroup: bloodRequests.bloodGroup,
   product: bloodRequests.product,
   units: bloodRequests.units,
@@ -111,9 +132,14 @@ const DECISION_COLUMNS = {
 /**
  * The centre's queue: everything submitted and not yet decided.
  *
- * Ordered by the day the blood is needed, so the oldest need is at the top and
- * an overdue request cannot be buried under newer ones. `blood_requests_queue_idx`
- * is the index this runs on.
+ * **Ordered by urgency, then by how long it has waited** (ADR 0010). Three of
+ * the four urgencies mean today, so the date cannot separate them — a routine
+ * request raised on Monday would otherwise sit above an emergency raised this
+ * morning. Within a level, oldest first, so nothing is buried under newer work.
+ *
+ * The `CASE` spells the order out rather than relying on the alphabet, which
+ * would put `emergency` after `very_urgent` and be wrong in the one direction
+ * that matters. `blood_requests_queue_urgency_idx` is the index this runs on.
  */
 export async function listRequestsAwaitingDecision(
   ctx: UseCaseContext,
@@ -122,7 +148,16 @@ export async function listRequestsAwaitingDecision(
     .select(DECISION_COLUMNS)
     .from(bloodRequests)
     .where(eq(bloodRequests.status, 'submitted'))
-    .orderBy(asc(bloodRequests.dateRequired), asc(bloodRequests.submittedAt));
+    .orderBy(
+      sql`CASE ${bloodRequests.urgency}
+            WHEN 'emergency'   THEN 0
+            WHEN 'very_urgent' THEN 1
+            WHEN 'urgent'      THEN 2
+            WHEN 'routine'     THEN 3
+            ELSE 4
+          END`,
+      asc(bloodRequests.submittedAt),
+    );
 
   return rows.map(toDecisionView);
 }
@@ -185,6 +220,90 @@ export async function admissionStateFor(
 
   if (row?.admissionId == null) return 'none';
   return row.status === 'admitted' ? 'admitted' : 'discharged';
+}
+
+/* -------------------------------------------------------------------------- */
+/* Completing a request at the counter (ADR 0010)                              */
+/* -------------------------------------------------------------------------- */
+
+export type AttachError =
+  | NotAuthorized
+  | PatientProblem
+  | { readonly kind: 'RequestNotFound'; readonly message: string }
+  | { readonly kind: 'AlreadyAttached'; readonly message: string };
+
+/**
+ * The other half of the request slip.
+ *
+ * A doctor raises four fields and reads an ID to the patient's bystander; the
+ * bystander brings it here, and this is where the patient finally gets a name.
+ * Until it runs, the request cannot be reserved against or issued — except for
+ * an emergency, which may be answered first and completed after (ADR 0010).
+ *
+ * One transaction: the patient, the admission, the link and the snapshot commit
+ * together, because a request pointing at half a patient is worse than one
+ * pointing at none.
+ *
+ * **Attached once.** A second attempt is refused rather than allowed to
+ * overwrite: the snapshot is what the centre answered against (§2.6), and
+ * silently repointing a request at a different patient is the way a unit ends up
+ * recorded against the wrong person. Correcting a mistake is an edit to the
+ * patient record, which is versioned, not a re-attach.
+ */
+export async function attachPatient(
+  ctx: UseCaseContext,
+  requestUuid: string,
+  input: PatientDetails,
+): Promise<Result<{ admissionId: string }, AttachError>> {
+  if (!actorHas(ctx.actor, 'centre:operate')) return err(notAuthorized('centre:operate'));
+
+  const invalid = validatePatient(input);
+  if (invalid) return err(invalid);
+
+  const now = ctx.clock.now();
+
+  return ctx.db.transaction(async (tx) => {
+    const [request] = await tx
+      .select({ id: bloodRequests.id, admissionId: bloodRequests.admissionId })
+      .from(bloodRequests)
+      .where(eq(bloodRequests.id, requestUuid))
+      .for('update');
+
+    if (!request) {
+      return err({ kind: 'RequestNotFound' as const, message: 'That request does not exist.' });
+    }
+    if (request.admissionId !== null) {
+      return err({
+        kind: 'AlreadyAttached' as const,
+        message: 'This request already has a patient. Edit the patient record instead.',
+      });
+    }
+
+    const created = await createPatientAndAdmit(tx, ctx, input, now);
+    if (!created.ok) return err(created.error);
+
+    await tx
+      .update(bloodRequests)
+      .set({
+        admissionId: created.value.admissionId,
+        // Frozen now rather than at submit, because there was nothing to freeze
+        // then. Its purpose — a request keeps what it was answered with — is
+        // unchanged (§2.6).
+        patientSnapshot: created.value.snapshot,
+      })
+      .where(eq(bloodRequests.id, requestUuid));
+
+    const audit = createAuditWriter(tx, ctx.actor, ctx.correlationId, now);
+    await audit({
+      action: 'request.patient_attached',
+      subjectType: 'blood_request',
+      subjectId: requestUuid,
+      // The link, never the person (§11.9).
+      metadata: { admissionId: created.value.admissionId },
+    });
+
+    return ok({ admissionId: created.value.admissionId });
+  });
 }
 
 export type DecidedStatus = 'approved' | 'partially_approved' | 'declined';

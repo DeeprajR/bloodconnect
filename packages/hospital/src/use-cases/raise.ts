@@ -18,10 +18,8 @@
 
 import { eq, sql } from 'drizzle-orm';
 import {
-  admissions,
   bloodRequestCounters,
   bloodRequests,
-  patients,
   users,
 } from '@blood-connect/db';
 import {
@@ -42,6 +40,12 @@ import {
 } from '@blood-connect/platform';
 
 import { notAuthorized, type NotAuthorized } from '../errors.js';
+import {
+  createPatientAndAdmit,
+  snapshotOfAdmission,
+  type PatientDetails,
+  type PatientProblem,
+} from '../patient-record.js';
 
 /* -------------------------------------------------------------------------- */
 /* Input                                                                       */
@@ -66,27 +70,13 @@ export type RequestExtras = {
   readonly indication?: string | undefined;
   /** An existing admission, if the doctor picked one. */
   readonly admissionId?: string | undefined;
-  /** Or a patient described inline, which creates the patient and admits them. */
-  readonly patient?:
-    | {
-        readonly name: string;
-        readonly ipNo: string;
-        readonly ward?: string | undefined;
-        readonly dob?: string | undefined;
-        readonly age?: number | undefined;
-        readonly ageUnit?: string | undefined;
-        readonly sex?: string | undefined;
-        readonly bloodGroup?: string | undefined;
-        readonly uhid?: string | undefined;
-        readonly attenderName?: string | undefined;
-        readonly attenderPhone?: string | undefined;
-        readonly address?: string | undefined;
-        readonly diagnosis?: string | undefined;
-        readonly history?: string | undefined;
-        readonly previousTransfusion?: string | undefined;
-        readonly previousReaction?: string | undefined;
-      }
-    | undefined;
+  /**
+   * Or a patient described inline, which creates the patient and admits them.
+   *
+   * The same shape the centre uses at the counter — one record, one definition
+   * of what it must contain, whoever typed it.
+   */
+  readonly patient?: PatientDetails | undefined;
 };
 
 export type RaiseInput = RequestEssentials & RequestExtras;
@@ -103,19 +93,8 @@ export type RaiseResult = {
 
 export type RaiseError =
   | NotAuthorized
+  | PatientProblem
   | { readonly kind: 'InvalidRequest'; readonly message: string; readonly field: string };
-
-/**
- * Empty is absent.
- *
- * A form posts `''` for a field nobody filled, and `''` is not what belongs in
- * a nullable clinical column. `??` would keep it, so this is a function rather
- * than an operator — and one place to read, rather than fourteen `|| null`s.
- */
-const blank = (value: string | undefined): string | null => {
-  const trimmed = value?.trim() ?? '';
-  return trimmed === '' ? null : trimmed;
-};
 
 const invalid = (field: string, message: string): RaiseError => ({
   kind: 'InvalidRequest',
@@ -206,7 +185,7 @@ export async function raiseRequest(
     let patientSnapshot: Record<string, unknown> | null = null;
 
     if (input.patient) {
-      const created = await createPatientAndAdmission(tx, ctx, input.patient, now);
+      const created = await createPatientAndAdmit(tx, ctx, input.patient, now);
       if (!created.ok) return err(created.error);
       admissionId = created.value.admissionId;
       patientSnapshot = created.value.snapshot;
@@ -266,148 +245,5 @@ export async function raiseRequest(
       dateRequired,
       awaitingPatient: admissionId === null,
     });
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/* The optional half                                                           */
-/* -------------------------------------------------------------------------- */
-
-async function snapshotOfAdmission(
-  tx: Transaction,
-  admissionId: string,
-): Promise<Record<string, unknown> | undefined> {
-  const [row] = await tx
-    .select({ patient: patients, admission: admissions })
-    .from(admissions)
-    .innerJoin(patients, eq(patients.id, admissions.patientId))
-    .where(eq(admissions.id, admissionId));
-
-  if (!row) return undefined;
-  return snapshotFrom(row.patient, row.admission.ipNo, row.admission.ward);
-}
-
-const snapshotFrom = (
-  patient: typeof patients.$inferSelect,
-  ipNo: string,
-  ward: string,
-): Record<string, unknown> => ({
-  name: patient.name,
-  dob: patient.dob,
-  age: patient.age,
-  ageUnit: patient.ageUnit,
-  sex: patient.sex,
-  bloodGroup: patient.bloodGroup,
-  uhid: patient.uhid,
-  diagnosis: patient.diagnosis,
-  history: patient.history,
-  previousTransfusion: patient.previousTransfusion,
-  previousReaction: patient.previousReaction,
-  ipNo,
-  ward,
-});
-
-/**
- * Creates the patient and admits them, in the same transaction as the request.
- *
- * Only reached when the doctor opened the collapsed section and filled it. The
- * `ip_no` is the admission's identity, so an existing one is reused rather than
- * rejected — a second request for the same admitted patient is the ordinary
- * case, not an error.
- */
-async function createPatientAndAdmission(
-  tx: Transaction,
-  ctx: UseCaseContext,
-  input: NonNullable<RequestExtras['patient']>,
-  now: Date,
-): Promise<Result<{ admissionId: string; snapshot: Record<string, unknown> }, RaiseError>> {
-  const name = input.name.trim();
-  const ipNo = input.ipNo.trim();
-
-  if (name.length === 0) return err(invalid('patient.name', 'The patient needs a name.'));
-  if (ipNo.length === 0) return err(invalid('patient.ipNo', 'The admission needs an IP number.'));
-  /**
-   * The patient's own group, required only once the section is opened.
-   *
-   * `patients.blood_group` is NOT NULL, and it is **not** the same claim as the
-   * group being requested — an emergency is often answered with O− regardless
-   * of what the patient turns out to be. Defaulting one from the other would
-   * write a clinical fact nobody stated, so it is asked for instead.
-   */
-  if (!isBloodGroup(input.bloodGroup ?? '')) {
-    return err(invalid('patient.bloodGroup', 'Give the patient’s own blood group, or leave the patient section closed.'));
-  }
-  /**
-   * A date of birth **or** an age with its unit — `patients_age_check`.
-   *
-   * Checked here so the form gets a sentence rather than a 500. Neonates are
-   * why the unit exists at all (§3): a DOB is often unknown on admission and
-   * "four days" is the only age anybody can state.
-   */
-  const hasDob = (input.dob?.trim() ?? '') !== '';
-  const hasAge = typeof input.age === 'number' && (input.ageUnit?.trim() ?? '') !== '';
-  if (!hasDob && !hasAge) {
-    return err(
-      invalid(
-        'patient.age',
-        'Give the patient’s date of birth, or an age and its unit.',
-      ),
-    );
-  }
-
-  // Already admitted under this number: reuse it. Two requests for one
-  // admission is the ordinary case.
-  const [existing] = await tx
-    .select({ id: admissions.id, patientId: admissions.patientId })
-    .from(admissions)
-    .where(eq(admissions.ipNo, ipNo));
-
-  if (existing) {
-    const snapshot = await snapshotOfAdmission(tx, existing.id);
-    if (!snapshot) return err(invalid('patient.ipNo', 'That admission is unreadable.'));
-    return ok({ admissionId: existing.id, snapshot });
-  }
-
-  const patientId = ctx.ids.next<'PatientId'>();
-  const admissionId = ctx.ids.next<'AdmissionId'>();
-
-  const [patient] = await tx
-    .insert(patients)
-    .values({
-      id: patientId,
-      name,
-      dob: blank(input.dob),
-      age: input.age ?? null,
-      ageUnit: blank(input.ageUnit),
-      sex: blank(input.sex) ?? 'other',
-      bloodGroup: input.bloodGroup ?? '',
-      uhid: blank(input.uhid),
-      attenderName: blank(input.attenderName),
-      attenderPhone: blank(input.attenderPhone),
-      address: blank(input.address),
-      diagnosis: blank(input.diagnosis),
-      history: blank(input.history),
-      previousTransfusion: blank(input.previousTransfusion) ?? 'unknown',
-      previousReaction: blank(input.previousReaction),
-    })
-    .returning();
-
-  if (!patient) return err(invalid('patient.name', 'The patient could not be saved.'));
-
-  await tx.insert(admissions).values({
-    id: admissionId,
-    ipNo,
-    patientId,
-    // NOT NULL on the admission, and the collapsed section may leave it out.
-    // Recorded as unstated rather than invented — the centre fills it in when
-    // the bystander arrives.
-    ward: blank(input.ward) ?? 'not stated',
-    admittedAt: now,
-    status: 'admitted',
-  });
-
-  return ok({
-    admissionId,
-    snapshot: snapshotFrom(patient, ipNo, blank(input.ward) ?? 'not stated'),
   });
 }

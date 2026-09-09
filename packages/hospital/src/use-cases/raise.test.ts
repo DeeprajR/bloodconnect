@@ -18,7 +18,7 @@ import {
 
 import { raiseRequest, type RaiseInput } from './raise.js';
 import { listRequestsForDoctor } from './records.js';
-import { admissionStateFor } from '../for-centre.js';
+import { admissionStateFor, attachPatient, listRequestsAwaitingDecision } from '../for-centre.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
@@ -283,8 +283,10 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
        * whatever the patient turns out to be, so defaulting one from the other
        * would write a clinical fact nobody stated.
        */
+      // The type now requires it, so the runtime check is what catches a form
+      // that posted an empty select.
       const result = await raise({
-        patient: { name: 'Test Patient', ipNo: 'IP-2026-5502' },
+        patient: { name: 'Test Patient', ipNo: 'IP-2026-5502', bloodGroup: '' },
       });
       expect(result.ok).toBe(false);
     });
@@ -447,6 +449,145 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
       expect(await admissionStateFor(context(), raised.value.requestUuid)).toBe(
         'discharged',
       );
+    });
+  });
+
+  /* ==================================================================== */
+  /* Completing it at the counter                                          */
+  /* ==================================================================== */
+
+  describe('attaching the patient', () => {
+    const counter: Actor = {
+      kind: 'user',
+      userId: '',
+      role: 'blood_centre',
+      districtScopeId: null,
+    };
+
+    const details = {
+      name: 'Bystander Named Patient',
+      ipNo: 'IP-ATTACH-1',
+      bloodGroup: 'A+',
+      ward: '4C',
+      age: 52,
+      ageUnit: 'years',
+    };
+
+    const asCounter = async () => {
+      const id = newId();
+      await db.insert(users).values({
+        id,
+        email: `counter-${id}@blood-connect.invalid`,
+        fullName: 'Counter Staff',
+        role: 'blood_centre',
+        status: 'active',
+        passwordHash: 'x'.repeat(20),
+      });
+      return context({ actor: { ...counter, userId: id } });
+    };
+
+    it('completes a request raised with four fields', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      const attached = await attachPatient(await asCounter(), raised.value.requestUuid, details);
+      expect(attached.ok).toBe(true);
+
+      const [row] = await db
+        .select()
+        .from(bloodRequests)
+        .where(eq(bloodRequests.id, raised.value.requestUuid));
+
+      expect(row?.admissionId).not.toBeNull();
+      // Frozen now rather than at submit, because there was nothing to freeze
+      // then (§2.6).
+      expect((row?.patientSnapshot as { name: string }).name).toBe(details.name);
+      expect(await admissionStateFor(context(), raised.value.requestUuid)).toBe('admitted');
+    });
+
+    it('refuses a second patient on the same request', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      await attachPatient(await asCounter(), raised.value.requestUuid, details);
+      const again = await attachPatient(await asCounter(), raised.value.requestUuid, {
+        ...details,
+        name: 'Someone Else',
+        ipNo: 'IP-ATTACH-2',
+      });
+
+      /**
+       * Silently repointing a request at a different patient is how a unit ends
+       * up recorded against the wrong person. A correction is an edit to the
+       * patient record, which is versioned — not a re-attach.
+       */
+      expect(again.ok).toBe(false);
+    });
+
+    it('refuses a doctor at the counter', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      // `centre:operate`, which a doctor does not hold (§9).
+      const result = await attachPatient(context(), raised.value.requestUuid, details);
+      expect(result.ok).toBe(false);
+    });
+
+    it('says what is missing rather than failing at the database', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+      const ctx = await asCounter();
+
+      expect((await attachPatient(ctx, raised.value.requestUuid, { ...details, name: '' })).ok)
+        .toBe(false);
+      expect((await attachPatient(ctx, raised.value.requestUuid, { ...details, bloodGroup: '' })).ok)
+        .toBe(false);
+      expect(
+        (
+          await attachPatient(ctx, raised.value.requestUuid, {
+            name: details.name,
+            ipNo: details.ipNo,
+            bloodGroup: details.bloodGroup,
+          })
+        ).ok,
+      ).toBe(false);
+    });
+  });
+
+  describe('the queue the counter works from', () => {
+    it('puts the most urgent first, whatever order they arrived in', async () => {
+      await raise({ urgency: 'routine' });
+      await raise({ urgency: 'emergency' });
+      await raise({ urgency: 'urgent' });
+
+      const queue = await listRequestsAwaitingDecision(context());
+
+      /**
+       * Three of the four urgencies share a date, so ordering by
+       * `date_required` would leave the routine request raised first sitting
+       * above the emergency raised third.
+       */
+      expect(queue.map((row) => row.urgency)).toEqual([
+        'emergency',
+        'urgent',
+        'routine',
+      ]);
+    });
+
+    it('marks the ones still waiting on a bystander', async () => {
+      await raise();
+      await raise({
+        patient: {
+          name: 'Test Patient',
+          ipNo: 'IP-QUEUE-1',
+          bloodGroup: 'O+',
+          age: 30,
+          ageUnit: 'years',
+        },
+      });
+
+      const queue = await listRequestsAwaitingDecision(context());
+      expect(queue.filter((row) => row.awaitingPatient)).toHaveLength(1);
     });
   });
 
