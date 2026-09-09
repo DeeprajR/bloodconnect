@@ -13,7 +13,7 @@
  * record rather than a fabricated confirmation.
  */
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import { err, ok, type Result } from '@blood-connect/result';
 import {
   bloodBags,
@@ -337,4 +337,104 @@ export async function countUnmarked(ctx: UseCaseContext, demandId: string): Prom
     );
 
   return row?.n ?? 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The centre-wide view, for the dashboard                                     */
+/* -------------------------------------------------------------------------- */
+
+export type DonationRow = {
+  readonly id: string;
+  readonly demandId: string;
+  readonly donorName: string;
+  readonly bloodGroup: string;
+  readonly channel: string;
+  /** The day expected, for an upcoming donation; the day given, for a past one. */
+  readonly day: string;
+  readonly bagIdentifier: string | null;
+};
+
+/**
+ * Donors expected at the counter, across every open demand (§4).
+ *
+ * **No phone numbers.** The roster page carries them because that is where
+ * somebody is calling a name at a desk; an overview does not need them, and
+ * §2.10 says the narrower read is the one to build. The name stays, because a
+ * list of eight anonymous rows tells the counter nothing about who to expect.
+ */
+export async function listUpcomingDonations(
+  ctx: UseCaseContext,
+  limit = 25,
+): Promise<DonationRow[]> {
+  return ctx.db
+    .select({
+      id: donorDemandConfirmations.id,
+      demandId: donorDemandConfirmations.demandId,
+      donorName: donorDemandConfirmations.donorName,
+      bloodGroup: donorDemandConfirmations.bloodGroup,
+      channel: donorDemandConfirmations.channel,
+      day: donorDemand.dateRequired,
+      bagIdentifier: donorDemandConfirmations.bagIdentifier,
+    })
+    .from(donorDemandConfirmations)
+    .innerJoin(donorDemand, eq(donorDemand.id, donorDemandConfirmations.demandId))
+    .where(
+      and(
+        eq(donorDemandConfirmations.status, 'confirmed'),
+        // A demand the centre has withdrawn is not somebody to expect.
+        sql`${donorDemand.status} IN ('open', 'fulfilled')`,
+      ),
+    )
+    .orderBy(asc(donorDemand.dateRequired), asc(donorDemandConfirmations.confirmedAt))
+    .limit(limit);
+}
+
+/**
+ * Donations already given, roster and walk-in alike (§4).
+ *
+ * Two reads rather than a SQL union: the walk-in table is the centre's own and
+ * shaped differently, and merging eight rows in TypeScript is clearer than a
+ * union that has to invent the columns each side lacks.
+ */
+export async function listCompletedDonations(
+  ctx: UseCaseContext,
+  limit = 25,
+): Promise<DonationRow[]> {
+  const [roster, walkIns] = await Promise.all([
+    ctx.db
+      .select({
+        id: donorDemandConfirmations.id,
+        demandId: donorDemandConfirmations.demandId,
+        donorName: donorDemandConfirmations.donorName,
+        bloodGroup: donorDemandConfirmations.bloodGroup,
+        channel: donorDemandConfirmations.channel,
+        day: donorDemandConfirmations.donatedAt,
+        bagIdentifier: donorDemandConfirmations.bagIdentifier,
+      })
+      .from(donorDemandConfirmations)
+      .where(eq(donorDemandConfirmations.status, 'completed'))
+      .orderBy(desc(donorDemandConfirmations.donatedAt))
+      .limit(limit),
+
+    ctx.db
+      .select({
+        id: walkInDonations.id,
+        demandId: walkInDonations.demandId,
+        donorName: walkInDonations.donorName,
+        // The group the unit typed as, which is the only one anybody measured.
+        bloodGroup: walkInDonations.bloodGroup,
+        bagIdentifier: walkInDonations.bagIdentifier,
+        day: walkInDonations.donatedOn,
+      })
+      .from(walkInDonations)
+      .orderBy(desc(walkInDonations.donatedOn))
+      .limit(limit),
+  ]);
+
+  const merged: DonationRow[] = [
+    ...roster.map((row) => ({ ...row, day: row.day ?? '' })),
+    ...walkIns.map((row) => ({ ...row, channel: 'walk_in' })),
+  ];
+
+  return merged.sort((a, b) => b.day.localeCompare(a.day)).slice(0, limit);
 }

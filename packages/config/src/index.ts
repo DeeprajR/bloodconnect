@@ -79,11 +79,17 @@ export const appConfigSchema = z.object({
   stock: z
     .object({
       /**
-       * Below this share of the floor, a group is **critically low**.
+       * At or above this share of the floor, a group is merely **low** — worth
+       * watching. Below it, the centre should be recruiting.
+       */
+      lowFraction: z.number().gt(0).max(1),
+      /**
+       * Below this share of the floor, a group is **critically low**: recruit
+       * tonight, not this week.
        *
-       * The other two boundaries are structural rather than tunable: at or above
-       * the floor is adequate by definition, and an empty shelf is its own state
-       * whatever the floor says.
+       * The outer two boundaries are structural rather than tunable — at or
+       * above the floor is adequate by definition, and an empty shelf is its own
+       * state whatever the floor says.
        */
       criticalFraction: z.number().gt(0).max(1),
     })
@@ -140,11 +146,14 @@ export const CONFIG_DEFAULTS: AppConfig = {
     minPasswordLength: 12,
   },
   /**
-   * Two fifths of the floor. A centre at 10 of 25 has a bad week coming; one at
-   * 6 of 25 has a bad night, and the screen should not say the same thing about
-   * both. Expected to be corrected by the centre rather than by a commit.
+   * Three fifths and three tenths of the floor.
+   *
+   * Against a floor of 25 that reads: 15 and up is worth watching, 8 to 14 means
+   * recruit, below 8 means recruit tonight. Expected to be corrected by the
+   * centre rather than by a commit — these are the numbers a blood centre has an
+   * opinion about.
    */
-  stock: { criticalFraction: 0.4 },
+  stock: { lowFraction: 0.6, criticalFraction: 0.3 },
   ageing: { quarantineDays: 7, reconciliationHours: 24, inviteDays: 7, draftDays: 3 },
   retention: { framesDays: 30, journeyMonths: 24, donorTailDays: 90 },
   flag: {

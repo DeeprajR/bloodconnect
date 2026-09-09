@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { CentreShell } from '../../centre-shell';
 import { CancelDemandForm } from '../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { countUnmarked, listDemands } from '@blood-connect/centre';
@@ -40,7 +40,7 @@ export default async function DemandsPage() {
   });
 
   return (
-    <AppShell actor={actor} title="Demand">
+    <CentreShell actor={actor} title="Demand">
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">{WORDING.donorDemand}</h1>
         <p className="ux4g-body-m-default">
@@ -182,6 +182,6 @@ export default async function DemandsPage() {
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
         Back to the overview
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

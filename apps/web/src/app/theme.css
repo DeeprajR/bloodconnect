@@ -211,19 +211,91 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * The centre's side navigation.
+ *
+ * A menu, not a drawer: three links that fit on the page at every width. On a
+ * phone it becomes a row above the content rather than something to open, since
+ * a counter holding a bag in one hand should not have to open a menu to reach
+ * the intake form.
+ * ------------------------------------------------------------------------- */
+
+.app-with-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ux4g-section-xs, 1.5rem);
+}
+
+.app-with-nav-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ux4g-section-xs, 1.5rem);
+  /* Without this a wide table inside makes the flex item refuse to shrink. */
+  min-inline-size: 0;
+}
+
+.app-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--ux4g-space-3, 0.375rem);
+  /* A phone gets a scrolling row; nothing is hidden behind a toggle. */
+  overflow-x: auto;
+}
+
+.app-nav-link {
+  display: flex;
+  align-items: center;
+  padding: var(--ux4g-padding-s, 0.75rem) var(--ux4g-padding-m, 1rem);
+  border-radius: var(--ux4g-radius-md, 0.5rem);
+  color: var(--ux4g-text-neutral-primary, #171717);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-nav-link:hover {
+  background: var(--ux4g-bg-neutral-subtle, #e5e5e5);
+}
+
+/*
+ * The current page. A left rule as well as a fill, because a background tint
+ * alone is the kind of distinction that disappears on a bright counter monitor.
+ */
+.app-nav-link-active {
+  background: var(--ux4g-bg-primary-soft, #dcd4ff);
+  /*
+   * The rule takes the text colour rather than a border token: the strong
+   * border step is a 300 in this theme, which against a 100 background is
+   * barely a line. 6.2:1 against the soft fill, checked.
+   */
+  color: var(--ux4g-text-brand-primary-default, #4a2bc2);
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+  box-shadow: inset 3px 0 0 0 var(--ux4g-text-brand-primary-default, #4a2bc2);
+}
+
+/* ---------------------------------------------------------------------------
  * The stock chart.
  *
- * One bar per blood group against the stock floor, the arrangement in the
- * approved prototype. UX4G ships no chart, so this is drawn here — but every
- * colour is a **semantic** token (`--ux4g-bg-success-soft`, not `green-100`),
- * which is what makes the bands invert correctly under [data-theme=dark]: the
- * soft fills move to the 800 step and the strong red to the 300 while the text
- * token moves the other way. Writing the ramp steps directly would produce a
- * chart that is unreadable in the other theme.
+ * One bar per blood group against the stock floor. UX4G ships no chart, so this
+ * is drawn here.
+ *
+ * **Ramp tokens, not the semantic ones**, and that is a deliberate departure
+ * from the rule this file otherwise keeps. The semantic set (`bg-success-soft`,
+ * `bg-warning-soft`, `bg-error-*`) has no yellow at all — warning maps to
+ * orange — so it cannot express five ordered steps, and its soft fills were too
+ * pale to tell apart at a glance on a counter monitor. A severity scale needs
+ * its five steps to stay in a fixed order and a fixed relationship to their text
+ * colour, which is exactly what a semantic token is free to change between
+ * themes. So each band names its ramp step and its text colour together, and
+ * every pair is checked for WCAG AA:
+ *
+ *   green 700  on white   6.6:1     orange 600 on near-black  7.7:1
+ *   yellow 500 on near-black 13.1:1  red 600    on white      4.6:1
+ *                                    red 800    on white      9.4:1
  *
  * Colour is never the only signal (WCAG 1.4.1): every bar prints its own count
  * against the floor, each carries role="meter" with the band named in
- * aria-valuetext, and a legend states what the four colours mean.
+ * aria-valuetext, and a legend states what the five colours mean.
  * ------------------------------------------------------------------------- */
 
 .app-chart {
@@ -231,9 +303,10 @@
   align-items: stretch;
   gap: var(--ux4g-space-4, 0.5rem);
   /*
-   * Tall enough that two fifths of a bar is still a readable difference from
-   * one quarter. Below about 180px the bands stop being distinguishable at a
-   * glance, which is the only thing this chart is for.
+   * Tall enough that the bottom of the range stays readable. Against a floor of
+   * 25 the difference between 1, 3 and 6 units is 10px, 29px and 58px here —
+   * three clearly different bars. At half this height they are 5, 14 and 29,
+   * and the first two stop being distinguishable.
    */
   block-size: 240px;
   /*
@@ -256,8 +329,9 @@
 .app-chart-track {
   flex: 1;
   display: flex;
+  flex-direction: column;
   /* The fill grows from the bottom, the way a container fills. */
-  align-items: flex-end;
+  justify-content: flex-end;
   border: var(--ux4g-border-md, 1px) solid
     var(--ux4g-border-color-neutral-default, #d9d9d9);
   border-radius: var(--ux4g-radius-lg, 0.75rem);
@@ -266,47 +340,68 @@
 }
 
 .app-chart-fill {
+  /*
+   * Exactly its share of the floor.
+   *
+   * `flex: none` matters: as a flex item this would otherwise shrink to fit
+   * beside the label above it, and every short bar would end up the same
+   * height as every other short bar — which is the bug this replaced. The only
+   * minimum is a hairline, so that one unit is still visible as a bar rather
+   * than as nothing at all.
+   */
+  flex: none;
   inline-size: 100%;
+  min-block-size: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--ux4g-radius-lg, 0.75rem);
-  /*
-   * The fill is proportional, but never shorter than its own label.
-   *
-   * A group at 1 of 25 is 4% of the track — a sliver with the count hidden
-   * outside it. The number is printed on the fill and is the authoritative
-   * reading, so a minimum height makes the chart legible without making it
-   * dishonest: the figure says 1/25 whatever the bar looks like.
-   */
-  min-block-size: 2.75rem;
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+}
+
+/*
+ * The count, when the fill is too short to hold it.
+ *
+ * Printed just above the bar instead of inside it. The alternative — a minimum
+ * height big enough for the text — is what made 1/25, 3/25 and 6/25 render as
+ * three identical bars.
+ */
+.app-chart-count {
+  flex: none;
+  text-align: center;
+  padding-block-end: var(--ux4g-space-2, 0.25rem);
   color: var(--ux4g-text-neutral-primary, #171717);
   font-weight: var(--ux4g-font-weight-semibold, 600);
 }
 
 .app-chart-adequate {
-  background: var(--ux4g-bg-success-soft, #dcfce7);
+  background: var(--ux4g-color-green-700, #006c35);
+  color: var(--ux4g-color-neutral-0, #fff);
 }
 
 .app-chart-low {
-  background: var(--ux4g-bg-warning-soft, #ffedd5);
+  background: var(--ux4g-color-yellow-500, #ffd72a);
+  color: var(--ux4g-color-neutral-900, #171717);
+}
+
+.app-chart-short {
+  background: var(--ux4g-color-orange-600, #fa8c16);
+  color: var(--ux4g-color-neutral-900, #171717);
 }
 
 .app-chart-critical {
-  background: var(--ux4g-bg-error-subtle, #ffdadc);
+  background: var(--ux4g-color-red-600, #db372d);
+  color: var(--ux4g-color-neutral-0, #fff);
 }
 
 /*
- * Nothing on the shelf, and the one band that is not a pastel.
- *
- * An empty group is not a worse shade of low — the next request for it cannot
- * be answered from stock at all — so it is the only bar that reads as a filled
- * block rather than as a level, and it takes the inverse text token to stay
- * legible in both themes.
+ * Nothing on the shelf — the darkest step, and the one state that is not a
+ * degree of the others: the next request for this group cannot be answered
+ * from stock at all.
  */
 .app-chart-empty {
-  background: var(--ux4g-bg-error-strong, #db372d);
-  color: var(--ux4g-text-neutral-inverse, #fafafa);
+  background: var(--ux4g-color-red-800, #8a1a16);
+  color: var(--ux4g-color-neutral-0, #fff);
 }
 
 .app-chart-group {
@@ -367,6 +462,30 @@
 
   .app-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  /* Room for a sidebar: the menu moves beside the content. */
+  .app-with-nav {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--ux4g-section-xs, 1.5rem);
+  }
+
+  .app-nav {
+    flex: none;
+    inline-size: 200px;
+    position: sticky;
+    /* Clears the header when a long page scrolls under it. */
+    top: var(--ux4g-space-6, 1rem);
+  }
+
+  .app-nav-list {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .app-with-nav-body {
+    flex: 1;
   }
 }
 

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { asc, eq } from 'drizzle-orm';
 
-import { AppShell } from '../../shell';
+import { CentreShell } from '../../centre-shell';
 import { SettingsForm, ShelfLifeForm } from '../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getCentreSettings, getShelfLives } from '@blood-connect/centre';
@@ -28,7 +28,7 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <AppShell actor={actor} title="Centre settings" narrow>
+    <CentreShell actor={actor} title="Centre settings" narrow>
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">Settings</h1>
         <p className="ux4g-body-m-default">
@@ -88,6 +88,6 @@ export default async function SettingsPage() {
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
         Back to the overview
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

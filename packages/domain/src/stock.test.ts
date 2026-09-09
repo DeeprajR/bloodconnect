@@ -10,14 +10,15 @@ import {
 } from './stock.js';
 
 /**
- * The shipped default for `stock.critical_fraction`, written out rather than
- * imported: this package may not depend on `@blood-connect/config` (§12, and
- * the `domain-is-pure` boundary rule). A test that reached for the config
- * package would also stop proving that the threshold arrives as a parameter.
+ * The shipped defaults for `stock.low_fraction` and `stock.critical_fraction`,
+ * written out rather than imported: this package may not depend on
+ * `@blood-connect/config` (§12, and the `domain-is-pure` boundary rule). A test
+ * that reached for the config package would also stop proving that the
+ * thresholds arrive as parameters.
  */
-const critical = 0.4;
+const DEFAULTS = { low: 0.6, critical: 0.3 };
 const band = (onShelf: number, floor = 25): StockBand =>
-  stockBandFor(onShelf, floor, critical);
+  stockBandFor(onShelf, floor, DEFAULTS);
 
 describe('the stock bands (§4)', () => {
   /**
@@ -26,10 +27,29 @@ describe('the stock bands (§4)', () => {
    * 25/25 green, 10/25 orange, 6/25 red — three points that pin the boundary
    * between low and critical to somewhere in (0.24, 0.40].
    */
-  it('matches the three counts on the approved chart', () => {
+  it('grades a floor of 25 the way the centre reads it', () => {
+    // Watch it · recruit · recruit tonight, and the two ends.
     expect(band(25)).toBe('adequate');
-    expect(band(10)).toBe('low');
+    expect(band(15)).toBe('low');
+    expect(band(10)).toBe('short');
     expect(band(6)).toBe('critical');
+    expect(band(0)).toBe('empty');
+  });
+
+  /**
+   * The counts that prompted the five-colour scale.
+   *
+   * 1, 3 and 6 of 25 are all critical and share a colour, truthfully — they are
+   * the same call to action. What distinguishes them on screen is bar height and
+   * the printed count, which is why the fill is proportional with no minimum
+   * height worth speaking of.
+   */
+  it('keeps the bottom three counts in one band, and says so', () => {
+    expect(band(1)).toBe('critical');
+    expect(band(3)).toBe('critical');
+    expect(band(6)).toBe('critical');
+    expect(stockFillFraction(1, 25)).toBeLessThan(stockFillFraction(3, 25));
+    expect(stockFillFraction(3, 25)).toBeLessThan(stockFillFraction(6, 25));
   });
 
   it('calls the floor itself adequate, and one short of it low', () => {
@@ -43,7 +63,7 @@ describe('the stock bands (§4)', () => {
     expect(band(1000)).toBe('adequate');
   });
 
-  it('separates an empty shelf from a low one', () => {
+  it('separates an empty shelf from a critical one', () => {
     /**
      * The distinction the fourth colour exists for. Below the floor raises a
      * demand; nothing at all means the next request for this group cannot be
@@ -63,29 +83,49 @@ describe('the stock bands (§4)', () => {
     expect(band(1, -5)).toBe('adequate');
   });
 
-  it('reads the boundary from the fraction it is given, not from a constant', () => {
-    // Half the floor: 12 of 25 is now the critical side of the line, and the
-    // default's answer for the same count is not.
-    expect(stockBandFor(12, 25, 0.5)).toBe('critical');
-    expect(stockBandFor(12, 25, 0.4)).toBe('low');
+  it('reads both boundaries from the fractions it is given', () => {
+    // The same count, three different centres' opinions about it.
+    expect(stockBandFor(12, 25, { low: 0.6, critical: 0.3 })).toBe('short');
+    expect(stockBandFor(12, 25, { low: 0.4, critical: 0.3 })).toBe('low');
+    expect(stockBandFor(12, 25, { low: 0.8, critical: 0.6 })).toBe('critical');
   });
 
-  it('puts the boundary itself on the low side', () => {
-    // 10 of 25 is exactly two fifths, and the chart shows it orange.
-    expect(stockBandFor(10, 25, 0.4)).toBe('low');
-    expect(stockBandFor(9, 25, 0.4)).toBe('critical');
+  it('puts each boundary itself on the kinder side', () => {
+    // At the line is the better band; below it is the worse one.
+    expect(stockBandFor(15, 25, DEFAULTS)).toBe('low');
+    expect(stockBandFor(14, 25, DEFAULTS)).toBe('short');
+    expect(stockBandFor(8, 25, DEFAULTS)).toBe('short');
+    expect(stockBandFor(7, 25, DEFAULTS)).toBe('critical');
   });
 
-  it('survives a fraction outside its range without losing a band', () => {
-    // Config validates this at the boundary; the clamp is here so a bad value
-    // cannot silently collapse `low` into `critical` or the reverse.
-    expect(stockBandFor(24, 25, 5)).toBe('critical');
-    expect(stockBandFor(1, 25, -1)).toBe('low');
+  it('survives fractions outside their range without losing a band', () => {
+    // Config validates these at the boundary; the clamp is here so a bad row
+    // cannot silently collapse one band into another.
+    expect(stockBandFor(24, 25, { low: 5, critical: 5 })).toBe('critical');
+    expect(stockBandFor(1, 25, { low: -1, critical: -1 })).toBe('low');
+  });
+
+  it('does not let a crossed-over pair swallow the middle band', () => {
+    /**
+     * `critical` above `low` is a misconfiguration that would otherwise make
+     * `short` unreachable and quietly change what every orange bar means. The
+     * lower of the two always wins as the lower edge.
+     */
+    const crossed = { low: 0.3, critical: 0.6 };
+    expect(stockBandFor(10, 25, crossed)).toBe('low');
+    expect(stockBandFor(5, 25, crossed)).toBe('critical');
+    expect(STOCK_BANDS).toContain(stockBandFor(8, 25, crossed));
   });
 
   it('treats a nonsense count as nothing on the shelf', () => {
     expect(band(Number.NaN)).toBe('empty');
     expect(band(-3)).toBe('empty');
+  });
+
+  it('uses every band on a floor of 25', () => {
+    // A band no count can reach is a colour in the legend that never appears.
+    const reached = new Set(Array.from({ length: 61 }, (_, units) => band(units)));
+    expect([...reached].sort()).toEqual([...STOCK_BANDS].sort());
   });
 
   it('answers with a known band for every count', () => {

@@ -1,16 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../shell';
+import { CentreShell } from '../centre-shell';
 import { RecruitButton } from '../centre-forms';
 import { StockChart } from '../stock-chart';
+import { CompletedDonations, UpcomingDonations } from '../donations-tables';
 import { recruitForFloorAction } from '../centre-actions';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import {
   centreOverviewCounts,
+  listCompletedDonations,
   listDemands,
   listOpenDiscrepancies,
   listQuarantine,
+  listUpcomingDonations,
   stockByGroup,
 } from '@blood-connect/centre';
 import { listRequestsAwaitingDecision } from '@blood-connect/hospital';
@@ -22,14 +25,17 @@ export default async function CentrePage() {
   const actor = await requireAccess('/centre');
   const ctx = await useCaseContext(actor);
 
-  const [stock, queue, demands, counts, quarantined, discrepancies] = await Promise.all([
-    stockByGroup(ctx),
-    listRequestsAwaitingDecision(ctx),
-    listDemands(ctx, true),
-    centreOverviewCounts(ctx),
-    listQuarantine(ctx),
-    listOpenDiscrepancies(ctx),
-  ]);
+  const [stock, queue, demands, counts, quarantined, discrepancies, upcoming, completed] =
+    await Promise.all([
+      stockByGroup(ctx),
+      listRequestsAwaitingDecision(ctx),
+      listDemands(ctx, true),
+      centreOverviewCounts(ctx),
+      listQuarantine(ctx),
+      listOpenDiscrepancies(ctx),
+      listUpcomingDonations(ctx, 5),
+      listCompletedDonations(ctx, 5),
+    ]);
 
   const today = ctx.clock.today();
   const short = stock.filter((row) => row.short > 0);
@@ -48,7 +54,7 @@ export default async function CentrePage() {
   const overdue = queue.filter((row) => row.dateRequired < today);
 
   return (
-    <AppShell actor={actor} title="Blood centre">
+    <CentreShell actor={actor} title="Blood centre" current="dashboard">
       <div className="app-row-split">
         <div className="app-stack-tight">
           <h1 className="ux4g-heading-l-strong">Overview</h1>
@@ -113,7 +119,13 @@ export default async function CentrePage() {
             "which groups need donors tonight" at a glance; the table below is
             what somebody reads once they know which row to look at.
           */}
-          <StockChart rows={shelf} criticalFraction={ctx.config.stock.criticalFraction} />
+          <StockChart
+            rows={shelf}
+            fractions={{
+              low: ctx.config.stock.lowFraction,
+              critical: ctx.config.stock.criticalFraction,
+            }}
+          />
 
           <div className="app-scroll-x">
           <table className="ux4g-table">
@@ -159,6 +171,38 @@ export default async function CentrePage() {
             One demand per short group. A group that already has an open floor
             demand is skipped, so pressing this twice recruits nobody twice.
           </p>
+        </div>
+      </section>
+
+      {/*
+        Second section, and the other half of the day's work: the shelf above,
+        the people who fill it here.
+      */}
+      <section className="ux4g-card ux4g-card-outline" aria-labelledby="donations">
+        <div className="ux4g-card-header app-row-split">
+          <div className="app-stack-tight">
+            <h2 className="ux4g-card-title" id="donations">
+              Donations
+            </h2>
+            <p className="ux4g-card-sub-title">
+              Donors expected at the counter, and what has already been collected.
+            </p>
+          </div>
+          <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/centre/donations">
+            All donations
+          </Link>
+        </div>
+
+        <div className="ux4g-card-body app-stack">
+          <div className="app-stack-tight">
+            <h3 className="ux4g-label-l-strong">Coming in</h3>
+            <UpcomingDonations rows={upcoming} />
+          </div>
+
+          <div className="app-stack-tight">
+            <h3 className="ux4g-label-l-strong">Already given</h3>
+            <CompletedDonations rows={completed} />
+          </div>
         </div>
       </section>
 
@@ -276,6 +320,6 @@ export default async function CentrePage() {
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre/settings">
         Centre settings
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

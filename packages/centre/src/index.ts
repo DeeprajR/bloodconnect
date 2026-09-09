@@ -46,11 +46,14 @@ export {
 
 export {
   countUnmarked,
+  listCompletedDonations,
   listRoster,
+  listUpcomingDonations,
   listWalkIns,
   markRosterOutcome,
   recordWalkIn,
   todaysUnits,
+  type DonationRow,
   type MarkInput,
   type RosterOutcome,
   type RosterRow,

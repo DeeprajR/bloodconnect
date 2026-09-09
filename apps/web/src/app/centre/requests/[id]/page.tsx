@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { AppShell } from '../../../shell';
+import { CentreShell } from '../../../centre-shell';
 import { DecisionForm } from '../../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import {
@@ -54,7 +54,7 @@ export default async function DecisionPage({
   const recruits = recruitsDonors(request.product);
 
   return (
-    <AppShell actor={actor} title={request.requestId} narrow>
+    <CentreShell actor={actor} title={request.requestId} narrow>
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong app-figure">{request.requestId}</h1>
         <p className="ux4g-body-m-default">
@@ -237,6 +237,6 @@ export default async function DecisionPage({
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre/requests">
         Back to the queue
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

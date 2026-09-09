@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { CentreShell } from '../../centre-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { listBags } from '@blood-connect/centre';
 import { DiscardBagForm } from '../../centre-collision-forms';
@@ -52,7 +52,7 @@ export default async function StockPage({
   const today = ctx.clock.today();
 
   return (
-    <AppShell actor={actor} title="Register">
+    <CentreShell actor={actor} title="Register">
       <div className="app-row-split">
         <div className="app-stack-tight">
           <h1 className="ux4g-heading-l-strong">The register</h1>
@@ -240,6 +240,6 @@ export default async function StockPage({
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
         Back to the overview
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

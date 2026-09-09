@@ -1,28 +1,31 @@
 /**
- * How full a shelf is, as four states rather than a number (§4).
+ * How full a shelf is, as five states rather than a number (§4).
  *
  * The centre's overview shows one bar per blood group against the stock floor.
  * A bar's colour is the fastest thing on the screen to read, so what it means
  * has to be a rule rather than a judgement made in a component: the same count
  * must produce the same colour on every surface that ever shows one.
  *
- * Four states, and the two outer boundaries are structural rather than tunable:
+ * Five states. The two outer boundaries are structural rather than tunable, and
+ * the three in between are the ones a centre argues about:
  *
- * | State      | When                          | Why it is its own state |
- * |------------|-------------------------------|-------------------------|
- * | `adequate` | at or above the floor         | The floor is the definition of enough |
- * | `low`      | below the floor               | Recruitment should start; nothing is blocked yet |
- * | `critical` | below a share of the floor    | A bad night, not a bad week |
- * | `empty`    | nothing on the shelf          | **Not the same as low.** There is nothing to issue |
+ * | State      | When                       | Reads as |
+ * |------------|----------------------------|----------|
+ * | `adequate` | at or above the floor      | Green |
+ * | `low`      | below the floor            | Yellow |
+ * | `short`    | below a share of the floor | Orange |
+ * | `critical` | below a smaller share      | Red |
+ * | `empty`    | nothing on the shelf       | Dark red |
  *
- * `empty` is separated deliberately. "Below the floor" and "there is none"
- * differ in what happens next: one raises a demand, the other means the next
- * request for that group cannot be answered from stock at all, and a screen
- * that renders both as the same red hides that from the person who would act on
- * it.
+ * They are graded by **what somebody does about it**, not by an even split of
+ * the range: watch it, recruit, recruit tonight, and — at the bottom — the one
+ * state where the next request for that group cannot be answered from stock at
+ * all. `empty` stays separate from `critical` for that reason: one unit left and
+ * no units left differ in kind, not in degree, and a screen that renders both
+ * the same red hides that from the person who would act on it.
  *
- * Per §12, this reads no configuration. The one tunable boundary arrives as a
- * parameter, from `stock.critical_fraction`.
+ * Per §12, this reads no configuration. The two tunable boundaries arrive as
+ * parameters, from `stock.low_fraction` and `stock.critical_fraction`.
  */
 
 import type { BloodGroup } from './blood.js';
@@ -49,7 +52,8 @@ export const STOCK_DISPLAY_ORDER = [
   'O-',
 ] as const satisfies readonly BloodGroup[];
 
-export const STOCK_BANDS = ['adequate', 'low', 'critical', 'empty'] as const;
+/** Ordered best to worst. The chart's legend and its colours both follow this. */
+export const STOCK_BANDS = ['adequate', 'low', 'short', 'critical', 'empty'] as const;
 export type StockBand = (typeof STOCK_BANDS)[number];
 
 /**
@@ -62,6 +66,7 @@ export type StockBand = (typeof STOCK_BANDS)[number];
 export const STOCK_BAND_LABELS: Readonly<Record<StockBand, string>> = {
   adequate: 'At or above the floor',
   low: 'Below the floor',
+  short: 'Short — recruit',
   critical: 'Critically low',
   empty: 'None on the shelf',
 };
@@ -76,12 +81,13 @@ const atLeastZero = (value: number): number =>
  * @param onShelf units available now — reserved units are somebody else's
  *   already, so the caller excludes them (`stockByGroup`)
  * @param floor `centre_settings.min_units_per_group`, per centre and editable
- * @param criticalFraction `stock.critical_fraction`, the one tunable boundary
+ * @param fractions `stock.low_fraction` and `stock.critical_fraction`, the two
+ *   tunable boundaries, as shares of the floor
  */
 export function stockBandFor(
   onShelf: number,
   floor: number,
-  criticalFraction: number,
+  fractions: { readonly low: number; readonly critical: number },
 ): StockBand {
   const units = atLeastZero(onShelf);
 
@@ -96,10 +102,21 @@ export function stockBandFor(
 
   if (units >= target) return 'adequate';
 
-  // Clamped rather than trusted: config is validated at the boundary, and a
-  // fraction outside (0, 1] here would silently swallow the `low` band.
-  const boundary = Math.min(Math.max(criticalFraction, 0), 1);
-  return units < target * boundary ? 'critical' : 'low';
+  /**
+   * Clamped, and ordered.
+   *
+   * Config validates both at the boundary, but a pair that crossed over — a
+   * critical fraction above the low one — would silently swallow the `short`
+   * band rather than fail, so the smaller of the two is always the lower edge.
+   */
+  const clamp = (value: number): number => Math.min(Math.max(value, 0), 1);
+  const low = clamp(fractions.low);
+  const critical = Math.min(clamp(fractions.critical), low);
+
+  const share = units / target;
+  if (share >= low) return 'low';
+  if (share >= critical) return 'short';
+  return 'critical';
 }
 
 /**

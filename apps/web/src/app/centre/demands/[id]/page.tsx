@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { AppShell } from '../../../shell';
+import { CentreShell } from '../../../centre-shell';
 import { RosterMarkForm, WalkInForm } from '../../../centre-collision-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getDemand, listRoster, listWalkIns } from '@blood-connect/centre';
@@ -45,7 +45,7 @@ export default async function RosterPage({
   const open = demand.status === 'open' || demand.status === 'fulfilled';
 
   return (
-    <AppShell actor={actor} title="Roster">
+    <CentreShell actor={actor} title="Roster">
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">
           {bloodGroupLabel(demand.bloodGroup as never)} · {productLabel(demand.product as never)}
@@ -219,6 +219,6 @@ export default async function RosterPage({
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre/demands">
         Back to demand
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

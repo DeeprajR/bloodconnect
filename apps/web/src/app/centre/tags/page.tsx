@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { CentreShell } from '../../centre-shell';
 import {
   DiscrepancyForm,
   RaiseDiscrepancyForm,
@@ -43,7 +43,7 @@ export default async function TagsPage({
   const found = resolved?.ok === true ? resolved.value : undefined;
 
   return (
-    <AppShell actor={actor} title="Scan a tag">
+    <CentreShell actor={actor} title="Scan a tag">
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">Scan a tag</h1>
         <p className="ux4g-body-m-default">
@@ -219,6 +219,6 @@ export default async function TagsPage({
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
         Back to the overview
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }

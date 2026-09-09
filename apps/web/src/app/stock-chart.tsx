@@ -24,9 +24,20 @@ import {
 const BAND_CLASSES: Readonly<Record<StockBand, string>> = {
   adequate: 'app-chart-adequate',
   low: 'app-chart-low',
+  short: 'app-chart-short',
   critical: 'app-chart-critical',
   empty: 'app-chart-empty',
 };
+
+/**
+ * Below this share of the track, the count is printed above the bar instead of
+ * inside it.
+ *
+ * A 240px track makes this about 48px — comfortably more than the line box the
+ * figure needs. Forcing every fill to be at least that tall instead is what
+ * made 1/25, 3/25 and 6/25 render as three identical bars.
+ */
+const LABEL_FITS_ABOVE = 0.2;
 
 export type StockChartRow = {
   readonly bloodGroup: BloodGroup;
@@ -36,11 +47,11 @@ export type StockChartRow = {
 
 export function StockChart({
   rows,
-  criticalFraction,
+  fractions,
 }: {
   readonly rows: readonly StockChartRow[];
-  /** `stock.critical_fraction`, read from config by the page (§12). */
-  readonly criticalFraction: number;
+  /** `stock.low_fraction` and `stock.critical_fraction`, read by the page (§12). */
+  readonly fractions: { readonly low: number; readonly critical: number };
 }) {
   return (
     <>
@@ -51,7 +62,7 @@ export function StockChart({
       <div className="app-scroll-x">
         <div className="app-chart">
           {rows.map((row) => {
-            const band = stockBandFor(row.onShelf, row.floor, criticalFraction);
+            const band = stockBandFor(row.onShelf, row.floor, fractions);
             const fill = stockFillFraction(row.onShelf, row.floor);
             const group = bloodGroupLabel(row.bloodGroup);
 
@@ -70,6 +81,10 @@ export function StockChart({
               row.floor > 0
                 ? `${String(row.onShelf)} of ${String(row.floor)} units`
                 : `${String(row.onShelf)} units, no floor set`;
+            const count =
+              row.floor > 0
+                ? `${String(row.onShelf)}/${String(row.floor)}`
+                : String(row.onShelf);
 
             return (
               <div className="app-chart-column" key={row.bloodGroup}>
@@ -88,13 +103,20 @@ export function StockChart({
                   aria-valuetext={`${reading}. ${STOCK_BAND_LABELS[band]}`}
                   aria-label={`${group} stock against the floor`}
                 >
+                  {/*
+                    A short bar cannot hold its own label, so the label steps
+                    outside rather than the bar growing to fit it.
+                  */}
+                  {fill < LABEL_FITS_ABOVE ? (
+                    <p className="app-chart-count ux4g-label-m-strong app-figure">{count}</p>
+                  ) : null}
                   <div
                     className={`app-chart-fill ${BAND_CLASSES[band]} app-figure`}
                     // The one inline style here, because the value is data: it
                     // is a different number for every group on every render.
                     style={{ blockSize: `${String(Math.round(fill * 100))}%` }}
                   >
-                    {row.floor > 0 ? `${String(row.onShelf)}/${String(row.floor)}` : row.onShelf}
+                    {fill < LABEL_FITS_ABOVE ? null : count}
                   </div>
                 </div>
                 <p className="app-chart-group ux4g-label-m-strong app-figure">{group}</p>

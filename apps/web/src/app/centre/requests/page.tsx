@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { CentreShell } from '../../centre-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { stockByGroup } from '@blood-connect/centre';
 import { listRequestsAwaitingDecision } from '@blood-connect/hospital';
@@ -33,7 +33,7 @@ export default async function QueuePage() {
   const onShelf = new Map(stock.map((row) => [row.bloodGroup, row.onShelf]));
 
   return (
-    <AppShell actor={actor} title="Request queue">
+    <CentreShell actor={actor} title="Request queue">
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">Requests awaiting an answer</h1>
         <p className="ux4g-body-m-default">
@@ -111,6 +111,6 @@ export default async function QueuePage() {
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
         Back to the overview
       </Link>
-    </AppShell>
+    </CentreShell>
   );
 }
