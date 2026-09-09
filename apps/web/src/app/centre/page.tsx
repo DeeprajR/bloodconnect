@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { AppShell } from '../shell';
 import { RecruitButton } from '../centre-forms';
+import { StockChart } from '../stock-chart';
 import { recruitForFloorAction } from '../centre-actions';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import {
@@ -13,7 +14,7 @@ import {
   stockByGroup,
 } from '@blood-connect/centre';
 import { listRequestsAwaitingDecision } from '@blood-connect/hospital';
-import { WORDING, bloodGroupLabel } from '@blood-connect/domain';
+import { STOCK_DISPLAY_ORDER, WORDING, bloodGroupLabel } from '@blood-connect/domain';
 
 export const metadata: Metadata = { title: 'Blood centre · Blood Connect' };
 
@@ -32,6 +33,18 @@ export default async function CentrePage() {
 
   const today = ctx.clock.today();
   const short = stock.filter((row) => row.short > 0);
+
+  /**
+   * Shown in the clinical order, chart and table alike.
+   *
+   * `stockByGroup` returns storage order. Ordering only the chart would leave
+   * the table under it disagreeing with the bars directly above, which is worse
+   * than either order on its own.
+   */
+  const byGroup = new Map(stock.map((row) => [row.bloodGroup, row]));
+  const shelf = STOCK_DISPLAY_ORDER.map((group) => byGroup.get(group)).filter(
+    (row) => row !== undefined,
+  );
   const overdue = queue.filter((row) => row.dateRequired < today);
 
   return (
@@ -94,7 +107,15 @@ export default async function CentrePage() {
             made.
           </p>
         </div>
-        <div className="ux4g-card-body app-scroll-x">
+        <div className="ux4g-card-body app-stack">
+          {/*
+            The picture first, then the numbers behind it. The chart answers
+            "which groups need donors tonight" at a glance; the table below is
+            what somebody reads once they know which row to look at.
+          */}
+          <StockChart rows={shelf} criticalFraction={ctx.config.stock.criticalFraction} />
+
+          <div className="app-scroll-x">
           <table className="ux4g-table">
             <thead>
               <tr>
@@ -107,7 +128,7 @@ export default async function CentrePage() {
               </tr>
             </thead>
             <tbody>
-              {stock.map((row) => (
+              {shelf.map((row) => (
                 <tr key={row.bloodGroup}>
                   <td className="app-figure">{bloodGroupLabel(row.bloodGroup)}</td>
                   <td className="app-figure">{row.onShelf}</td>
@@ -127,6 +148,7 @@ export default async function CentrePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
         <div className="ux4g-card-footer app-stack-tight">
           <form action={recruitForFloorAction}>

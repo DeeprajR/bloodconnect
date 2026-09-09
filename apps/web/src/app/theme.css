@@ -211,6 +211,136 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * The stock chart.
+ *
+ * One bar per blood group against the stock floor, the arrangement in the
+ * approved prototype. UX4G ships no chart, so this is drawn here — but every
+ * colour is a **semantic** token (`--ux4g-bg-success-soft`, not `green-100`),
+ * which is what makes the bands invert correctly under [data-theme=dark]: the
+ * soft fills move to the 800 step and the strong red to the 300 while the text
+ * token moves the other way. Writing the ramp steps directly would produce a
+ * chart that is unreadable in the other theme.
+ *
+ * Colour is never the only signal (WCAG 1.4.1): every bar prints its own count
+ * against the floor, each carries role="meter" with the band named in
+ * aria-valuetext, and a legend states what the four colours mean.
+ * ------------------------------------------------------------------------- */
+
+.app-chart {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ux4g-space-4, 0.5rem);
+  /*
+   * Tall enough that two fifths of a bar is still a readable difference from
+   * one quarter. Below about 180px the bands stop being distinguishable at a
+   * glance, which is the only thing this chart is for.
+   */
+  block-size: 240px;
+  /*
+   * Eight bars never squeeze: the wrapper scrolls sideways on a phone the same
+   * way the tables do, rather than shrinking each bar into a sliver.
+   */
+  min-inline-size: max-content;
+  padding-block: var(--ux4g-padding-s, 0.75rem);
+}
+
+.app-chart-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ux4g-space-3, 0.375rem);
+  inline-size: 72px;
+}
+
+/* The unfilled bar: the floor, drawn as the space the fill is measured in. */
+.app-chart-track {
+  flex: 1;
+  display: flex;
+  /* The fill grows from the bottom, the way a container fills. */
+  align-items: flex-end;
+  border: var(--ux4g-border-md, 1px) solid
+    var(--ux4g-border-color-neutral-default, #d9d9d9);
+  border-radius: var(--ux4g-radius-lg, 0.75rem);
+  background: var(--ux4g-bg-neutral-elevated, #fff);
+  overflow: hidden;
+}
+
+.app-chart-fill {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ux4g-radius-lg, 0.75rem);
+  /*
+   * The fill is proportional, but never shorter than its own label.
+   *
+   * A group at 1 of 25 is 4% of the track — a sliver with the count hidden
+   * outside it. The number is printed on the fill and is the authoritative
+   * reading, so a minimum height makes the chart legible without making it
+   * dishonest: the figure says 1/25 whatever the bar looks like.
+   */
+  min-block-size: 2.75rem;
+  color: var(--ux4g-text-neutral-primary, #171717);
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+}
+
+.app-chart-adequate {
+  background: var(--ux4g-bg-success-soft, #dcfce7);
+}
+
+.app-chart-low {
+  background: var(--ux4g-bg-warning-soft, #ffedd5);
+}
+
+.app-chart-critical {
+  background: var(--ux4g-bg-error-subtle, #ffdadc);
+}
+
+/*
+ * Nothing on the shelf, and the one band that is not a pastel.
+ *
+ * An empty group is not a worse shade of low — the next request for it cannot
+ * be answered from stock at all — so it is the only bar that reads as a filled
+ * block rather than as a level, and it takes the inverse text token to stay
+ * legible in both themes.
+ */
+.app-chart-empty {
+  background: var(--ux4g-bg-error-strong, #db372d);
+  color: var(--ux4g-text-neutral-inverse, #fafafa);
+}
+
+.app-chart-group {
+  text-align: center;
+  color: var(--ux4g-text-neutral-primary, #171717);
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+}
+
+/* The legend, which is what keeps the colours from being the only signal. */
+.app-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ux4g-space-4, 0.5rem) var(--ux4g-space-6, 1rem);
+  align-items: center;
+  margin-block-start: var(--ux4g-space-4, 0.5rem);
+}
+
+.app-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ux4g-space-3, 0.375rem);
+  color: var(--ux4g-text-neutral-secondary, #404040);
+}
+
+.app-legend-swatch {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: var(--ux4g-radius-sm, 0.25rem);
+  border: var(--ux4g-border-md, 1px) solid
+    var(--ux4g-border-color-neutral-default, #d9d9d9);
+  flex: none;
+}
+
+/* ---------------------------------------------------------------------------
  * Breakpoints, from Design.md §8. The mode names there do not match device
  * reality — a portrait tablet resolves to Mobile — so these are written as
  * min-widths against the stated ranges rather than by name.

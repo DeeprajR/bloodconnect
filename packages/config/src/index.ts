@@ -68,6 +68,27 @@ export const appConfigSchema = z.object({
     minPasswordLength: positiveInt,
   }),
 
+  /**
+   * Where the stock chart turns from orange to red (§4).
+   *
+   * The floor itself is **not** here — it is `centre_settings.min_units_per_group`,
+   * edited on the settings screen. This is the one boundary below it that has no
+   * screen: at what share of the floor a group stops being merely low and starts
+   * being the thing somebody should act on tonight.
+   */
+  stock: z
+    .object({
+      /**
+       * Below this share of the floor, a group is **critically low**.
+       *
+       * The other two boundaries are structural rather than tunable: at or above
+       * the floor is adequate by definition, and an empty shelf is its own state
+       * whatever the floor says.
+       */
+      criticalFraction: z.number().gt(0).max(1),
+    })
+    .describe('Stock chart bands'),
+
   ageing: z.object({
     quarantineDays: nonNegativeInt,
     reconciliationHours: nonNegativeInt,
@@ -118,6 +139,12 @@ export const CONFIG_DEFAULTS: AppConfig = {
     loginThrottle: { windowMinutes: 15, maxAttemptsPerAccount: 5, maxAttemptsPerIp: 20 },
     minPasswordLength: 12,
   },
+  /**
+   * Two fifths of the floor. A centre at 10 of 25 has a bad week coming; one at
+   * 6 of 25 has a bad night, and the screen should not say the same thing about
+   * both. Expected to be corrected by the centre rather than by a commit.
+   */
+  stock: { criticalFraction: 0.4 },
   ageing: { quarantineDays: 7, reconciliationHours: 24, inviteDays: 7, draftDays: 3 },
   retention: { framesDays: 30, journeyMonths: 24, donorTailDays: 90 },
   flag: {
