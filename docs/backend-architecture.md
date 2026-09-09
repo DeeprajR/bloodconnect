@@ -336,7 +336,7 @@ physically cannot set `units` or `hospital_name` on a demand; the centre physica
 | `admissions` | id, ip_no unique, patient_id, ward, admitted_at, discharged_at, status | `ip_no` immutable after insert (trigger); `CHECK (discharged_at IS NULL OR discharged_at >= admitted_at)`; index `(patient_id, admitted_at desc)` |
 | `blood_requests` | id, request_id, centre_id, admission_id, doctor_id, status, indication, date_required date, blood_group, product, units, submitted_at, cancelled_at, cancel_reason, `patient_snapshot jsonb`, `doctor_snapshot jsonb` | Unique on `request_id`; `CHECK (status <> 'submitted' OR (request_id IS NOT NULL AND patient_snapshot IS NOT NULL))` (§2.6); index `(status, date_required)` for the centre queue and the overdue flag; index `(doctor_id, updated_at desc)` for stale-draft ages |
 | `blood_samples` | id, request_id, sample_identifier, collected_at, collected_by_doctor_id | Unique on `sample_identifier` **alone** — globally unique per §15 |
-| `blood_request_counters` | year PK, next_value | The transactional allocator in [§7.1](#71-allocating-a-request-id-at-submit) |
+| `blood_request_counters` | day PK, next_value | The transactional allocator in [§7.1](#71-allocating-a-request-id-at-submit); keyed by day since ADR 0010 |
 
 `centre_id` is on `blood_requests` and `donor_demand` from day one so multi-tenant is not a
 retrofit (§13), even though v1 runs one centre.
@@ -456,15 +456,20 @@ deliberate concurrency test against real Postgres (§11.6).
 ### 7.1 Allocating a Request ID at submit
 
 ```sql
-INSERT INTO hospital.blood_request_counters (year, next_value) VALUES ($year, 2)
-ON CONFLICT (year) DO UPDATE SET next_value = blood_request_counters.next_value + 1
+INSERT INTO hospital.blood_request_counters (day, next_value) VALUES ($day, 2)
+ON CONFLICT (day) DO UPDATE SET next_value = blood_request_counters.next_value + 1
 RETURNING next_value - 1 AS allocated;
 ```
 
-One statement inside the submit transaction, which also freezes the snapshots and flips the
-status. Two doctors submitting in the same millisecond serialise on the counter row and get
-consecutive numbers, and no number is burned by a failed submit because allocation and submit
-commit together.
+One statement inside the submit transaction, which also freezes the doctor snapshot. Two
+doctors submitting in the same millisecond serialise on the counter row and get consecutive
+numbers, and no number is burned by a failed submit because allocation and submit commit
+together.
+
+**Keyed by day, not by year** (ADR 0010). The ID is `DDMMYY-NNNNN` — read aloud to a
+bystander and typed at a counter with the date part prefilled — so the sequence restarts each
+day and five digits is 99,999 requests in one. The row per day is also the natural place to
+answer "how many requests did we take yesterday?" without scanning the table.
 
 ### 7.2 Deciding a request — the whole decision is one transaction
 
@@ -635,7 +640,8 @@ map the `Result`". Each returns `Result<T, E>` and each writes its audit event (
 | `createPatient` / `updatePatient` | Upsert patient | Duplicate warning is a **read** before the write, never a hard block (§3) |
 | `createAdmission` / `dischargeAdmission` | Insert / update by `ip_no` | `ip_no` is the admission's identity and immutable |
 | `createDraft` / `updateDraft` | Upsert draft | Owner only; refuses anything not `draft` (§2.6) |
-| `submitRequest` | Allocate `BR-YYYY-NNNNNN` (§7.1), write both snapshots, set `submitted` | One transaction; draft endpoints refuse the record from then on |
+| `submitRequest` | Allocate `DDMMYY-NNNNN` (§7.1), write the doctor snapshot, set `submitted`, derive `date_required` from the urgency | One transaction. Four fields and no draft (ADR 0010); the record is immutable from here |
+| `attachPatient` | Create or match the patient, admit under an `ip_no`, link it to the request and snapshot it | Module 2's, at the counter. What unlocks deciding for every urgency except emergency |
 | `cancelRequest` | Set cancelled + reason, release reserved bags, cancel any open demand | The cancel cascades into §7.6's stand-down — the whole point of the flow (§3) |
 | `associateSample` | Insert sample | Submitted requests only; `sample_identifier` globally unique |
 | `listDashboard` | Read | Returns draft ages so stale drafts surface (§3) |

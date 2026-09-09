@@ -37,7 +37,8 @@ P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
 P5  Module 1 depth               ✅
 P6  Centre depth — collisions    ✅
 P7  Bot depth — the interview    ✅
-P8  Endings sweep                ← next
+P7b The request slip             ← next  (ADR 0010)
+P8  Endings sweep
 …
 ```
 
@@ -129,6 +130,13 @@ number on every roster row for ever. Migration 0016 grants exactly those two
 columns — the unit number and the date stay, because that is the donation record.
 `pnpm smoke:bot` runs the whole thing as `app_bot`, which is what caught it.
 ([ADR 0009](docs/adr/0009-the-interview-and-an-erasure-that-did-not-land.md))
+
+**Next, and a change of shape.** The doctor app becomes a **request slip**: blood group,
+product, units, urgency, and an ID to read aloud to the patient's bystander, who carries it
+to the blood centre. Everything else about the request — the patient, the admission, the
+clinical context, the crossmatch sample — is entered at the counter, because a doctor
+handling several patients at once is the wrong person to be typing an address.
+([ADR 0010](docs/adr/0010-the-doctor-app-becomes-a-request-slip.md))
 
 Run `pnpm db:seed` and sign in as any of:
 

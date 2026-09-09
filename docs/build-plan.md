@@ -86,7 +86,8 @@ P4  The bot loop, thin           8d  ✅ ▲ MILESTONE A — the loop closes (da
 P5  Module 1 depth               7d  ✅
 P6  Centre depth — collisions    8d  ✅
 P7  Bot depth — the interview    9d  ✅
-P8  Endings sweep                4d   ▲ MILESTONE B — every §8 flow ends (day ~57)
+P7b The request slip             4d   ⟵ ADR 0010, inserted after P7
+P8  Endings sweep                4d   ▲ MILESTONE B — every §8 flow ends (day ~61)
 P9  Volunteer + public board     4d
 P10 Control panel                5d
 P11 Tag reader integration       3d   ⟵ gated on hardware
@@ -250,6 +251,10 @@ triggers P4's stand-down; the PWA shell with network-only data (§2.8).
 **Prove.** The reset flow is not an enumeration oracle. Nobody approves their own update request.
 The last active admin cannot be demoted, under two concurrent attempts.
 
+**Since superseded in part.** ADR 0010 removes drafts from the request, and with them draft
+ageing and the stale-draft surfacing built here. The duplicate-patient warning is not
+deleted but moves to the centre, which now creates patients. Cancellation, the sample and
+the request-view work all stand.
 ---
 
 ### P6 · Centre depth — the collision cases — 8d
@@ -303,6 +308,41 @@ The finding was erasure: §12.1 requires de-identifying the roster and `app_bot`
 held no grant to do it, so deletion reported success and changed nothing.
 Migration 0016, contract 1.3.0, and `pnpm smoke:bot` to prove it.
 ([ADR 0009](adr/0009-the-interview-and-an-erasure-that-did-not-land.md))
+
+---
+
+### P7b · The request slip — 4d
+
+**Goal.** Module 1 becomes four fields and an ID; the patient moves to the counter.
+[ADR 0010](adr/0010-the-doctor-app-becomes-a-request-slip.md) has the reasoning and the
+consequences. Inserted after P7 rather than folded into P8 because it changes the shape of
+the request, and every ending in P8 is an ending *of a request*.
+
+**Build.**
+
+1. **Domain and schema.** `urgency` on the request, with the four levels and their derived
+   `date_required`; `admission_id` becomes nullable; the ID moves to `DDMMYY-NNNNN` on a
+   per-day counter; `draft` leaves the state machine. Offsets and response thresholds into
+   `app_config`.
+2. **The doctor app.** One screen — group, product, units, urgency — then the ID, shown
+   large enough to read aloud. Their own requests with status and answer. Cancel stays.
+   Delete: drafts, draft ageing, the review screen, patient and admission entry.
+3. **The counter.** Look up by ID with the date prefilled; create or match a patient
+   (duplicate warning moves here), admit under an `ip_no`, attach, snapshot. The crossmatch
+   sample moves here too.
+4. **The queue.** Ordered by urgency, then date, then submission time, with time-since-
+   submitted against the per-urgency threshold. The emergency exception, recorded on the
+   decision and shown on the request until a patient is attached.
+
+**Prove.** A doctor submits in four taps and reads back an ID. The centre finds that request
+by typing five digits. A non-emergency request cannot be reserved against until a patient is
+attached — asserted as a refusal, not a convention. An emergency can, and the request says so
+until it is completed. A request nobody ever brings in ages on the queue as *awaiting the
+bystander* rather than vanishing.
+
+**Defer.** Notifying a doctor when their request is answered — P8, with the other endings.
+Whether `indication` needs to return as a fifth doctor field is ADR 0010's open question and
+needs the medical lead, not a commit.
 
 ---
 

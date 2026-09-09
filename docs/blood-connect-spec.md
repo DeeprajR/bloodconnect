@@ -155,14 +155,17 @@ donor's chat identity, which comes from the messaging platform and is never type
 
 ### 2.6 Immutability and snapshots
 
-A blood request is editable only while it is a `draft`. Submitting it allocates a
-human-readable Request ID (`BR-YYYY-NNNNNN`) from a transactional per-year counter and
-freezes the record: draft endpoints refuse it from then on.
+A blood request is immutable from the moment it is submitted, and there is no earlier state:
+ADR 0010 removed drafts, because a four-field form is submitted or it never existed.
+Submitting allocates a human-readable Request ID (`DDMMYY-NNNNN`) from a transactional
+**per-day** counter (§7.1) and freezes the record.
 
 Anything that appears on a printed or historical record is **snapshotted** at write time —
-patient name, age, blood group, ward, doctor name, registration and seal on the request;
-hospital name and address on a donor demand. A later edit to the patient or to centre
-settings must never rewrite history.
+doctor name, registration and seal on the request at submit; patient name, age, blood group
+and ward when the centre attaches the patient; hospital name and address on a donor demand.
+A later edit to the patient or to centre settings must never rewrite history. The patient
+half of the request snapshot is taken later than the rest now, because there is no patient at
+submit; its purpose — a request keeps what it was answered with — is unchanged.
 
 ### 2.7 Standard clinical terminology
 
@@ -304,10 +307,15 @@ calibration screen, and the tag-collision workflows.
 
 ### Concept
 
-The paper blood request form, digitized end to end: identify the admitted patient, fill the
-form, review it, submit it, get an ID back, and attach the crossmatch sample. It replaces
-the form and the phone call. The doctor's job ends at "submitted"; the centre's answer comes
-back to the same screen.
+**A request slip, not a form.** The doctor gives four things — blood group, product, units,
+urgency — and gets back an ID to read aloud to the patient's bystander, who carries it to the
+blood centre. It replaces the paper form and the phone call.
+
+Everything else about the request — the patient, the admission, the clinical context, the
+crossmatch sample — is entered by the **blood centre** (§4), because a doctor handling
+several patients at once is the wrong person to be typing an address, and the centre has a
+counter with the bystander standing at it. The doctor's job ends at "submitted"; the centre's
+answer comes back to the same screen. See [ADR 0010](adr/0010-the-doctor-app-becomes-a-request-slip.md).
 
 ### Target users
 
@@ -372,38 +380,63 @@ back to the same screen.
     than sitting silently — the user asked a person for something, and silence is not an
     answer.
 
-**Patients**
-- **The doctor app is where every patient detail is entered.** The centre and the bot read
-  what they are given and never edit a patient record; there is one place a patient is
-  described, and this is it.
-- Identity and demographics: name, date of birth **or** age with unit (days / months /
-  years — neonates matter, and a DOB is often unknown on admission), sex, blood group, and a
-  hospital patient identifier (UHID/MRN) where one exists.
-- Contact and address: attender name and phone, address, district, city.
-- Clinical context carried with the patient rather than retyped per request: known
-  diagnosis, relevant history, previous transfusion and any reaction to one.
-- Search and de-duplicate before creating: a warning on a close name + age + group match,
-  so one patient does not end up with three records across three admissions.
-- Edits are permitted and versioned by snapshot rather than blocked — a request already
-  submitted keeps the values it was submitted with (§2.6).
+**Patients, admissions and clinical context — entered by the blood centre**
 
-**Admissions**
-- Admit a patient under an `ip_no`, which is the admission's identity and the key blood
-  requests reference. Ward number, admitted and discharged timestamps, active/discharged
-  status.
+**The doctor app is not where a patient is described.** A doctor at a bedside is handling
+several patients at once; the centre has a counter, a person at it, and the patient's
+bystander standing in front of them with the ID the doctor gave out. So everything about
+the patient is Module 2's to collect, and §4 carries the detail:
 
-**Blood request**
-- Start a draft from an admission; patient context resolves from the `ip_no` and is never
-  typed again.
-- Form fields: indication for transfusion, date required, requested blood group, product
-  (Whole Blood / Packed Red Blood Cells / Platelet Concentrate / Fresh Frozen Plasma /
-  Cryoprecipitate — standard component names, §2.7), units. Doctor identity fields are read-only.
-- Save, reopen, and edit the draft — owner only.
-- **Review** screen showing every field exactly as it will be submitted.
-- **Submit** → allocates `BR-YYYY-NNNNNN`, records the submit time, makes the record
-  immutable.
-- **View** the submitted request, including the centre's decision and, if donors were
-  recruited, live recruitment progress.
+- Identity and demographics, contact and address, clinical context, the admission under an
+  `ip_no`, the search-and-de-duplicate warning before creating a record, and the
+  crossmatch sample.
+- The tables are unchanged (`patients`, `admissions`, `blood_samples`) and Module 1 still
+  owns them. Only who fills them in has moved.
+
+**Blood request — four fields and an ID**
+
+This is the whole of what a doctor does.
+
+| Field | How it is asked |
+|---|---|
+| **Blood group** | Eight buttons |
+| **Product** | Whole Blood / Packed Red Blood Cells / Platelet Concentrate / Fresh Frozen Plasma / Cryoprecipitate (§2.7). **Stays with the clinician**: components are not interchangeable, and which one a patient needs cannot be inferred from a group and a count |
+| **Units** | A number |
+| **Urgency** | Emergency · Very urgent · Urgent · Routine |
+
+There is no draft and no review screen: four fields on one screen are their own review.
+Submitting allocates the ID, records the submit time, and makes the record immutable.
+
+**Urgency, and the clock it runs on.** The doctor does not type a date. Each level derives
+one, and each carries the time within which an answer is expected:
+
+| Urgency | Needed by | Answer expected within |
+|---|---|---|
+| Emergency | today | 15 minutes |
+| Very urgent | today | 1 hour |
+| Urgent | today | 4 hours |
+| Routine | in a week | — |
+
+Three of the four land on the same date, which is the point: the difference between them is
+how fast somebody walks, not what day it is. So the **centre queue orders by urgency**, then
+by the derived date, then by submission time; and it shows **time since submission** against
+the threshold above, flagging anything past it. A date alone would not notice an unanswered
+emergency until midnight. Both the offsets and the thresholds are configuration (§12).
+
+**The ID — `DDMMYY-NNNNN`.** Allocated at submit from a per-day counter (§7.1) and shown
+back to the doctor large enough to read aloud. The doctor gives it to the patient's
+bystander, who carries it to the blood centre; the date part is prefilled wherever it is
+typed, so the counter enters five digits for a request raised today.
+
+> **The ID identifies a request. It does not authenticate anybody.** It is short,
+> sequential within a day and therefore guessable. That is safe at a counter, where a person
+> is physically present and the centre verifies the patient by other means. It follows that
+> **nothing keyed on this ID alone may ever be exposed publicly** — no status page, no API
+> lookup, no "track your request" link. Anything of that kind needs a second factor.
+
+**What the doctor sees afterwards.** Their own requests with the centre's decision, and —
+if donors were recruited — live recruitment progress. Plus the one post-submit action they
+have: **cancel**.
 
 **How a request ends.** The happy path above is only one ending, and most requests leave by
 another. Each needs a defined end state, because a request with no ending is a request the
@@ -415,17 +448,27 @@ centre keeps looking at.
 | **Partially fulfilled, donors recruited** | The centre, then the bot | The decision stands at `partial`; the shortfall lives on as a demand, and the request shows its progress until the demand closes |
 | **Declined** | The centre | Recorded with a reason and visible to the doctor. A decline is an answer, not a dead end: the doctor can raise a fresh request, which is a new record rather than an edit of the old one |
 | **Cancelled by the doctor** | The doctor | A submitted request can be **cancelled** — the patient improved, died, was referred, or it was raised in error. Cancelling releases any reserved bags, cancels an open donor demand (§5 stand-down), and requires a reason. It is the one post-submit action a doctor has, and without it the centre chases units nobody needs |
-| **Abandoned draft** | Nobody, which is the problem | A draft never submitted is invisible to everyone but its author. Drafts show their age on the dashboard, and one untouched past a threshold is surfaced for the doctor to submit or discard. They are never auto-deleted — an old draft may be the only record that something was intended |
+| **Nobody ever came** | The centre | The ID was never brought to the counter, so no patient was ever attached. It ages on the queue as **awaiting the bystander** and is closed by the centre with that reason — never silently |
 | **Expired need** | The system | `date_required` passes with the request undecided: it stays visible and is flagged overdue on the centre queue rather than quietly ageing out. Nothing about a blood request should expire silently |
 
-**Blood samples**
-- Associate one or more crossmatch samples with a submitted request: sample identifier
-  (globally unique), collection time, and the authenticated collecting doctor. Sample
-  history is listed on the request view.
+**Deciding before the patient is known — the emergency exception.** A request cannot
+normally be reserved against or issued until the centre has attached a patient: blood
+leaving a fridge has to be traceable to a named person, which is what §4's traceability and
+the crossmatch sample both assume. **Emergency is the exception**, because waiting for a
+bystander to arrive before releasing units is the worse failure. Three things keep it an
+exception rather than a hole:
+
+1. It applies to `emergency` only. Every other urgency needs the patient first.
+2. The decision records that it was made against an unidentified patient, and by whom.
+3. The request shows that visibly until a patient is attached, and the centre queue lists it
+   as outstanding. An issued unit pointing at nobody is a debt, and it is shown as one.
+
 
 **Dashboard**
-- Live counts and a recent-requests table for the signed-in doctor, with direct actions to
-  resume a draft or open a submitted request, and the age of any stale draft.
+- Live counts and a recent-requests table for the signed-in doctor: what each request was
+  for, its ID, its urgency, how long it has been waiting, and the centre's answer when one
+  comes. There are no drafts to resume — a four-field form is submitted or it never
+  existed.
 
 **Admin panel**
 - Create accounts in every role — `doctor`, `admin`, `blood_centre`, `volunteer_admin` — list
@@ -456,6 +499,10 @@ centre keeps looking at.
 `account_invites`, `account_update_requests`, `email_deliveries`, `patients`, `admissions`,
 `blood_requests`, `blood_samples`, `blood_request_counters`, `audit_log`.
 
+Ownership of the **tables** is unchanged by ADR 0010; what moved is who fills them in.
+`patients`, `admissions` and `blood_samples` are now written by Module 2, and
+`blood_requests.admission_id` is therefore null until the centre attaches one.
+
 ---
 
 ## 4. Module 2 — Blood centre dashboard
@@ -482,6 +529,43 @@ database client. Splitting it into its own deployment later should be mechanical
   token. It writes observations and reads nothing.
 
 ### Functionality
+
+**The request queue, and the counter that completes it**
+
+Every request arrives with four fields and an ID (§3). The centre's first job is to turn it
+into a record it can act on.
+
+- **Ordered by urgency**, then by the derived date, then by submission time. A routine
+  request raised on Monday must never sit above an emergency raised this morning.
+- **Time since submission** against the threshold for that urgency — 15 minutes for an
+  emergency, an hour, four hours — with anything past it flagged. That is the clock the top
+  three urgencies actually run on; a calendar date would not notice an unanswered emergency
+  until midnight.
+- **Look up a request by ID.** The bystander reads out `090926-00001`; the date part is
+  prefilled with today, so the counter types five digits.
+
+**Patients and admissions — entered here**
+
+Moved from the doctor app by ADR 0010, with the bystander standing at the counter to answer:
+
+- Identity and demographics: name, date of birth **or** age with unit (days / months /
+  years — neonates matter, and a DOB is often unknown on admission), sex, blood group, and a
+  hospital patient identifier (UHID/MRN) where one exists.
+- Contact and address: attender name and phone, address, district, city.
+- Clinical context carried with the patient rather than retyped per request: known
+  diagnosis, relevant history, previous transfusion and any reaction to one, and the
+  indication for this transfusion.
+- Admit under an `ip_no` — the admission's identity and what the request references — with
+  ward number and admitted/discharged timestamps.
+- **Search and de-duplicate before creating**: a warning on a close name + age + group
+  match, so one patient does not end up with three records across three admissions.
+- Edits are permitted and versioned by snapshot rather than blocked — a request already
+  answered keeps the values it was answered with (§2.6).
+- **Attaching the patient completes the request**, snapshots the patient onto it, and is
+  what unlocks reserving and issuing for every urgency except emergency.
+
+**The crossmatch sample** — identifier (globally unique), collection time, and who recorded
+it — is associated with the request here, alongside the patient.
 
 **Inventory — two instruments, two different questions**
 
