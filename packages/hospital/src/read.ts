@@ -11,7 +11,7 @@
  * reason.
  */
 
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, or } from 'drizzle-orm';
 import { admissions, bloodRequests, patients } from '@blood-connect/db';
 import { actorHas, createAuditWriter, type UseCaseContext } from '@blood-connect/platform';
 
@@ -116,11 +116,23 @@ export async function getDoctorActivity(
   ctx: UseCaseContext,
   doctorId: string,
 ): Promise<DoctorActivity> {
+  /**
+   * Work in progress, whether or not a patient has been attached yet.
+   *
+   * A left join: a request raised with four fields has no admission (ADR 0010),
+   * and an inner one counted it as no work at all — which is the opposite of
+   * true, since nobody has even identified the patient yet.
+   */
   const [open] = await ctx.db
     .select({ n: count() })
     .from(bloodRequests)
-    .innerJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
-    .where(and(eq(bloodRequests.doctorId, doctorId), eq(admissions.status, 'admitted')));
+    .leftJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
+    .where(
+      and(
+        eq(bloodRequests.doctorId, doctorId),
+        or(isNull(bloodRequests.admissionId), eq(admissions.status, 'admitted')),
+      ),
+    );
 
   const [live] = await ctx.db
     .select({ n: count() })

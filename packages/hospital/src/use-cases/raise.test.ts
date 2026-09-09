@@ -17,6 +17,7 @@ import {
 } from '@blood-connect/platform';
 
 import { raiseRequest, type RaiseInput } from './raise.js';
+import { listRequestsForDoctor } from './records.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
@@ -313,6 +314,81 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
       // than leaving a request pointing at half a patient.
       expect(await db.select().from(bloodRequests)).toHaveLength(0);
       expect(await db.select().from(patients)).toHaveLength(0);
+    });
+  });
+
+  /* ==================================================================== */
+  /* The doctor can see what they raised                                   */
+  /* ==================================================================== */
+
+  describe('the dashboard', () => {
+    /**
+     * The bug this describes, found in use.
+     *
+     * `listRequestsForDoctor` inner-joined the admission and the patient, so a
+     * request raised with four fields — which is now the ordinary one — was
+     * dropped from the doctor's own dashboard. They submitted, read out an ID,
+     * and then could not see the request anywhere.
+     */
+    it('shows a request that has no patient yet', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      const rows = await listRequestsForDoctor(context(), doctorId);
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.requestId).toBe(raised.value.requestId);
+      // Empty rather than absent: the request is there, the patient is not.
+      expect(rows[0]?.patientName).toBeNull();
+      expect(rows[0]?.ipNo).toBeNull();
+    });
+
+    it('shows one with a patient too, with the name on it', async () => {
+      await raise({
+        patient: {
+          name: 'Test Patient',
+          ipNo: 'IP-DASH-1',
+          bloodGroup: 'O+',
+          age: 30,
+          ageUnit: 'years',
+        },
+      });
+
+      const rows = await listRequestsForDoctor(context(), doctorId);
+      expect(rows[0]?.patientName).toBe('Test Patient');
+      expect(rows[0]?.ipNo).toBe('IP-DASH-1');
+    });
+
+    it('shows both kinds together, and loses neither', async () => {
+      await raise();
+      await raise({
+        patient: {
+          name: 'Test Patient',
+          ipNo: 'IP-DASH-2',
+          bloodGroup: 'O+',
+          age: 30,
+          ageUnit: 'years',
+        },
+      });
+
+      const rows = await listRequestsForDoctor(context(), doctorId);
+      expect(rows).toHaveLength(2);
+      // The urgency is carried, because it is what the doctor chose and the
+      // date alone cannot express it.
+      expect(rows.every((row) => row.urgency === 'urgent')).toBe(true);
+    });
+
+    it('shows another doctor nothing of theirs', async () => {
+      await raise();
+
+      const other: Actor = {
+        kind: 'user',
+        userId: newId(),
+        role: 'doctor',
+        districtScopeId: null,
+      };
+      const rows = await listRequestsForDoctor(context({ actor: other }), other.userId);
+      expect(rows).toHaveLength(0);
     });
   });
 

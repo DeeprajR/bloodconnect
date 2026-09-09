@@ -9,10 +9,13 @@ import {
   listRequestsForDoctor,
 } from '@blood-connect/hospital';
 import {
+  URGENCY_SHORT,
   WORDING,
   bloodGroupLabel,
+  isUrgency,
   productLabel,
   type BloodGroup,
+  type Urgency,
 } from '@blood-connect/domain';
 import { StartRequestButton } from '../request-buttons';
 
@@ -80,9 +83,9 @@ export default async function DashboardPage() {
               <thead>
                 <tr>
                   <th scope="col">Request ID</th>
-                  <th scope="col">Patient</th>
+                  <th scope="col">Urgency</th>
                   <th scope="col">Wanted</th>
-                  <th scope="col">{WORDING.dateRequired}</th>
+                  <th scope="col">Patient</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
@@ -92,13 +95,28 @@ export default async function DashboardPage() {
                     <td className="app-figure">
                       <Link href={`/requests/${request.id}`}>{request.requestId}</Link>
                     </td>
-                    <td>{request.patientName}</td>
+                    <td>
+                      {isUrgency(request.urgency ?? '')
+                        ? URGENCY_SHORT[request.urgency as Urgency]
+                        : '—'}
+                    </td>
                     <td>
                       {request.units} ×{' '}
                       {request.product ? productLabel(request.product) : '—'}{' '}
                       {request.bloodGroup ? bloodGroupLabel(request.bloodGroup) : ''}
                     </td>
-                    <td className="app-figure">{request.dateRequired ?? '—'}</td>
+                    <td>
+                      {/*
+                        Empty until the centre attaches one, which is the
+                        ordinary case (ADR 0010). Said in words, because a blank
+                        cell reads as a bug rather than as a state.
+                      */}
+                      {request.patientName ?? (
+                        <span className="ux4g-label-m-default">
+                          with the bystander
+                        </span>
+                      )}
+                    </td>
                     <td>
                       {STATUS_LABELS[request.status] ?? request.status}
                       {/*

@@ -228,15 +228,26 @@ export type RequestListRow = {
   readonly id: string;
   readonly requestId: string | null;
   readonly status: string;
+  readonly urgency: string | null;
   readonly bloodGroup: BloodGroup | null;
   readonly product: Product | null;
   readonly units: number | null;
   readonly dateRequired: string | null;
-  readonly patientName: string;
-  readonly ipNo: string;
+  /** Null until the centre attaches a patient (ADR 0010). */
+  readonly patientName: string | null;
+  readonly ipNo: string | null;
+  readonly submittedAt: Date | null;
   readonly updatedAt: Date;
 };
 
+/**
+ * A doctor's own requests.
+ *
+ * **Left joins, not inner ones.** A request is raised with four fields and no
+ * patient (ADR 0010), and inner joins here dropped every one of them — the
+ * doctor submitted a request, got an ID, and then could not see it on their own
+ * dashboard. The most common request in the system was the one it hid.
+ */
 export async function listRequestsForDoctor(
   ctx: UseCaseContext,
   doctorId: string,
@@ -246,17 +257,19 @@ export async function listRequestsForDoctor(
       id: bloodRequests.id,
       requestId: bloodRequests.requestId,
       status: bloodRequests.status,
+      urgency: bloodRequests.urgency,
       bloodGroup: bloodRequests.bloodGroup,
       product: bloodRequests.product,
       units: bloodRequests.units,
       dateRequired: bloodRequests.dateRequired,
       patientName: patients.name,
       ipNo: admissions.ipNo,
+      submittedAt: bloodRequests.submittedAt,
       updatedAt: bloodRequests.updatedAt,
     })
     .from(bloodRequests)
-    .innerJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
-    .innerJoin(patients, eq(patients.id, admissions.patientId))
+    .leftJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
+    .leftJoin(patients, eq(patients.id, admissions.patientId))
     .where(eq(bloodRequests.doctorId, doctorId))
     .orderBy(desc(bloodRequests.updatedAt));
 
