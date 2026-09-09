@@ -208,6 +208,71 @@ ${why}`;
     'Send anything to pick up where you left off. If you would rather not, ' +
     'just ignore this; we will not ask again.',
 
+  /* ------------------------------------------------------ the demand board */
+
+  boardEmpty:
+    'Nothing is needed right now. That is good news — we will message you when ' +
+    'something comes up.',
+
+  boardHeading: (count: number): string =>
+    count === 1 ? 'One patient needs blood right now.' : `${String(count)} patients need blood right now.`,
+
+  /** No patient detail, ever: the hospital, the group, the units, the day (§2.10). */
+  boardLine: (
+    bloodGroup: string,
+    unitsOutstanding: number,
+    neededBy: string,
+    hospital: HospitalSnapshot,
+    matchesMe: boolean,
+  ): string =>
+    `${matchesMe ? '● ' : '○ '}${group(bloodGroup)} — ` +
+    `${String(unitsOutstanding)} ${unitsOutstanding === 1 ? 'unit' : 'units'} still needed ` +
+    `by ${readableDay(neededBy)}\n   ${hospital.hospitalName}` +
+    (matchesMe ? '\n   You can give for this one.' : ''),
+
+  boardKey: '● you can give   ○ a different group',
+
+  /**
+   * Why they cannot answer anything, said **once** and without a lecture (§5).
+   *
+   * A donor who understands why they were skipped stays; one who feels ignored
+   * leaves. Each line says what would change it.
+   */
+  boardBlocked: (reason: string, until: string): string => {
+    switch (reason) {
+      case 'not_registered':
+        return 'Send anything to register — it takes about a minute, and then we can tell you which of these you could give for.';
+      case 'group_unverified':
+        return 'We cannot match you yet because your blood group has not been confirmed. The centre types you at your first donation — walk in any time.';
+      case 'flagged':
+        return 'The centre wants a word before your next donation, so we are not asking for now. That is a conversation, not a no.';
+      case 'paused':
+        return `You have paused messages until ${readableDay(until)}. Send “resume” if you would like to be asked again.`;
+      case 'interval':
+        return `You gave recently — the next time you can give is ${readableDay(until)}.`;
+      default:
+        return '';
+    }
+  },
+
+  boardTapPrompt: 'Tap one you can give for, and I will ask you a few questions.',
+
+  /** A visitor who tapped a request before registering (§5). */
+  linkHeldForYou: (bloodGroup: string, hospital: HospitalSnapshot): string =>
+    `Someone at ${hospital.hospitalName} needs ${group(bloodGroup)} blood.
+
+` +
+    'Let us get you registered first — it takes about a minute, and I will bring ' +
+    'you straight back to this.',
+
+  linkResumed: (bloodGroup: string, hospital: HospitalSnapshot): string =>
+    `Now, back to why you came: ${group(bloodGroup)} blood is needed at ` +
+    `${hospital.hospitalName}.`,
+
+  linkGone:
+    'That request has already been answered. Thank you for coming — here is ' +
+    'what else is needed.',
+
   /* -------------------------------------------------------------- the ask */
 
   request: (bloodGroup: string, neededBy: string, hospital: HospitalSnapshot): string =>

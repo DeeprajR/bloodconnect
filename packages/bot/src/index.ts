@@ -154,6 +154,16 @@ export {
 export { applyWalkIns, type WalkInSyncResult } from './use-cases/walk-ins.js';
 
 export {
+  journeyForBoardTap,
+  openBoard,
+  openCount,
+  requestByPublicId,
+  type Board,
+  type BoardBlock,
+  type BoardEntry,
+} from './use-cases/board.js';
+
+export {
   REMIND_AFTER_HOURS,
   remindAbandonedSignups,
   type ReminderResult,

@@ -85,7 +85,7 @@ P3  The centre decision, thin    6d  ✅
 P4  The bot loop, thin           8d  ✅ ▲ MILESTONE A — the loop closes (day ~29)
 P5  Module 1 depth               7d  ✅
 P6  Centre depth — collisions    8d  ✅
-P7  Bot depth — the interview    9d
+P7  Bot depth — the interview    9d  ✅
 P8  Endings sweep                4d   ▲ MILESTONE B — every §8 flow ends (day ~57)
 P9  Volunteer + public board     4d
 P10 Control panel                5d
@@ -290,6 +290,19 @@ forwardable message; the abandoned-signup reminder, once.
 **Prove.** Three ticked fields are fixed in one pass and return to the summary once. An abandoned
 signup resumes on the question it stopped at, after a process restart. Deleting a donor who
 donated keeps the donation and the bag identifier, and drops the name and number.
+
+---
+
+**Done.** All of it except two things, both named in ADR 0009: reverse geocoding
+(the first of §5's two location paths — the second is built, and there is no
+adapter providing a location fix to confirm yet), and the volunteer admin cards,
+which need a decision about how a staff account is reached on a chat platform and
+belong with the volunteer dashboard in P9.
+
+The finding was erasure: §12.1 requires de-identifying the roster and `app_bot`
+held no grant to do it, so deletion reported success and changed nothing.
+Migration 0016, contract 1.3.0, and `pnpm smoke:bot` to prove it.
+([ADR 0009](adr/0009-the-interview-and-an-erasure-that-did-not-land.md))
 
 ---
 

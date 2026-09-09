@@ -31,7 +31,7 @@ import {
   draftFromProfile,
   findDonorByAddress,
   loadInterview,
-  remindAbandonedSignups,
+  openBoard,
 } from '@blood-connect/bot';
 
 const botUrl = process.env.BOT_DATABASE_URL;
@@ -239,6 +239,15 @@ async function main() {
   } else {
     console.log('  --   every group already has an open floor demand; erasure skipped');
   }
+
+  /* ---------------------------------------------------------- the board */
+
+  console.log('\nthe demand board');
+  await attempt('a stranger can read the board', () => openBoard(ctx()));
+  const mine = await attempt('a donor sees it with their matches marked', () =>
+    openBoard(ctx(), donorId),
+  );
+  check('and is told why they cannot answer yet', mine?.blocked !== null);
 
   /* --------------------------------------------- what app_bot must not do */
 

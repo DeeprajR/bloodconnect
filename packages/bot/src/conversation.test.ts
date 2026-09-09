@@ -7,6 +7,7 @@ import { CONFIG_DEFAULTS } from '@blood-connect/config';
 import * as bot from '@blood-connect/db/bot';
 import { donorDemand, donorDemandConfirmations } from '@blood-connect/db';
 import { idGenerator, newId } from '@blood-connect/ids';
+import { addDays } from '@blood-connect/domain';
 import { createFakeClock } from '@blood-connect/testing';
 
 import { createMemoryChannel, type MemoryChannel } from './adapters/memory-channel.js';
@@ -598,6 +599,28 @@ describe.skipIf(!testUrl)('the conversation', () => {
       expect(second.reminded).toBe(0);
     });
 
+    /**
+     * The bug this comment outlives.
+     *
+     * The reminder used to compare `updated_at` — written by a database
+     * trigger on the server's clock — against a cutoff derived from the
+     * injected one. It passed at half past three and failed at five. Running
+     * the same assertion at two different fake times is what pins the fix.
+     */
+    it('measures idleness on the injected clock, not the server’s', async () => {
+      await say('hi');
+      await share('+919876543210');
+
+      // Two hours after they stopped: too soon, whatever the server's clock
+      // happens to say.
+      clock.set(new Date(START.getTime() + 2 * 3_600_000));
+      expect((await remindAbandonedSignups(context())).reminded).toBe(0);
+
+      // Seven hours after they stopped: due, on the same reasoning.
+      clock.set(new Date(START.getTime() + 7 * 3_600_000));
+      expect((await remindAbandonedSignups(context())).reminded).toBe(1);
+    });
+
     it('says nothing to somebody who only just stopped', async () => {
       await say('hi');
       await share('+919876543210');
@@ -621,6 +644,168 @@ describe.skipIf(!testUrl)('the conversation', () => {
       const back = await tap('dob:m:03');
       expect(back[0]).toContain('day');
       expect(await db.select().from(bot.donors)).toHaveLength(0);
+    });
+  });
+
+  /* ==================================================================== */
+  /* The demand board, and the link that leads to it                       */
+  /* ==================================================================== */
+
+  describe('the demand board', () => {
+    /** An open request, as the bot would hold it after importing a demand. */
+    const openRequest = async (
+      bloodGroup: string,
+      publicId: string,
+    ): Promise<string> => {
+      const id = newId();
+      await db.insert(bot.botRequests).values({
+        id,
+        demandId: newId(),
+        publicId,
+        bloodGroup,
+        product: 'whole_blood',
+        unitsNeeded: 2,
+        neededBy: addDays(clock.today(), 3),
+        hospitalSnapshot: { hospitalName: 'Test centre', hospitalAddress: 'Somewhere' },
+        status: 'open',
+      });
+      return id;
+    };
+
+    it('answers a stranger without making them register first', async () => {
+      await openRequest('O-', 'need-open-1');
+
+      // §5: open to everyone, registered or not. A visitor asking "what is
+      // needed?" gets an answer, not a signup form.
+      const said = await deliver({
+        kind: 'text',
+        address: { channel: 'memory', channelUserId: 'visitor-1' },
+        text: '/start need-open-1',
+        updateId: 'v1',
+      });
+
+      expect(said[0]?.text).toContain('needs O− blood');
+      // …and then it takes them to the first question, holding the link.
+      expect(said[1]?.text).toContain('phone number');
+    });
+
+    it('brings a visitor back to the request they arrived on', async () => {
+      await openRequest('O-', 'need-open-2');
+
+      await say('/start need-open-2');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+      await tap('group:O-');
+      await tap('weight:50_60');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap(`loc:district:${DISTRICT_ID}`);
+      await tap(`loc:city:${CITY_ID}`);
+      await tap(`loc:town:${TOWN_ID}`);
+      await tap('donated:never');
+      const said = await tap('sum:confirm');
+
+      // "The link is never lost" (§5) — across the whole interview.
+      expect(said.join('\n')).toContain('back to why you came');
+      expect(said.join('\n')).toContain('Test centre');
+
+      // And the same journey a wave would have created, so the same questions
+      // follow from here.
+      const [journey] = await db.select().from(bot.donorRequests);
+      expect(journey?.status).toBe('NOTIFIED');
+      expect(journey?.waveNo).toBe(0);
+    });
+
+    it('shows a registered donor their matches first, and the rest below', async () => {
+      await register();
+      /**
+       * AB+, not the O− they registered as.
+       *
+       * O− is the universal red-cell donor and matches every request, which
+       * makes it useless for testing the split — AB+ red cells can go only to
+       * AB+, so exactly one of these two is theirs to answer.
+       */
+      await client`UPDATE bot.donors SET blood_group = 'AB+'`;
+      await openRequest('O-', 'need-other');
+      await openRequest('AB+', 'need-mine');
+
+      const said = await say('board');
+      const text = said[0] ?? '';
+
+      // ● marks what they can give for; ○ is a different group, still visible,
+      // because "nothing for you" and "nothing at all" are different facts.
+      expect(text).toContain('● AB+');
+      expect(text).toContain('○ O−');
+      expect(text.indexOf('● AB+')).toBeLessThan(text.indexOf('○ O−'));
+      expect(text).toContain('a different group');
+    });
+
+    it('says once why a donor cannot answer, without a lecture', async () => {
+      await register();
+      await openRequest('O-', 'need-blocked');
+
+      // A donor whose group has never been typed by staff is not matchable —
+      // §7.7 recruits nobody on a self-declared group.
+      const said = await say('board');
+      expect(said[0]).toContain('not been confirmed');
+      expect(said[0]).toContain('walk in');
+    });
+
+    it('offers no tap when the donor cannot give, and one when they can', async () => {
+      await register();
+      await openRequest('O-', 'need-tap');
+
+      const blocked = channel.sent.at(-1)?.message.choices ?? [];
+      await say('board');
+      expect(blocked).toEqual([]);
+
+      // Staff type them at their first donation; now the tap appears.
+      await client`UPDATE bot.donors SET blood_group_verified_at = now()`;
+      await say('board');
+      expect(lastChoices().some((c) => c.data === 'board:need-tap')).toBe(true);
+    });
+
+    it('turns a board tap into the same journey a wave would have made', async () => {
+      await register();
+      await openRequest('O-', 'need-tapped');
+      await client`UPDATE bot.donors SET blood_group_verified_at = now()`;
+
+      await say('board');
+      const said = await tap('board:need-tapped');
+
+      // One path, not two (§5): the same card, and the same two answers.
+      expect(said[0]).toContain('Could you give?');
+      expect(lastChoices().some((c) => c.data.startsWith('accept:'))).toBe(true);
+
+      const [journey] = await db.select().from(bot.donorRequests);
+      expect(journey?.status).toBe('NOTIFIED');
+    });
+
+    it('does not create a second journey when the same request is tapped twice', async () => {
+      await register();
+      await openRequest('O-', 'need-twice');
+      await client`UPDATE bot.donors SET blood_group_verified_at = now()`;
+
+      await say('board');
+      await tap('board:need-twice');
+      await tap('board:need-twice');
+
+      // A donor who taps the board after being pushed the card must not end up
+      // holding two places for one request.
+      expect(await db.select().from(bot.donorRequests)).toHaveLength(1);
+    });
+
+    it('says so kindly when the link has already been answered', async () => {
+      await register();
+      const said = await say('/start no-such-request');
+
+      expect(said[0]).toContain('already been answered');
     });
   });
 

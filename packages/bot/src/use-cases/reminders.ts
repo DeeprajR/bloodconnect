@@ -22,6 +22,7 @@ import { conversationState } from '@blood-connect/db/bot';
 import type { BotContext } from '../context.js';
 import { MESSAGES } from '../messages.js';
 import { enqueue, type QueuedMessage } from '../outbox.js';
+import { DRAFT_TTL_HOURS } from './interview.js';
 
 /**
  * How long a draft sits untouched before the nudge.
@@ -42,14 +43,31 @@ export async function remindAbandonedSignups(
   limit = 50,
 ): Promise<ReminderResult> {
   const now = ctx.clock.now();
-  const cutoff = new Date(now.getTime() - REMIND_AFTER_HOURS * 3_600_000);
+
+  /**
+   * Idleness is read from `expires_at`, not from `updated_at`.
+   *
+   * Both move on every answer, but only one of them moves on **this** clock:
+   * `expires_at` is written by the application as `now + DRAFT_TTL_HOURS`,
+   * while `updated_at` is stamped by a database trigger using the server's
+   * `now()`. Comparing a trigger timestamp against an injected-clock cutoff
+   * made this depend on the wall-clock time of day — it passed at half past
+   * three and failed at five, which a test caught and a production incident
+   * would have caught later and worse (§3: the clock is injected so behaviour
+   * is asserted rather than waited for).
+   *
+   * So: untouched for `REMIND_AFTER_HOURS` means the expiry is now less than
+   * `TTL − REMIND_AFTER` away.
+   */
+  const idleBy = new Date(
+    now.getTime() + (DRAFT_TTL_HOURS - REMIND_AFTER_HOURS) * 3_600_000,
+  );
 
   const stale = await ctx.db
     .select({
       channel: conversationState.channel,
       channelUserId: conversationState.channelUserId,
       step: conversationState.step,
-      updatedAt: conversationState.updatedAt,
     })
     .from(conversationState)
     .where(
@@ -57,7 +75,7 @@ export async function remindAbandonedSignups(
         // Signup only. A donor half-way through editing their profile has
         // nothing to be reminded about — they are already registered.
         eq(conversationState.flow, 'onboarding'),
-        lt(conversationState.updatedAt, cutoff),
+        lt(conversationState.expiresAt, idleBy),
         /**
          * Still resumable. Past the TTL the draft is gone and a nudge would
          * point at nothing.

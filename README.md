@@ -36,7 +36,8 @@ P3  The centre decision, thin    ✅
 P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
 P5  Module 1 depth               ✅
 P6  Centre depth — collisions    ✅
-P7  Bot depth — the interview    ← next
+P7  Bot depth — the interview    ✅
+P8  Endings sweep                ← next
 …
 ```
 
@@ -113,6 +114,22 @@ collected. `pnpm smoke:centre` is what found that — it runs P6's writes as the
 role, which the test suite (connecting as `migrator`) cannot.
 ([ADR 0008](docs/adr/0008-centre-depth-and-a-grant-that-said-no.md))
 
+**P7** replaced the seven fields matching needed with the interview §5 describes.
+Ten steps: the platform is asked for the phone so the number arrives **verified**
+and the counter has something it can ring; the date of birth as year, month, day,
+because age asked directly gets rounded; "I don't know" for the blood group, since
+guessing is worse; the four-level location matched against the seeded hierarchy.
+Then the summary — every answer played back, numbered, the phone masked — with a
+checklist that fixes three wrong answers in **one** pass and returns once. The
+profile editor is the same screens with a different way in.
+
+Erasure was the finding. §12.1 requires de-identifying the roster; `app_bot` had
+no grant to do it, so deletion reported success and left the donor's name and
+number on every roster row for ever. Migration 0016 grants exactly those two
+columns — the unit number and the date stay, because that is the donation record.
+`pnpm smoke:bot` runs the whole thing as `app_bot`, which is what caught it.
+([ADR 0009](docs/adr/0009-the-interview-and-an-erasure-that-did-not-land.md))
+
 Run `pnpm db:seed` and sign in as any of:
 
 | Role | Email | Lands on |
@@ -171,6 +188,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
 | `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |
 | `pnpm smoke:centre` | Runs the centre's writes as `app_web` and asserts what that role must not be able to do. The suite connects as `migrator`, so it proves nothing about the grants; this does |
+| `pnpm smoke:bot` | The same for `app_bot`: the interview, the profile edit, erasure, and the six things the bot must not be able to reach |
 | `pnpm bot` | The donor bot: long-polls the channel and ticks. `CHANNEL=memory` needs no token |
 | `pnpm check:bot-migrations` | Greps the bot's migrations for a table the web release owns (§2.1) |
 | `pnpm db:generate` / `pnpm db:generate:bot` | Generate a migration from the Drizzle schema, for either set |

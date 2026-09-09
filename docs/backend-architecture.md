@@ -266,6 +266,10 @@ GRANT UPDATE (bot_public_id, imported_at, donors_notified, confirmed_units,
 GRANT SELECT, INSERT ON hospital.donor_demand_confirmations TO app_bot;
 GRANT UPDATE (status, acknowledged_at, updated_at)
   ON hospital.donor_demand_confirmations TO app_bot;
+-- erasure has to reach the roster (§12.1, 1.3.0): the name and the number go,
+-- the unit number and the date stay -- that is the donation record
+GRANT UPDATE (donor_name, donor_phone)
+  ON hospital.donor_demand_confirmations TO app_bot;
 -- a unit collected outside the bot is a unit it must stop recruiting for; it
 -- reads them and writes nothing (1.2.0)
 GRANT SELECT ON hospital.walk_in_donations TO app_bot;

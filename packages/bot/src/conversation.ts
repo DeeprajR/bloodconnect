@@ -34,6 +34,12 @@ import {
   declineRequest,
 } from './use-cases/journey.js';
 import { standingFor } from './use-cases/needs.js';
+import {
+  journeyForBoardTap,
+  openBoard,
+  requestByPublicId,
+  type Board,
+} from './use-cases/board.js';
 import { promptFor } from './use-cases/interview.js';
 import {
   answerContact,
@@ -123,6 +129,65 @@ async function standingMessage(
   return { text: lines.join('\n') };
 }
 
+/**
+ * The demand board, as one message (§5).
+ *
+ * Open to everyone — a visitor asking "what is needed?" gets an answer, not a
+ * signup form. A registered donor's matches lead the list and are marked; the
+ * rest stay visible below, because "nothing for you" and "nothing at all" are
+ * different facts and a donor should be able to tell them apart.
+ */
+function boardMessage(board: Board): OutgoingMessage {
+  if (board.entries.length === 0) {
+    return { text: MESSAGES.boardEmpty };
+  }
+
+  const lines = [
+    MESSAGES.boardHeading(board.entries.length),
+    '',
+    ...board.entries.map((entry) =>
+      MESSAGES.boardLine(
+        entry.bloodGroup,
+        entry.unitsOutstanding,
+        entry.neededBy,
+        entry.hospital,
+        entry.matchesMe,
+      ),
+    ),
+    '',
+    MESSAGES.boardKey,
+  ];
+
+  const mine = board.entries.filter((entry) => entry.matchesMe && !entry.alreadyAsked);
+
+  if (board.blocked !== null) {
+    // Said once, and without a lecture (§5).
+    const until =
+      board.blocked.reason === 'interval' || board.blocked.reason === 'paused'
+        ? board.blocked.until
+        : '';
+    lines.push('', MESSAGES.boardBlocked(board.blocked.reason, until));
+    return { text: lines.join('\n') };
+  }
+
+  if (mine.length === 0) return { text: lines.join('\n') };
+
+  lines.push('', MESSAGES.boardTapPrompt);
+  return {
+    text: lines.join('\n'),
+    /*
+      Tapping a match enters the same accept → screen → confirm flow as a
+      pushed card. §5 is explicit that there is one path and not two, so this
+      offers `board:<publicId>` and the handler turns it into the same journey
+      a wave would have created.
+    */
+    choices: mine.map((entry) => ({
+      label: `Give ${entry.bloodGroup} — ${entry.hospital.hospitalName}`,
+      data: `board:${entry.publicId}`,
+    })),
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* The router                                                                  */
 /* -------------------------------------------------------------------------- */
@@ -134,6 +199,13 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
   // it is handled before anything else looks them up.
   if (update.kind === 'choice' && isJourneyChoice(update.data)) {
     await handleJourneyChoice(ctx, address, update.data, update.updateId);
+    return;
+  }
+
+  // A tap on the board is the same: it turns into the same journey a wave
+  // would have created, and then into the same questions (§5).
+  if (update.kind === 'choice' && update.data.startsWith('board:')) {
+    await handleBoardTap(ctx, address, update.data.slice(6), update.updateId);
     return;
   }
 
@@ -154,6 +226,20 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
   }
 
   const said = update.kind === 'text' ? update.text.trim() : update.data;
+
+  /* ------------------------------------------------------- a deep link */
+  /**
+   * "A donor arriving on a request link is onboarded first, then lands back on
+   * that request — **the link is never lost**" (§5).
+   *
+   * The target is written onto the draft rather than held anywhere, so it
+   * survives the whole interview, a restart, and a night's sleep.
+   */
+  const deepLink = deepLinkTarget(said);
+  if (deepLink !== undefined) {
+    await handleDeepLink(ctx, address, deepLink, update.updateId);
+    return;
+  }
 
   /* ------------------------------------------ somebody part-way through */
   /**
@@ -266,6 +352,132 @@ const question = (journeyId: string, index: number, text: string): OutgoingMessa
 });
 
 /* -------------------------------------------------------------------------- */
+/* The board, and the link that leads to it                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The public id inside a deep link, if this is one.
+ *
+ * Telegram delivers `/start <payload>` when somebody opens `t.me/bot?start=x`,
+ * which is why this is the one place a command word still matters — it is the
+ * platform's wire format, not something a person is expected to type.
+ */
+function deepLinkTarget(said: string): string | undefined {
+  const match = /^\/?start[ =]([A-Za-z0-9_-]{4,64})$/.exec(said.trim());
+  return match?.[1];
+}
+
+async function handleDeepLink(
+  ctx: BotContext,
+  address: ChannelAddress,
+  publicId: string,
+  updateId: string,
+): Promise<void> {
+  const target = await requestByPublicId(ctx, publicId);
+  const donor = await findDonorByAddress(ctx, address);
+
+  if (!target) {
+    // The request closed between the share and the tap, which is the common
+    // case for a message forwarded around a family group.
+    const board = await openBoard(ctx, donor?.donorId);
+    await reply(ctx, address, [{ text: MESSAGES.linkGone }, boardMessage(board)], updateId);
+    return;
+  }
+
+  /* --- already registered: straight to the card ----------------------- */
+  if (donor) {
+    const journeyId = await journeyForBoardTap(ctx, target.botRequestId, donor.donorId);
+    if (journeyId === undefined) {
+      // Two taps racing on the same link: the other one made the journey and
+      // sent the card, so this one says nothing rather than sending a second.
+      await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
+      return;
+    }
+    await reply(
+      ctx,
+      address,
+      [requestCard(target.bloodGroup, target.neededBy, target.hospital, journeyId)],
+      updateId,
+    );
+    return;
+  }
+
+  /**
+   * A visitor: onboard first, holding the link **on the draft**.
+   *
+   * §5 — "the link is never lost". Writing it into the interview state is what
+   * makes that true across a restart and a night's sleep, rather than only
+   * across the next few messages.
+   */
+  const state = await beginInterview(ctx, address, {
+    draft: { returnToRequest: publicId },
+  });
+  await reply(
+    ctx,
+    address,
+    [
+      { text: MESSAGES.linkHeldForYou(target.bloodGroup, target.hospital) },
+      await promptFor(ctx, state),
+    ],
+    updateId,
+  );
+}
+
+/**
+ * A tap on the board, which becomes the journey a wave would have made.
+ *
+ * One path, not two (§5): from here the donor sees the same card and answers
+ * the same questions as somebody who was pushed it.
+ */
+async function handleBoardTap(
+  ctx: BotContext,
+  address: ChannelAddress,
+  publicId: string,
+  updateId: string,
+): Promise<void> {
+  const donor = await findDonorByAddress(ctx, address);
+  const target = await requestByPublicId(ctx, publicId);
+
+  if (!target) {
+    await reply(ctx, address, [{ text: MESSAGES.linkGone }], updateId);
+    return;
+  }
+
+  if (!donor) {
+    // Onboard first, then come back to it — the same behaviour as a deep link.
+    await handleDeepLink(ctx, address, publicId, updateId);
+    return;
+  }
+
+  const journeyId = await journeyForBoardTap(ctx, target.botRequestId, donor.donorId);
+  if (journeyId === undefined) {
+    await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
+    return;
+  }
+
+  await reply(
+    ctx,
+    address,
+    [requestCard(target.bloodGroup, target.neededBy, target.hospital, journeyId)],
+    updateId,
+  );
+}
+
+/** The request card — the same one a wave sends (§5). */
+const requestCard = (
+  bloodGroup: string,
+  neededBy: string,
+  hospital: { hospitalName: string; hospitalAddress: string },
+  journeyId: string,
+): OutgoingMessage => ({
+  text: MESSAGES.request(bloodGroup, neededBy, hospital),
+  choices: [
+    { label: 'Yes, I can give', data: `accept:${journeyId}` },
+    { label: 'Not this time', data: `decline:${journeyId}` },
+  ],
+});
+
+/* -------------------------------------------------------------------------- */
 /* Registered                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -361,6 +573,11 @@ async function handleRegistered(
     return;
   }
 
+  if (word === 'board' || word === 'needs' || word === 'requests') {
+    await reply(ctx, address, [boardMessage(await openBoard(ctx, donorId))], updateId);
+    return;
+  }
+
   if (word === 'help') {
     await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
     return;
@@ -432,6 +649,42 @@ async function showInterview(
           result.matchable.until ?? null,
         ),
       };
+
+  /**
+   * Came in on a request link → **straight back to that request** (§5).
+   *
+   * "That is what they came for." The alternative — a generic list of what is
+   * needed — loses the one person who already had a reason to act, which is
+   * the most expensive donor in the system to lose.
+   */
+  if (result.returnToRequest !== undefined) {
+    const target = await requestByPublicId(ctx, result.returnToRequest);
+    if (target) {
+      const journeyId = await journeyForBoardTap(ctx, target.botRequestId, result.donorId);
+      await reply(
+        ctx,
+        address,
+        [
+          closing,
+          { text: MESSAGES.linkResumed(target.bloodGroup, target.hospital) },
+          ...(journeyId === undefined
+            ? []
+            : [requestCard(target.bloodGroup, target.neededBy, target.hospital, journeyId)]),
+        ],
+        updateId,
+      );
+      return;
+    }
+    // It closed while they were registering. Say so, then show what else there
+    // is — an ending, not a dead end (§8).
+    await reply(
+      ctx,
+      address,
+      [closing, { text: MESSAGES.linkGone }, await standingMessage(ctx, result.donorId)],
+      updateId,
+    );
+    return;
+  }
 
   await reply(
     ctx,
