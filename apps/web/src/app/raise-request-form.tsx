@@ -234,11 +234,35 @@ export function RaiseRequestForm({
       */}
       <details className="app-more" open={admissionId !== undefined}>
         <summary className="app-more-summary">
-          Patient and clinical details
-          <span className="ux4g-label-m-default">
-            {' '}
-            — optional, the centre fills these in
+          <span className="app-stack-tight">
+            <span>Patient and clinical details</span>
+            <span className="ux4g-label-m-default">
+              Optional — the blood centre fills these in
+            </span>
           </span>
+          {/*
+            The affordance. `display: flex` on a `<summary>` removes the
+            browser's own marker, so the chevron is drawn here where it can be
+            placed and rotated. Hidden from assistive technology: the
+            open/closed state is already on the `<details>` element itself.
+          */}
+          <svg
+            className="app-more-chevron"
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M5 7.5 10 12.5 15 7.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </summary>
 
         <div className="app-stack app-more-body">

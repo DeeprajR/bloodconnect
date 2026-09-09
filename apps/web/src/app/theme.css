@@ -297,23 +297,81 @@
  * form when it is collapsed again — a doctor who filled it and closed it does
  * not lose the answers.
  */
+/*
+ * The disclosure, as a standard accordion panel.
+ *
+ * It is still a native `<details>` — no JavaScript decides whether it opens, so
+ * it works before hydration and the fields inside stay in the form when it is
+ * collapsed again. What changed is that it now **looks** like something you can
+ * open.
+ *
+ * The first version set `display: flex` on the `<summary>`, which silently
+ * removes the browser's own disclosure marker. The result was bold text with no
+ * affordance whatsoever: nothing said it was a control, let alone a closed one.
+ * So the marker is suppressed deliberately in all three engines and replaced by
+ * a chevron this file can actually place and rotate.
+ */
+
 .app-more {
-  border-block-start: var(--ux4g-border-md, 1px) solid
+  border: var(--ux4g-border-md, 1px) solid
     var(--ux4g-border-color-neutral-default, #d9d9d9);
-  padding-block-start: var(--ux4g-padding-m, 1rem);
+  border-radius: var(--ux4g-radius-md, 0.5rem);
+  background: var(--ux4g-bg-neutral-elevated, #fff);
+  /* Keeps the header's hover fill inside the rounded corners. */
+  overflow: hidden;
 }
 
 .app-more-summary {
-  cursor: pointer;
-  min-block-size: 44px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--ux4g-space-4, 0.5rem);
+  min-block-size: 56px;
+  padding: var(--ux4g-padding-s, 0.75rem) var(--ux4g-padding-m, 1rem);
+  cursor: pointer;
   color: var(--ux4g-text-neutral-primary, #171717);
   font-weight: var(--ux4g-font-weight-semibold, 600);
+  /* The native marker, removed in each engine that draws one. */
+  list-style: none;
+}
+
+.app-more-summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-more-summary:hover {
+  background: var(--ux4g-bg-neutral-subtle, #e5e5e5);
+}
+
+/*
+ * Focus lands on the summary, and it must be visible: this is the only control
+ * on the page a keyboard user reaches that is not a button or a field.
+ */
+.app-more-summary:focus-visible {
+  outline: var(--ux4g-border-lg, 0.1875rem) solid
+    var(--ux4g-text-brand-primary-default, #4a2bc2);
+  outline-offset: -3px;
+}
+
+.app-more-chevron {
+  flex: none;
+  transition: transform 150ms ease;
+  color: var(--ux4g-text-neutral-secondary, #404040);
+}
+
+/*
+ * Pointing down when closed, up when open — the direction says which way the
+ * panel will move. The reduced-motion block at the end of this file already
+ * neutralises the transition for anybody who asked for that.
+ */
+.app-more[open] .app-more-chevron {
+  transform: rotate(180deg);
 }
 
 .app-more-body {
-  padding-block-start: var(--ux4g-padding-m, 1rem);
+  padding: var(--ux4g-padding-m, 1rem);
+  border-block-start: var(--ux4g-border-md, 1px) solid
+    var(--ux4g-border-color-neutral-default, #d9d9d9);
 }
 
 @media (min-width: 1024px) {
