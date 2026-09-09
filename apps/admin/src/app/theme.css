@@ -274,3 +274,10 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* A list that is a list for a screen reader and a stack for everyone else. */
+.app-plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

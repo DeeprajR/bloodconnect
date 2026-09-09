@@ -362,16 +362,22 @@ answer comes back to the same screen. See [ADR 0010](adr/0010-the-doctor-app-bec
 - **Seals go to object storage**, not to local disk. They are served only to the owning
   doctor or an admin, through an authenticated route — never by public URL.
 - **Change my password** while signed in (current password required).
-- **Request an account details update.** Fields a user must not silently rewrite — email
-  address, display name, provisional registration number — are read-only on the profile
-  page with a *Request update* action beside them. The user submits the proposed value and
-  a reason; the request lands in the admin queue as `pending`.
+- **Request an account details update.** Fields a user must not silently rewrite — display
+  name and provisional registration number — are read-only on the profile page with a
+  *Request update* action beside them. The user submits the proposed value and a reason;
+  the request lands in the admin queue as `pending`.
+  - **The email address is not one of them.** It has the stronger flow above: a link
+    delivered to the proposed address proves the person holds it, where an admin queue
+    proves only that an administrator agreed, and both addresses are notified either way.
+    Routing email through the queue as well would be a second, weaker path to the same
+    change, which is the path an attacker would take (ADR 0012).
   - The user sees the status of their own requests (`pending` / `approved` / `rejected`,
     with the admin's note) and may withdraw one that is still pending.
   - Only one pending request per field per user.
   - On approval the change is applied by the system, not retyped by the admin, so what was
-    reviewed is exactly what lands. An approved email change notifies **both** the old and
-    the new address, and invalidates any outstanding OTP.
+    reviewed is exactly what lands.
+  - **Nobody decides their own request**, including an administrator. The queue exists so
+    that a second person agrees, and a self-approval removes the only check in the flow.
   - Fields the user owns outright — phone number, department — are simply editable; the
     queue is only for identity fields.
   - **Every request reaches an end state.** Approved applies the change and notifies;
@@ -480,8 +486,9 @@ exception rather than a hole:
   the last email sent to each account.
 - **Account update request queue**: pending requests with the current value, the proposed
   value and the user's reason; approve (the system applies the change) or reject with a
-  note. Approving an email change is the one action that moves an account's identity, so it
-  is confirmed explicitly and always notifies both addresses.
+  note that the person can act on. Oldest first, each showing how many days it has waited,
+  because a request nobody rejects and nobody approves is the failure this guards against.
+  An administrator's own request is shown without buttons and refused if submitted anyway.
 - Authorization is checked at three independent layers — route protection, page guard, and
   a per-endpoint re-check — so no single mistake grants access.
 - Safeguards: cannot change or deactivate your own account; cannot approve your own update
@@ -1738,7 +1745,7 @@ during a pilot.
 | **A confirmed donor travels to a hospital that no longer needs them** | §5, §8 | The stand-down message on a cancelled or expired demand is the highest-consequence message in the system and the easiest to forget, because it fires on the path nobody demonstrates. Test it first, not last |
 | **A flow is built with an entrance and no exit** | §8 | Quarantine, the case-3 discrepancy, the waitlist, the abandoned draft and the unactioned update request each need an ending. Check every new flow against §8's rule: named endings including the failure ones, and whoever was left waiting is told |
 | **The reset OTP becomes an account-enumeration oracle or a brute-force target** | §3 | Identical responses for known and unknown addresses; short expiry; single use; hashed at rest; throttled per account and per IP; sessions revoked on success |
-| **The update-request queue becomes a privilege-escalation path** | §3 | Approving an email change moves an account's identity. Nobody approves their own; both addresses are notified; every decision is audited |
+| **The update-request queue becomes a privilege-escalation path** | §3 | Email is kept out of the queue entirely and confirmed from the new address instead (ADR 0012); nobody decides their own request; every decision is audited with the administrator who made it |
 | **Reverse geocoding is wrong at locality level** | §5 | Always confirm, never silently accept. Make every level correctable afterwards |
 | **Free-text localities fragment the donor pool** | §5 | Match against a seeded hierarchy and store the reference id. Unmatched text goes to a review queue, never straight into the pool |
 | **Signup is ten questions long** | §5 | Every question costs completion, and the summary adds a screen before the finish line. Instrument drop-off per step, and be ready to defer weight and the durable screening to first-request rather than signup if the numbers say so |

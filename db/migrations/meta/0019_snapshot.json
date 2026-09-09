@@ -1,6 +1,6 @@
 {
-  "id": "96572b0a-75c1-4f9b-8967-cc1bcdde80c4",
-  "prevId": "189d7208-640e-4b82-88d6-e67a52fc3fa8",
+  "id": "219bd22a-6926-4a45-80d2-f9a3c06dc20a",
+  "prevId": "e3243138-081c-4780-bf35-6b13800eba10",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -995,6 +995,210 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "hospital.account_update_requests": {
+      "name": "account_update_requests",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field": {
+          "name": "field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_value": {
+          "name": "current_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proposed_value": {
+          "name": "proposed_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "admin_note": {
+          "name": "admin_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "account_update_requests_one_pending_idx": {
+          "name": "account_update_requests_one_pending_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "field",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "status = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_update_requests_queue_idx": {
+          "name": "account_update_requests_queue_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "status = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_update_requests_user_idx": {
+          "name": "account_update_requests_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_update_requests_user_id_users_id_fk": {
+          "name": "account_update_requests_user_id_users_id_fk",
+          "tableFrom": "account_update_requests",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_update_requests_decided_by_users_id_fk": {
+          "name": "account_update_requests_decided_by_users_id_fk",
+          "tableFrom": "account_update_requests",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "decided_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "account_update_requests_field_check": {
+          "name": "account_update_requests_field_check",
+          "value": "field IN ('full_name', 'provisional_reg')"
+        },
+        "account_update_requests_status_check": {
+          "name": "account_update_requests_status_check",
+          "value": "status IN ('pending', 'approved', 'rejected', 'withdrawn')"
+        },
+        "account_update_requests_decided_check": {
+          "name": "account_update_requests_decided_check",
+          "value": "(status IN ('pending', 'withdrawn')) = (decided_by IS NULL AND decided_at IS NULL)"
+        },
+        "account_update_requests_value_check": {
+          "name": "account_update_requests_value_check",
+          "value": "length(trim(proposed_value)) > 0"
+        },
+        "account_update_requests_reason_check": {
+          "name": "account_update_requests_reason_check",
+          "value": "length(trim(reason)) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "hospital.email_change_requests": {
       "name": "email_change_requests",
       "schema": "hospital",
@@ -1815,9 +2019,9 @@
       "name": "blood_request_counters",
       "schema": "hospital",
       "columns": {
-        "year": {
-          "name": "year",
-          "type": "integer",
+        "day": {
+          "name": "day",
+          "type": "date",
           "primaryKey": true,
           "notNull": true
         },
@@ -1862,7 +2066,7 @@
           "name": "admission_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "doctor_id": {
           "name": "doctor_id",
@@ -1875,7 +2079,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'draft'"
+          "default": "'submitted'"
+        },
+        "urgency": {
+          "name": "urgency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "indication": {
           "name": "indication",
@@ -2081,7 +2291,15 @@
         },
         "blood_requests_submitted_check": {
           "name": "blood_requests_submitted_check",
-          "value": "status = 'draft' OR (\n        request_id IS NOT NULL\n        AND patient_snapshot IS NOT NULL\n        AND doctor_snapshot IS NOT NULL\n        AND submitted_at IS NOT NULL\n        AND indication IS NOT NULL\n        AND date_required IS NOT NULL\n        AND blood_group IS NOT NULL\n        AND product IS NOT NULL\n        AND units IS NOT NULL\n      )"
+          "value": "status = 'draft' OR (\n        request_id IS NOT NULL\n        AND doctor_snapshot IS NOT NULL\n        AND submitted_at IS NOT NULL\n        AND urgency IS NOT NULL\n        AND date_required IS NOT NULL\n        AND blood_group IS NOT NULL\n        AND product IS NOT NULL\n        AND units IS NOT NULL\n      )"
+        },
+        "blood_requests_patient_check": {
+          "name": "blood_requests_patient_check",
+          "value": "patient_snapshot IS NULL OR admission_id IS NOT NULL"
+        },
+        "blood_requests_urgency_check": {
+          "name": "blood_requests_urgency_check",
+          "value": "urgency IS NULL OR urgency IN ('emergency', 'very_urgent', 'urgent', 'routine')"
         },
         "blood_requests_units_check": {
           "name": "blood_requests_units_check",
@@ -3202,6 +3420,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "patient_unidentified": {
+          "name": "patient_unidentified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "decided_by": {
           "name": "decided_by",

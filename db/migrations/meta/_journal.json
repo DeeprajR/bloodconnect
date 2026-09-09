@@ -134,6 +134,13 @@
       "when": 1788978603898,
       "tag": "0018_the_emergency_exception",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788981493254,
+      "tag": "0019_the_account_update_queue",
+      "breakpoints": true
     }
   ]
 }

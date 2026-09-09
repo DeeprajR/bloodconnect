@@ -39,6 +39,12 @@ export function AppShell({
             >
               Doctors
             </Link>
+            <Link
+              href="/updates"
+              className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md app-target"
+            >
+              Update requests
+            </Link>
             <SignOutButton />
           </div>
         ) : null}

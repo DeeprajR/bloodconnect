@@ -360,10 +360,14 @@ ageing; invites that were never used; the demand that expires unmet.
 
 > **Milestone B.** Every flow in the specification has a named ending, and each has a test.
 
-**Reached for every flow but one.** The account update-request flow was never built — P5 listed
-it and it did not happen — so its ⚠︎ ending cannot be closed, because the flow has no beginning
-either. Recorded in [ADR 0011](adr/0011-the-endings-sweep-and-one-milestone-short.md) rather than
-counted as done; roughly a day to close.
+**Reached.** It was one flow short at the end of the sweep: the account update-request flow had
+never been built — P5 listed it and it did not happen — so its ⚠︎ ending could not be closed,
+because the flow had no beginning either. Recorded in
+[ADR 0011](adr/0011-the-endings-sweep-and-one-milestone-short.md) rather than counted as done,
+then built in [ADR 0012](adr/0012-the-update-queue-holds-two-fields.md): the profile action, the
+admin queue with approve and reject, the system applying the change itself, and the ageing that
+is the ⚠︎. It holds two fields rather than the three §3 listed — the email address keeps its
+own flow, confirmed from the new address, which proves more than an approval can.
 
 Two endings were genuinely missing and are now built: declining the acknowledgement leaves a
 donor **registered and dormant** rather than nothing at all, and somebody still holding a card

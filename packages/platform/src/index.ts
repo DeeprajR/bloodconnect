@@ -66,9 +66,11 @@ export {
   rateLimited,
   sealRejected,
   sessionInvalid,
+  updateRequestRejected,
   type AccountLifecycleError,
   type NotAuthorized,
   type PlatformError,
+  type UpdateRequestRejected,
 } from './errors.js';
 
 export { db, schema, type Database, type Transaction } from './db.js';
@@ -128,6 +130,26 @@ export {
   type DoctorDetail,
   type DoctorSummary,
 } from './use-cases/doctors.js';
+
+export {
+  UPDATE_REQUEST_FIELDS,
+  UPDATE_REQUEST_STATUSES,
+  type UpdateRequestField,
+  type UpdateRequestStatus,
+} from '@blood-connect/db';
+
+export {
+  UPDATE_REQUEST_LABELS,
+  approveUpdateRequest,
+  listMyUpdateRequests,
+  listPendingUpdateRequests,
+  rejectUpdateRequest,
+  requestAccountUpdate,
+  withdrawAccountUpdate,
+  type PendingUpdateRequest,
+  type UpdateRequestError,
+  type UpdateRequestRow,
+} from './use-cases/update-requests.js';
 
 export {
   readSeal,

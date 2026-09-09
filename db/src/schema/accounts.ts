@@ -140,6 +140,96 @@ export const emailChangeRequests = hospitalSchema.table(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Account update requests — the identity fields an admin has to agree to      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Fields a person must not silently rewrite about themselves (§3).
+ *
+ * **Email is deliberately absent.** It has the flow above, confirmed by a link
+ * delivered to the proposed address. What is left is the two fields a person can
+ * assert but nobody can verify by delivery: the name printed on a request and
+ * the registration number beside it. Both are copied onto a doctor's snapshot
+ * and travel from there onto clinical records, which is why they are reviewed
+ * rather than typed.
+ */
+export const UPDATE_REQUEST_FIELDS = ['full_name', 'provisional_reg'] as const;
+export type UpdateRequestField = (typeof UPDATE_REQUEST_FIELDS)[number];
+
+export const UPDATE_REQUEST_STATUSES = [
+  'pending',
+  'approved',
+  'rejected',
+  'withdrawn',
+] as const;
+export type UpdateRequestStatus = (typeof UPDATE_REQUEST_STATUSES)[number];
+
+export const accountUpdateRequests = hospitalSchema.table(
+  'account_update_requests',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    field: text('field').notNull(),
+    /**
+     * What the field said when the request was made.
+     *
+     * Stored rather than joined, so the queue shows the comparison that was
+     * actually submitted. A value edited in between would otherwise make the
+     * admin approve a change nobody proposed.
+     */
+    currentValue: text('current_value'),
+    proposedValue: text('proposed_value').notNull(),
+    reason: text('reason').notNull(),
+    status: text('status').notNull().default('pending'),
+    /** The note on a rejection — the reason the person gets to act on. */
+    adminNote: text('admin_note'),
+    decidedBy: uuid('decided_by').references(() => users.id),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    /**
+     * One pending request per field per person (§3).
+     *
+     * A partial unique index rather than a check inside a use case: two tabs
+     * open on the profile page would both insert, and the admin would then see
+     * the same field twice with different values and no way to tell which won.
+     */
+    uniqueIndex('account_update_requests_one_pending_idx')
+      .on(table.userId, table.field)
+      .where(sql`status = 'pending'`),
+    // The queue itself: what is waiting, oldest first, so nothing is buried.
+    index('account_update_requests_queue_idx')
+      .on(table.status, table.createdAt)
+      .where(sql`status = 'pending'`),
+    index('account_update_requests_user_idx').on(table.userId, table.createdAt),
+    check(
+      'account_update_requests_field_check',
+      sql`field IN ('full_name', 'provisional_reg')`,
+    ),
+    check(
+      'account_update_requests_status_check',
+      sql`status IN ('pending', 'approved', 'rejected', 'withdrawn')`,
+    ),
+    /**
+     * Decided means a person and a time, together.
+     *
+     * A row saying "approved" with nobody attached is a change to a clinical
+     * identity that nobody owns, and §14 exists so that cannot happen quietly.
+     */
+    check(
+      'account_update_requests_decided_check',
+      sql`(status IN ('pending', 'withdrawn')) = (decided_by IS NULL AND decided_at IS NULL)`,
+    ),
+    check('account_update_requests_value_check', sql`length(trim(proposed_value)) > 0`),
+    check('account_update_requests_reason_check', sql`length(trim(reason)) > 0`),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
 /* Stored objects (§3, §12.3)                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -280,6 +370,22 @@ export const passwordResetOtpRelations = relations(passwordResetOtps, ({ one }) 
 export const emailChangeRequestRelations = relations(emailChangeRequests, ({ one }) => ({
   user: one(users, { fields: [emailChangeRequests.userId], references: [users.id] }),
 }));
+
+export const accountUpdateRequestRelations = relations(
+  accountUpdateRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [accountUpdateRequests.userId],
+      references: [users.id],
+      relationName: 'update_request_subject',
+    }),
+    decider: one(users, {
+      fields: [accountUpdateRequests.decidedBy],
+      references: [users.id],
+      relationName: 'update_request_decider',
+    }),
+  }),
+);
 
 export const userSealRelations = relations(userSeals, ({ one }) => ({
   user: one(users, { fields: [userSeals.userId], references: [users.id] }),

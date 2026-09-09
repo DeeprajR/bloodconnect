@@ -23,12 +23,15 @@ import {
   drainEmailOutbox,
   landingFor,
   nodeTokens,
+  UPDATE_REQUEST_FIELDS,
+  requestAccountUpdate,
   requestEmailChange,
   requestPasswordOtp,
   signIn,
   signOut,
   smtpEmailPort,
   verifyOtpAndReset,
+  withdrawAccountUpdate,
 } from '@blood-connect/platform';
 
 /**
@@ -207,6 +210,55 @@ export async function cancelEmailChangeAction(): Promise<void> {
   const actor = await currentActor();
   const ctx = await useCaseContext(actor);
   await cancelPendingEmailChange(ctx);
+
+  revalidatePath('/profile');
+}
+
+/* -------------------------------------------------------------------------- */
+/* Account update requests (§3)                                                */
+/* -------------------------------------------------------------------------- */
+
+const updateRequestSchema = z.object({
+  field: z.enum(UPDATE_REQUEST_FIELDS),
+  proposedValue: z.string().trim().min(1, 'Fill in the new value.').max(200),
+  reason: z
+    .string()
+    .trim()
+    .min(1, 'Say why it needs changing.')
+    .max(500, 'Keep it under 500 characters.'),
+});
+
+export async function requestAccountUpdateAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await assertSameOrigin();
+
+  const parsed = updateRequestSchema.safeParse({
+    field: formData.get('field'),
+    proposedValue: formData.get('proposedValue'),
+    reason: formData.get('reason'),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Check the form.' };
+  }
+
+  const actor = await currentActor();
+  const ctx = await useCaseContext(actor);
+  const result = await requestAccountUpdate(ctx, parsed.data);
+
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath('/profile');
+  return { error: null, done: true };
+}
+
+export async function withdrawAccountUpdateAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+
+  const actor = await currentActor();
+  const ctx = await useCaseContext(actor);
+  await withdrawAccountUpdate(ctx, formValue(formData, 'requestId'));
 
   revalidatePath('/profile');
 }

@@ -8,11 +8,13 @@ import { z } from 'zod';
 
 import {
   anonymousActor,
+  approveUpdateRequest,
   createDoctor,
   db,
   drainEmailOutbox,
   landingFor,
   nodeTokens,
+  rejectUpdateRequest,
   removeSeal,
   resendInvite,
   setAccountStatus,
@@ -237,4 +239,34 @@ export async function removeSealAction(userId: string): Promise<void> {
   await removeSeal(ctx, userId);
 
   revalidatePath(`/doctors/${userId}`);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Account update requests (§3)                                                */
+/* -------------------------------------------------------------------------- */
+
+export async function approveUpdateRequestAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+
+  const actor = await currentActor();
+  const ctx = await useCaseContext(actor);
+  const result = await approveUpdateRequest(ctx, formValue(formData, 'requestId'));
+
+  revalidatePath('/updates');
+  if (!result.ok) redirect(`/updates?problem=${encodeURIComponent(result.error.message)}`);
+}
+
+export async function rejectUpdateRequestAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+
+  const actor = await currentActor();
+  const ctx = await useCaseContext(actor);
+  const result = await rejectUpdateRequest(
+    ctx,
+    formValue(formData, 'requestId'),
+    formValue(formData, 'adminNote'),
+  );
+
+  revalidatePath('/updates');
+  if (!result.ok) redirect(`/updates?problem=${encodeURIComponent(result.error.message)}`);
 }

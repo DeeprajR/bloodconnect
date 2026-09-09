@@ -172,3 +172,40 @@ export const lastAdministrator = (): LastAdministrator => ({
   kind: 'LastAdministrator',
   message: 'This is the last active administrator, so it cannot be removed.',
 });
+
+/* -------------------------------------------------------------------------- */
+/* Account update requests (§3)                                                */
+/* -------------------------------------------------------------------------- */
+
+export type UpdateRequestRejected = {
+  readonly kind: 'UpdateRequestRejected';
+  readonly reason:
+    | 'unchanged'
+    | 'already_pending'
+    | 'no_reason'
+    | 'empty_value'
+    | 'reg_taken'
+    | 'not_found'
+    | 'already_decided'
+    | 'own_request';
+  readonly message: string;
+};
+
+export const updateRequestRejected = (
+  reason: UpdateRequestRejected['reason'],
+): UpdateRequestRejected => ({
+  kind: 'UpdateRequestRejected',
+  reason,
+  message: {
+    unchanged: 'That is what it already says. Nothing to change.',
+    already_pending: 'You already have a request waiting for this. Withdraw it first.',
+    no_reason: 'Say why it needs changing — an administrator has to decide on something.',
+    empty_value: 'Fill in the new value.',
+    reg_taken: 'That registration number already belongs to another account.',
+    not_found: 'That request no longer exists.',
+    already_decided: 'That request has already been decided.',
+    // §3: the queue exists so that a second person agrees. An administrator who
+    // approves their own request has removed the only check in the flow.
+    own_request: 'You cannot decide your own request. Ask another administrator.',
+  }[reason],
+});

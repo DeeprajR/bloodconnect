@@ -188,6 +188,7 @@ export const ADMIN_ROUTE_RULES: readonly RouteRule[] = [
   { prefix: '/sw.js', access: { kind: 'public' } },
 
   { prefix: '/doctors', access: { kind: 'roles', roles: ['admin'] } },
+  { prefix: '/updates', access: { kind: 'roles', roles: ['admin'] } },
   { prefix: '/profile', access: { kind: 'roles', roles: ['admin'] } },
   { prefix: '/api/seal', access: { kind: 'roles', roles: ['admin'] } },
 ];

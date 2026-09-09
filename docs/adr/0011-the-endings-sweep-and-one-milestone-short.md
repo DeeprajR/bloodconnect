@@ -96,7 +96,8 @@ invalidate any outstanding OTP.
 
 ## 5. Still open
 
-- The account update-request flow above.
+- ~~The account update-request flow above.~~ Built in ADR 0012, which also
+  records why it holds two fields rather than the three §3 listed.
 - The centre's request queue shows a request awaiting a bystander and ages it,
   but nothing yet *closes* one that never gets collected. §8 says the centre
   closes it with that reason; today it would sit on the queue indefinitely. It
