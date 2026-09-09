@@ -38,6 +38,7 @@ export {
   getRequestForDecision,
   admissionStateFor,
   attachPatient,
+  findRequestByNumber,
   type AttachError,
   type AdmissionState,
   markRequestCancelled,

@@ -36,7 +36,13 @@
 import { inArray, sql } from 'drizzle-orm';
 import { err, ok, type Result } from '@blood-connect/result';
 import { bloodBags, centreDecisions, decisionBags } from '@blood-connect/db';
-import { recruitsDonors, type BloodGroup, type Product } from '@blood-connect/domain';
+import {
+  mayDecideWithoutPatient,
+  recruitsDonors,
+  type BloodGroup,
+  type Product,
+  type Urgency,
+} from '@blood-connect/domain';
 import { getRequestForDecision, markRequestDecided } from '@blood-connect/hospital';
 import {
   actorHas,
@@ -48,6 +54,7 @@ import {
 import {
   notAuthorized,
   requestAlreadyDecided,
+  patientNotIdentified,
   requestNotDecidable,
   requestNotFound,
   type DecideError,
@@ -175,6 +182,23 @@ export async function decideRequest(
   if (!request) return err(requestNotFound());
   if (request.status !== 'submitted') return err(requestNotDecidable(request.status));
 
+  /**
+   * Nobody has said who this is for (§4, ADR 0010).
+   *
+   * A unit leaving the fridge has to be traceable to a named person, and this is
+   * where that becomes a refusal rather than a convention. **Emergency is the
+   * only exception**: waiting for a bystander to arrive before releasing units
+   * in a real emergency is the worse failure, and the decision records that it
+   * was made against an unidentified patient.
+   *
+   * Checked before the transaction opens, because there is nothing to roll back
+   * — and a refusal that costs a lock is a refusal that slows the counter down
+   * for no reason.
+   */
+  if (request.awaitingPatient && !mayDecideWithoutPatient(request.urgency as Urgency)) {
+    return err(patientNotIdentified());
+  }
+
   const now = ctx.clock.now();
   const decisionId = ctx.ids.next<'DecisionId'>();
 
@@ -241,6 +265,8 @@ export async function decideRequest(
         note: input.note,
         decidedBy: ctx.actor.kind === 'user' ? ctx.actor.userId : null,
         decidedAt: now,
+        // The exception, recorded on the decision that took it (ADR 0010).
+        patientUnidentified: request.awaitingPatient,
         demandId,
       });
 
@@ -279,6 +305,7 @@ export async function decideRequest(
         subjectId: request.id,
         metadata: {
           requestId: request.requestId,
+          patientUnidentified: request.awaitingPatient,
           decision,
           unitsIssued,
           unitsRequested: request.units,

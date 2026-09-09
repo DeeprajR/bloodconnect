@@ -395,6 +395,11 @@
   color: var(--ux4g-text-neutral-primary, #171717);
 }
 
+/* The prefilled date half of the ID lookup: narrower, because it is rarely typed. */
+.app-lookup-date {
+  inline-size: 7rem;
+}
+
 /* ---------------------------------------------------------------------------
  * The centre's side navigation.
  *

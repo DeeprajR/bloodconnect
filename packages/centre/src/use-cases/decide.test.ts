@@ -143,24 +143,30 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
     units: number,
     product: Product = 'prbc',
     bloodGroup: BloodGroup = 'O+',
+    /** Raised the new way: four fields and no patient yet (ADR 0010). */
+    options: { urgency?: string; withPatient?: boolean } = {},
   ): Promise<string> {
     const id = newId();
+    const withPatient = options.withPatient !== false;
     await db.insert(bloodRequests).values({
       id,
       requestId: `BR-2026-${String(Math.floor(Math.random() * 900000) + 100000)}`,
       centreId: CENTRE_ID,
-      admissionId,
+      admissionId: withPatient ? admissionId : null,
       doctorId,
       status: 'submitted',
       // Required of every non-draft request since ADR 0010.
-      urgency: 'routine',
+      urgency: options.urgency ?? 'routine',
       indication: 'Anaemia',
       dateRequired: clock.today(),
       bloodGroup,
       product,
       units,
       submittedAt: clock.now(),
-      patientSnapshot: { name: 'Test Patient', ipNo: 'IP-1', ward: '3B', bloodGroup },
+      // The snapshot cannot exist without the patient — `blood_requests_patient_check`.
+      patientSnapshot: withPatient
+        ? { name: 'Test Patient', ipNo: 'IP-1', ward: '3B', bloodGroup }
+        : null,
       doctorSnapshot: { id: doctorId, fullName: 'Dr Test' },
     });
     return id;
@@ -462,6 +468,78 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
     expect(first.ok).toBe(true);
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.error.kind).toBe('RequestNotDecidable');
+  });
+
+  /* ==================================================================== */
+  /* Who is it for? (§4, ADR 0010)                                         */
+  /* ==================================================================== */
+
+  describe('deciding before anybody named the patient', () => {
+    it('refuses every urgency but emergency', async () => {
+      await stock(3);
+
+      for (const urgency of ['routine', 'urgent', 'very_urgent']) {
+        const id = await submittedRequest(2, 'prbc', 'O+', {
+          urgency,
+          withPatient: false,
+        });
+        const result = await decideRequest(context(), { requestUuid: id, action: 'issue', note: null });
+
+        /**
+         * A unit leaving the fridge has to be traceable to a named person —
+         * §4's traceability and the crossmatch sample both rest on it. This is
+         * where that becomes a refusal rather than a convention.
+         */
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error.kind).toBe('PatientNotIdentified');
+      }
+    });
+
+    it('writes nothing when it refuses', async () => {
+      const bags = await stock(3);
+      const id = await submittedRequest(2, 'prbc', 'O+', {
+        urgency: 'routine',
+        withPatient: false,
+      });
+
+      await decideRequest(context(), { requestUuid: id, action: 'issue', note: null });
+
+      // Refused before the transaction opens, so no bag is even claimed.
+      const rows = await db.select().from(bloodBags).where(inArray(bloodBags.id, bags));
+      expect(rows.every((row) => row.status === 'available')).toBe(true);
+      expect(await db.select().from(centreDecisions)).toHaveLength(0);
+    });
+
+    it('lets an emergency through, and records that it did', async () => {
+      await stock(3);
+      const id = await submittedRequest(2, 'prbc', 'O+', {
+        urgency: 'emergency',
+        withPatient: false,
+      });
+
+      const result = await decideRequest(context(), { requestUuid: id, action: 'issue', note: null });
+      if (!result.ok) throw new Error(`decision refused: ${result.error.kind}`);
+
+      const [decision] = await db.select().from(centreDecisions);
+      if (!decision) throw new Error('no decision row was written');
+
+      /**
+       * Stored, not inferred. Once the bystander arrives the request has a
+       * patient, and working it out later from "does it have one?" would erase
+       * the only trace that units went out before anybody knew.
+       */
+      expect(decision.patientUnidentified).toBe(true);
+    });
+
+    it('records the ordinary case as no exception at all', async () => {
+      await stock(3);
+      const id = await submittedRequest(2);
+
+      await decideRequest(context(), { requestUuid: id, action: 'issue', note: null });
+
+      const [decision] = await db.select().from(centreDecisions);
+      expect(decision?.patientUnidentified).toBe(false);
+    });
   });
 
   it('refuses a draft, and a cancelled request', async () => {

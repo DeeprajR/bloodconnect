@@ -483,6 +483,16 @@ export const centreDecisions = hospitalSchema.table(
     unitsIssued: integer('units_issued').notNull().default(0),
     unitsRequested: integer('units_requested').notNull(),
     note: text('note'),
+    /**
+     * Answered before anybody said who it was for (§4, ADR 0010).
+     *
+     * Only an emergency may be, and the fact is recorded here rather than
+     * inferred later from whether the request has a patient now — by then it
+     * will have one, and the exception would be invisible. An issued unit
+     * pointing at nobody is a debt, and this is the record that it was taken on.
+     */
+    patientUnidentified: boolean('patient_unidentified').notNull().default(false),
+
     decidedBy: uuid('decided_by').references(() => users.id),
     decidedAt: timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
     /** The demand a shortfall raised, in the same transaction (§7.2). */

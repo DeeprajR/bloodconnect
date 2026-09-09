@@ -18,7 +18,12 @@ import {
 
 import { raiseRequest, type RaiseInput } from './raise.js';
 import { listRequestsForDoctor } from './records.js';
-import { admissionStateFor, attachPatient, listRequestsAwaitingDecision } from '../for-centre.js';
+import {
+  admissionStateFor,
+  attachPatient,
+  findRequestByNumber,
+  listRequestsAwaitingDecision,
+} from '../for-centre.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
@@ -588,6 +593,60 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
 
       const queue = await listRequestsAwaitingDecision(context());
       expect(queue.filter((row) => row.awaitingPatient)).toHaveLength(1);
+    });
+  });
+
+  /* ==================================================================== */
+  /* Finding it at the counter                                             */
+  /* ==================================================================== */
+
+  describe('the ID lookup', () => {
+    it('finds the request the bystander read out', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      const found = await findRequestByNumber(context(), raised.value.requestId);
+      expect(found?.id).toBe(raised.value.requestUuid);
+    });
+
+    it('accepts it however the counter typed it', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+      const id = raised.value.requestId;
+
+      // Transcribed by ear, so the separator is whatever they used — or none.
+      for (const typed of [id, id.replace('-', ' '), id.replace('-', ''), ` ${id} `]) {
+        expect((await findRequestByNumber(context(), typed))?.id).toBe(
+          raised.value.requestUuid,
+        );
+      }
+    });
+
+    it('finds nothing rather than guessing at a near miss', async () => {
+      await raise();
+
+      /**
+       * A wrong digit is a **different request**, not this one. Handing the
+       * counter somebody else's record is the failure worth refusing over —
+       * there is a person standing there who can read it again.
+       */
+      // One digit out in the sequence: a different request, and there is not
+      // one. The clock is at 2026-09-08, so 00001 *is* the one just raised.
+      expect(await findRequestByNumber(context(), '080926-00002')).toBeUndefined();
+      // The right sequence on the wrong day.
+      expect(await findRequestByNumber(context(), '070926-00001')).toBeUndefined();
+      // A four-digit sequence is never padded into a five-digit one.
+      expect(await findRequestByNumber(context(), '080926-0001')).toBeUndefined();
+      expect(await findRequestByNumber(context(), 'hello')).toBeUndefined();
+      expect(await findRequestByNumber(context(), '')).toBeUndefined();
+    });
+
+    it('carries whether it still needs a patient', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      const found = await findRequestByNumber(context(), raised.value.requestId);
+      expect(found?.awaitingPatient).toBe(true);
     });
   });
 

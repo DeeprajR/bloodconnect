@@ -69,17 +69,38 @@ export type SettingsIncomplete = {
 
 export type DemandNotFound = { readonly kind: 'DemandNotFound'; readonly message: string };
 
+/**
+ * Answered before anybody said who it is for (§4, ADR 0010).
+ *
+ * A unit leaving the fridge has to be traceable to a named person — that is what
+ * §4's traceability and the crossmatch sample both rest on. **Emergency is the
+ * only exception**, because waiting for a bystander to arrive before releasing
+ * units in a real emergency is the worse failure.
+ */
+export type PatientNotIdentified = {
+  readonly kind: 'PatientNotIdentified';
+  readonly message: string;
+};
+
 export type CancelRequestError =
   | NotAuthorized
   | RequestNotFound
   | RequestNotDecidable
   | InvalidBag;
 
+export const patientNotIdentified = (): PatientNotIdentified => ({
+  kind: 'PatientNotIdentified',
+  message:
+    'No patient has been identified for this request. Take their details from ' +
+    'the bystander before issuing — only an emergency may be answered first.',
+});
+
 export type DecideError =
   | NotAuthorized
   | RequestNotFound
   | RequestNotDecidable
   | RequestAlreadyDecided
+  | PatientNotIdentified
   | SettingsIncomplete;
 
 export type RegisterBagError =

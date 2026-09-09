@@ -24,7 +24,12 @@ import { admissions, bloodRequests } from '@blood-connect/db';
 import { actorHas, createAuditWriter } from '@blood-connect/platform';
 import type { Transaction, UseCaseContext } from '@blood-connect/platform';
 import { err, ok, type Result } from '@blood-connect/result';
-import type { BloodGroup, Product } from '@blood-connect/domain';
+import {
+  formatRequestNumber,
+  parseRequestNumber,
+  type BloodGroup,
+  type Product,
+} from '@blood-connect/domain';
 
 import { notAuthorized, type NotAuthorized } from './errors.js';
 import {
@@ -220,6 +225,32 @@ export async function admissionStateFor(
 
   if (row?.admissionId == null) return 'none';
   return row.status === 'admitted' ? 'admitted' : 'discharged';
+}
+
+/**
+ * Finding the request the bystander just read out (ADR 0010).
+ *
+ * `DDMMYY-NNNNN`, typed at the counter with the date part prefilled. Tolerant of
+ * how it arrives — it was transcribed by ear — but never of a wrong length: a
+ * five-digit sequence heard as four is a **different request**, not a near miss,
+ * and padding it would hand the counter somebody else's record.
+ *
+ * A miss returns nothing rather than a guess. There is a person standing there
+ * who can read it again.
+ */
+export async function findRequestByNumber(
+  ctx: UseCaseContext,
+  typed: string,
+): Promise<RequestForDecision | undefined> {
+  const parsed = parseRequestNumber(typed);
+  if (!parsed) return undefined;
+
+  const [row] = await ctx.db
+    .select(DECISION_COLUMNS)
+    .from(bloodRequests)
+    .where(eq(bloodRequests.requestId, formatRequestNumber(parsed.day, parsed.sequence)));
+
+  return row ? toDecisionView(row) : undefined;
 }
 
 /* -------------------------------------------------------------------------- */
