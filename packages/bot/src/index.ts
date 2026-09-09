@@ -27,10 +27,14 @@ export { TELEGRAM_CHANNEL, createTelegramChannel, type TelegramOptions } from '.
 
 export { MESSAGES, WORDING_VERSION, readableDay, type HospitalSnapshot } from './messages.js';
 export {
+  DURABLE_QUESTIONS,
   QUESTION_COUNT,
   SCREENING_QUESTIONS,
+  VISIT_QUESTIONS,
   defersOn,
   durableAnswersFrom,
+  durableQuestionsFor,
+  durableSummaryLines,
   isPermanentDeferral,
   questionAt,
   type ScreeningQuestion,
@@ -95,18 +99,62 @@ export {
 
 export {
   DRAFT_TTL_HOURS,
-  ONBOARDING_STEPS,
-  advanceOnboarding,
-  beginOnboarding,
-  deleteDonorData,
-  findDonorByAddress,
-  loadState,
-  optOutDonor,
+  INTERVIEW_STEPS,
+  STEP_LABELS,
+  checklistMessage,
+  isInterviewStep,
+  maskPhone,
   promptFor,
+  rowNumberOf,
+  stepAtRow,
+  summaryMessage,
+  summaryRows,
+  type FlowStep,
+  type InterviewDraft,
+  type InterviewState,
+  type InterviewStep,
+  type SummaryRow,
+} from './use-cases/interview.js';
+
+export {
+  answerContact,
+  answerInterview,
+  beginInterview,
+  clearInterview,
+  loadInterview,
+  type AnswerResult,
+  type MatchableCheck,
+} from './use-cases/interview-flow.js';
+
+export {
+  clearConversation,
+  deleteDonorData,
+  draftFromProfile,
+  findDonorByAddress,
+  optOutDonor,
   resumeDonor,
   snoozeDonor,
-  type OnboardingDraft,
-  type OnboardingStep,
-} from './use-cases/onboarding.js';
+  type ErasureResult,
+} from './use-cases/self-service.js';
+
+export {
+  LOCATION_LEVELS,
+  describeLocation,
+  hasChildren,
+  levelBelow,
+  listChildren,
+  listDistricts,
+  normalise,
+  nodeById,
+  searchChildren,
+  type LocationLevel,
+  type LocationNode,
+} from './use-cases/location.js';
 
 export { applyWalkIns, type WalkInSyncResult } from './use-cases/walk-ins.js';
+
+export {
+  REMIND_AFTER_HOURS,
+  remindAbandonedSignups,
+  type ReminderResult,
+} from './use-cases/reminders.js';

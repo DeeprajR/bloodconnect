@@ -68,6 +68,107 @@ export const MESSAGES = {
     'Only the blood centre sees it, and only once you have agreed to give for ' +
     'a particular patient.',
   askDob: 'Your date of birth, please — like 1995-04-23.',
+
+  /**
+   * Year, then month, then day (§5).
+   *
+   * Age is never asked directly, because people round it — and a rounded age
+   * either side of a boundary is the difference between being asked and never
+   * being asked.
+   */
+  askBirthYear: 'Which year were you born?',
+  askBirthMonth: 'And which month?',
+  askBirthDay: 'And the day?',
+
+  /** Only ever seen if the durable set is empty, which it is not. */
+  askScreeningDone: 'Thank you.',
+
+  askLastDonation:
+    'When did you last give blood?\n\n' +
+    'If you know the exact date, you can type it as YYYY-MM-DD — otherwise ' +
+    'pick the closest.',
+
+  askLocationLevel: (level: string): string =>
+    level === 'city'
+      ? 'Which city or taluk?'
+      : level === 'town'
+        ? 'Which town?'
+        : 'And which part of town?',
+
+  /**
+   * The type-ahead (§5).
+   *
+   * Kozhikode alone has seventy-seven towns; buttons for that is a wall. Two or
+   * three characters is the whole interaction.
+   */
+  askLocationTypeAhead: (level: string): string =>
+    level === 'town'
+      ? 'Which town? Type the first few letters and I will find it.'
+      : level === 'city'
+        ? 'Which city or taluk? Type the first few letters.'
+        : 'Which part of town? Type the first few letters.',
+
+  locationMatches: (term: string): string =>
+    `Places matching “${term}”. Pick yours, or type a little more.`,
+
+  /* ------------------------------------------------------------- summary */
+
+  summaryTitle: 'Please check these details.',
+
+  summaryHelp:
+    'Tap “Yes, this is correct” if it all looks right, or “Fix something” to ' +
+    'change an answer. You can also just send the row number.',
+
+  fixWhich:
+    'Which ones need fixing?\n\n' +
+    'Tap each one — the list stays open — then “Fix these”.',
+
+  fixHelp: 'Tap the rows that are wrong, or send their numbers like “3, 5, 7”.',
+
+  /* ------------------------------------------------- where signup ends */
+
+  /**
+   * Registered, and matchable. The donor leaves knowing when to expect to hear
+   * from us, which is what stops "I registered and nothing happened" (§5).
+   */
+  registeredMatchable: (name: string, eligibleFrom: string | null): string =>
+    `Thank you, ${name}. You are registered.
+
+` +
+    (eligibleFrom === null
+      ? 'We will message you when someone near you needs your blood group.'
+      : `We will message you when someone near you needs your blood group, from ` +
+        `${readableDay(eligibleFrom)} onwards.`),
+
+  /**
+   * Registered but not matchable — an **ending, not a rejection** (§5), and the
+   * wording carries the difference. Each says what would change it.
+   */
+  registeredNotMatchable: (name: string, reason: string, until: string | null): string => {
+    const why =
+      reason === 'group_unknown'
+        ? 'We do not know your blood group yet, so we cannot match you to a ' +
+          'patient. The centre will type you at your first donation — you can ' +
+          'walk in any time, and then we can.'
+        : reason === 'under_weight'
+          ? 'Giving blood needs a weight above the safe minimum, so we will not ' +
+            'ask you for now. Nothing else changes, and you stay on the list.'
+          : reason === 'flagged'
+            ? 'One of your answers is something the centre checks with you ' +
+              'first, so we will not ask you until they have. That is a ' +
+              'conversation, not a no.'
+            : until === null
+              ? 'You are inside the gap between donations, so we will wait.'
+              : `You gave recently, so the next time you can give is ` +
+                `${readableDay(until)}. We will wait until then.`;
+
+    return `Thank you, ${name}. You are registered.
+
+${why}`;
+  },
+
+  /** Saved from the profile editor, re-acknowledged (§5). */
+  profileSaved: 'Saved. Thank you for keeping it up to date.',
   askSex:
     'And are you male or female?\n\n' +
     'This only sets how long you wait between donations.',
@@ -92,6 +193,20 @@ export const MESSAGES = {
     `Thank you, ${name}. You are registered.`,
 
   abandoned: 'No problem — nothing was saved. Say hello any time to start again.',
+
+  /**
+   * One nudge, and never a second (§5).
+   *
+   * It says where they got to and what it costs to finish, and it does not ask
+   * a question — somebody who has already walked away from a form should not be
+   * met with another one. If they come back, the next thing they see is the
+   * question they stopped on.
+   */
+  signupReminder:
+    'You started registering with Blood Connect and did not finish — your ' +
+    'answers are still here.\n\n' +
+    'Send anything to pick up where you left off. If you would rather not, ' +
+    'just ignore this; we will not ask again.',
 
   /* -------------------------------------------------------------- the ask */
 
@@ -175,7 +290,20 @@ export const MESSAGES = {
     'centre without your name, because the law requires it.\n\n' +
     'Delete everything?',
 
-  deleted: 'All deleted. Thank you for the blood you gave.',
+  /**
+   * What went, and what stayed, in two lines (§12.1).
+   *
+   * "Deletion confirms what was removed" — and a donor told only "all deleted"
+   * who later learns the centre still holds a donation record was misled. The
+   * count is theirs to know.
+   */
+  deleted: (donationsKept: number): string =>
+    donationsKept === 0
+      ? 'All deleted — your name, your number and everything you told us. Thank you.'
+      : 'Deleted: your name, your number and everything you told us.\n\n' +
+        `${String(donationsKept)} ${donationsKept === 1 ? 'donation stays' : 'donations stay'} ` +
+        'on the blood centre’s record without your name, because the law ' +
+        'requires it. Thank you for the blood you gave.',
 
   deletionCancelled: 'Nothing was deleted.',
 

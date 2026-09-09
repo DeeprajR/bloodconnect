@@ -18,7 +18,6 @@ import {
   botRequests,
   donorChannels,
   donorRequests,
-  donorScreeningAnswers,
   donors,
 } from '@blood-connect/db/bot';
 import { donorDemandConfirmations } from '@blood-connect/db';
@@ -31,8 +30,6 @@ import { enqueue, type QueuedMessage } from '../outbox.js';
 import {
   QUESTION_COUNT,
   defersOn,
-  durableAnswersFrom,
-  isPermanentDeferral,
   questionAt,
 } from '../screening.js';
 
@@ -153,7 +150,11 @@ export async function declineRequest(
 
 export type ScreeningStep =
   | { readonly kind: 'question'; readonly text: string; readonly index: number }
-  | { readonly kind: 'deferred'; readonly permanent: boolean }
+  /**
+   * Always this request only. Every question the journey asks is a visit
+   * question, so there is no longer a permanent variant to carry (§5).
+   */
+  | { readonly kind: 'deferred' }
   | { readonly kind: 'confirmed'; readonly hospital: HospitalSnapshot; readonly neededBy: string }
   | { readonly kind: 'waitlisted' };
 
@@ -200,8 +201,16 @@ export async function answerScreeningQuestion(
 
   /* --- a deferral ends the journey, kindly ----------------------------- */
   if (defersOn(question, answer)) {
-    const permanent = isPermanentDeferral(question.key);
-
+    /**
+     * **This request only, and never the profile** (§5).
+     *
+     * Every question asked here is a visit question — fever today, a meal, a
+     * course of antibiotics — and none of them describes the person. The
+     * durable set is asked once, at signup, and is the only thing that can flag
+     * a profile. Writing a visit answer to `donor_screening_answers` would
+     * defer somebody for a year for having skipped breakfast, which is why
+     * there is no longer any code here that could.
+     */
     return ctx.db.transaction(async (tx) => {
       const moved = await tx
         .update(donorRequests)
@@ -222,33 +231,6 @@ export async function answerScreeningQuestion(
 
       if (moved.length === 0) return err(alreadyMoved);
 
-      // Only the durable, flagging answers reach the profile (§5). A "no, I
-      // have never had hepatitis" is not written anywhere.
-      const durable = durableAnswersFrom(answers);
-      if (durable.length > 0) {
-        await tx
-          .insert(donorScreeningAnswers)
-          .values(
-            durable.map((entry) => ({
-              donorId: journey.donorId,
-              questionKey: entry.questionKey,
-              answer: entry.answer,
-              answeredAt: now,
-            })),
-          )
-          .onConflictDoNothing();
-      }
-
-      if (permanent) {
-        // Not a rejection: a flag that stops them being asked again about
-        // something they cannot change. Being asked repeatedly would be worse
-        // than not being asked.
-        await tx
-          .update(donors)
-          .set({ durableFlagStatus: 'flagged' })
-          .where(eq(donors.id, journey.donorId));
-      }
-
       const event = createEventWriter(tx, ctx.correlationId, now);
       await event({
         event: 'journey.deferred',
@@ -256,10 +238,10 @@ export async function answerScreeningQuestion(
         subjectId: journeyId,
         // The question key, never the answer: an answer here is a health datum
         // and the event log is not the place for one (§11.9, §12).
-        metadata: { questionKey: question.key, permanent },
+        metadata: { questionKey: question.key, scope: question.scope },
       });
 
-      return ok({ kind: 'deferred' as const, permanent });
+      return ok({ kind: 'deferred' as const });
     });
   }
 
@@ -351,21 +333,8 @@ async function claimUnit(
         walkIns: botRequests.walkInUnits,
       });
 
-    const durable = durableAnswersFrom(answers);
-    if (durable.length > 0) {
-      await tx
-        .insert(donorScreeningAnswers)
-        .values(
-          durable.map((entry) => ({
-            donorId: journey.donorId,
-            questionKey: entry.questionKey,
-            answer: entry.answer,
-            answeredAt: now,
-          })),
-        )
-        .onConflictDoNothing();
-    }
-
+    // Nothing durable is written here either: a passed visit questionnaire says
+    // this donor is well today, which is not a fact about them (§5).
     const event = createEventWriter(tx, ctx.correlationId, now);
 
     /* --- the loser: waitlisted, and told so as good news --------------- */

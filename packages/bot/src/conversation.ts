@@ -22,9 +22,7 @@
  * so that costs nothing in latency.
  */
 
-import { locationNodes } from '@blood-connect/db';
 import { addDays } from '@blood-connect/domain';
-import { asc, eq } from 'drizzle-orm';
 
 import type { BotContext } from './context.js';
 import { MESSAGES } from './messages.js';
@@ -36,28 +34,25 @@ import {
   declineRequest,
 } from './use-cases/journey.js';
 import { standingFor } from './use-cases/needs.js';
+import { promptFor } from './use-cases/interview.js';
 import {
-  advanceOnboarding,
-  beginOnboarding,
+  answerContact,
+  answerInterview,
+  beginInterview,
+  loadInterview,
+  type AnswerResult,
+} from './use-cases/interview-flow.js';
+import {
   deleteDonorData,
+  draftFromProfile,
   findDonorByAddress,
-  loadState,
   optOutDonor,
-  promptFor,
   resumeDonor,
   snoozeDonor,
-} from './use-cases/onboarding.js';
+} from './use-cases/self-service.js';
 
 /** How long "pause" lasts before a donor is asked again. */
 const SNOOZE_DAYS = 90;
-
-async function districts(ctx: BotContext): Promise<{ id: string; name: string }[]> {
-  return ctx.db
-    .select({ id: locationNodes.id, name: locationNodes.name })
-    .from(locationNodes)
-    .where(eq(locationNodes.level, 'district'))
-    .orderBy(asc(locationNodes.name));
-}
 
 /** Queues replies, keyed so a redelivered update writes nothing twice. */
 async function reply(
@@ -142,19 +137,42 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
     return;
   }
 
-  const donor = await findDonorByAddress(ctx, address);
+  const state = await loadInterview(ctx, address);
+
+  /**
+   * A shared contact answers exactly one question, and only while it is being
+   * asked. Handled before the donor lookup because it arrives mid-interview,
+   * when there is no donor row yet.
+   */
+  if (update.kind === 'contact') {
+    if (state) {
+      await showInterview(ctx, address, await answerContact(ctx, address, update.phone), update.updateId);
+      return;
+    }
+    await reply(ctx, address, [{ text: MESSAGES.help }], update.updateId);
+    return;
+  }
+
   const said = update.kind === 'text' ? update.text.trim() : update.data;
+
+  /* ------------------------------------------ somebody part-way through */
+  /**
+   * **Before** the donor lookup, not after.
+   *
+   * A registered donor editing their profile is in an interview, and answering
+   * them with "here is what is needed near you" would silently drop the edit
+   * they were half-way through.
+   */
+  if (state) {
+    await showInterview(ctx, address, await answerInterview(ctx, address, said), update.updateId);
+    return;
+  }
+
+  const donor = await findDonorByAddress(ctx, address);
 
   /* ------------------------------------------------ a registered donor */
   if (donor) {
     await handleRegistered(ctx, address, donor.donorId, said, update.updateId);
-    return;
-  }
-
-  /* ------------------------------------------ somebody part-way through */
-  const state = await loadState(ctx, address);
-  if (state) {
-    await handleOnboardingInput(ctx, address, said, update.updateId);
     return;
   }
 
@@ -164,13 +182,11 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
    * the first question — asking somebody to type `/start` first is a step that
    * exists for the system's convenience, not theirs.
    */
-  const begun = await beginOnboarding(ctx, address);
+  const begun = await beginInterview(ctx, address);
   await reply(
     ctx,
     address,
-    begun.ok
-      ? [{ text: MESSAGES.welcome }, promptFor('name')]
-      : [{ text: begun.error.message }],
+    [{ text: MESSAGES.welcome }, await promptFor(ctx, begun)],
     update.updateId,
   );
 }
@@ -263,8 +279,10 @@ async function handleRegistered(
   const word = said.toLowerCase().replace(/^\//, '');
 
   if (word === 'delete:confirm' || said === `delete:${donorId}`) {
-    await deleteDonorData(ctx, donorId);
-    await reply(ctx, address, [{ text: MESSAGES.deleted }], updateId);
+    const erased = await deleteDonorData(ctx, donorId);
+    // What was kept, said plainly: a donation record the centre must keep is
+    // not the donor's to delete, and hiding that would be a lie (§12.1).
+    await reply(ctx, address, [{ text: MESSAGES.deleted(erased.donationsKept) }], updateId);
     return;
   }
   if (said === 'cancel:delete') {
@@ -317,6 +335,32 @@ async function handleRegistered(
     return;
   }
 
+  if (word === 'profile' || word === 'edit') {
+    /**
+     * **The identical summary and the identical checklist** (§5).
+     *
+     * The stored profile becomes an interview draft, and every prompt and every
+     * fix path from here is the one signup already uses. There is one
+     * implementation and two entry points, which is also why the acknowledgement
+     * is re-recorded on save: the donor is agreeing to the summary in front of
+     * them, not to a form they filled in months ago.
+     */
+    const draft = await draftFromProfile(ctx, donorId);
+    if (!draft) {
+      await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
+      return;
+    }
+
+    const state = await beginInterview(ctx, address, {
+      flow: 'profile',
+      donorId,
+      draft: draft,
+      step: 'summary',
+    });
+    await reply(ctx, address, [await promptFor(ctx, state)], updateId);
+    return;
+  }
+
   if (word === 'help') {
     await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
     return;
@@ -327,55 +371,72 @@ async function handleRegistered(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Onboarding                                                                  */
+/* The interview                                                               */
 /* -------------------------------------------------------------------------- */
 
-async function handleOnboardingInput(
+/**
+ * Turns one interview outcome into what the donor sees.
+ *
+ * Every branch ends with a question or with an ending — never with a statement
+ * that leaves somebody unsure whether to answer or to wait (§8).
+ */
+async function showInterview(
   ctx: BotContext,
   address: ChannelAddress,
-  input: string,
+  result: AnswerResult,
   updateId: string,
 ): Promise<void> {
-  const result = await advanceOnboarding(ctx, address, input);
-
   if (result.kind === 'next') {
-    const list = result.state.step === 'district' ? await districts(ctx) : [];
-    await reply(ctx, address, [promptFor(result.state.step, list)], updateId);
+    await reply(ctx, address, [await promptFor(ctx, result.state)], updateId);
     return;
   }
 
-  if (result.kind === 'registered') {
-    /**
-     * Two messages, and the second is the point.
-     *
-     * "You are registered" on its own leaves somebody with nothing to do and no
-     * idea whether anything will ever happen. What is open near them right now
-     * answers that, and it is the state they will see from here on.
-     */
+  if (result.kind === 'invalid') {
+    // Say what is wrong and ask the same question again, rather than leaving
+    // somebody staring at an error with no prompt.
     await reply(
       ctx,
       address,
-      [
-        { text: MESSAGES.registered(result.name) },
-        await standingMessage(ctx, result.donorId),
-      ],
+      [{ text: result.message }, await promptFor(ctx, result.state)],
       updateId,
     );
     return;
   }
 
-  if (result.kind === 'abandoned') {
+  if (result.kind === 'saved') {
+    await reply(
+      ctx,
+      address,
+      [{ text: MESSAGES.profileSaved }, await standingMessage(ctx, result.donorId)],
+      updateId,
+    );
+    return;
+  }
+
+  if (result.kind === 'declined') {
     await reply(ctx, address, [{ text: MESSAGES.abandoned }], updateId);
     return;
   }
 
-  // A validation problem: say what is wrong and ask the same question again,
-  // rather than leaving somebody staring at an error with no prompt.
-  const list = result.step === 'district' ? await districts(ctx) : [];
+  /* --- registered: where signup ends (§5) ----------------------------- */
+  /**
+   * Three endings, and which one they get is the difference between a donor who
+   * waits for a message and one who thinks nothing happened.
+   */
+  const closing: OutgoingMessage = result.matchable.ok
+    ? { text: MESSAGES.registeredMatchable(result.name, result.nextEligible) }
+    : {
+        text: MESSAGES.registeredNotMatchable(
+          result.name,
+          result.matchable.reason,
+          result.matchable.until ?? null,
+        ),
+      };
+
   await reply(
     ctx,
     address,
-    [{ text: result.message }, promptFor(result.step, list)],
+    [closing, await standingMessage(ctx, result.donorId)],
     updateId,
   );
 }

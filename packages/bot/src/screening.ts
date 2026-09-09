@@ -1,22 +1,30 @@
 /**
- * The donor health questionnaire (§5, §2.7).
+ * The donor health questions (§5, §2.7).
  *
- * Six questions, and the wording matters as much as the logic. Two rules:
+ * **Two sets, asked at different times, and the distinction is the point.**
  *
- *  1. **A "no" is never a verdict.** An answer that stops this donation is a
- *     deferral for *this request*, phrased as "not today", and it does not close
- *     the door. §2.7 forbids "rejected", "eliminated" and "banned" outright.
- *  2. **Durable and temporary answers are different things** (§5). "Have you
- *     ever had jaundice" belongs to the person and is written to
- *     `donor_screening_answers`. "Did you eat today" belongs to one visit, lives
- *     on the journey row, and must never reach the profile — a temporary answer
- *     stored as durable would defer somebody permanently for having skipped
- *     breakfast once.
+ * | | Durable — at signup | Visit — at each request |
+ * |---|---|---|
+ * | Asks about | What does not change week to week | What changes today |
+ * | A disqualifying answer | Flags the profile for a human; the donor is not matched until it is resolved | Defers the donor from **this request only**; the profile is untouched |
+ * | Why | Re-asking these every time reads as distrust | The answer is only meaningful today |
  *
- * This is not a medical assessment and does not claim to be. The pre-donation
- * check happens on site and is the one that decides (§12.6); this only avoids
- * asking somebody to make a trip that will obviously end in a deferral.
+ * Storing a visit answer as durable would defer somebody for a year for having
+ * skipped breakfast once; asking a durable question at every request would tell
+ * a donor with a heart condition, eleven times, that we were not listening.
+ *
+ * Two rules of wording, from §2.7:
+ *
+ *  1. **An answer is never a verdict.** What stops a donation today is a
+ *     *deferral*, phrased as "not today". "Rejected", "eliminated" and "banned"
+ *     are forbidden outright.
+ *  2. **Nothing is phrased as a diagnosis.** This is not a medical assessment
+ *     and does not claim to be. The pre-donation check happens on site and is
+ *     the one that decides (§12.6); this only avoids asking somebody to make a
+ *     trip that will obviously end in a deferral.
  */
+
+import type { Sex } from '@blood-connect/domain';
 
 export type ScreeningQuestion = {
   readonly key: string;
@@ -28,9 +36,80 @@ export type ScreeningQuestion = {
    * `visit` answers describe today and never leave the journey row.
    */
   readonly scope: 'durable' | 'visit';
+  /**
+   * Shown on the signup summary in the donor's own terms (§5).
+   *
+   * The summary plays back what they told us, not a score: somebody who
+   * mis-tapped three screens ago finds out now rather than by being silently
+   * excluded from every request for a year.
+   */
+  readonly summary?: string;
+  /** Asked only of some donors — pregnancy, which depends on the sex answer. */
+  readonly appliesTo?: readonly Sex[];
 };
 
-export const SCREENING_QUESTIONS: readonly ScreeningQuestion[] = [
+/* -------------------------------------------------------------------------- */
+/* Durable — asked once, at signup                                             */
+/* -------------------------------------------------------------------------- */
+
+export const DURABLE_QUESTIONS: readonly ScreeningQuestion[] = [
+  {
+    key: 'long_term_condition',
+    text:
+      'Do you have a long-term illness — a heart condition, uncontrolled diabetes, ' +
+      'epilepsy — or take regular medication for one?',
+    proceedOn: 'no',
+    scope: 'durable',
+    summary: 'No long-term illness or medication',
+  },
+  {
+    key: 'transmissible_infection',
+    text:
+      'Have you ever been told you have hepatitis B or C, HIV, or another infection that ' +
+      'can pass through blood?',
+    proceedOn: 'no',
+    scope: 'durable',
+    summary: 'No infection that passes through blood',
+  },
+  {
+    /**
+     * Asked only where it applies (§5): sex is collected to set the donation
+     * interval and to decide whether this question is asked at all — never for
+     * display.
+     */
+    key: 'pregnant_or_breastfeeding',
+    text: 'Are you currently pregnant, or breastfeeding?',
+    proceedOn: 'no',
+    scope: 'durable',
+    summary: 'Not currently pregnant or breastfeeding',
+    appliesTo: ['female'],
+  },
+  {
+    key: 'advised_not_to_donate',
+    text: 'Has a doctor or a blood centre ever advised you not to donate?',
+    proceedOn: 'no',
+    scope: 'durable',
+    summary: 'Never been advised not to donate',
+  },
+];
+
+/**
+ * The durable set for one donor — three questions, or four.
+ *
+ * §5 puts the whole set at "three or four taps", and this is why: the pregnancy
+ * question is asked where it applies and skipped where it does not, rather than
+ * being asked of everybody with an awkward opt-out.
+ */
+export const durableQuestionsFor = (sex: Sex): readonly ScreeningQuestion[] =>
+  DURABLE_QUESTIONS.filter(
+    (question) => question.appliesTo === undefined || question.appliesTo.includes(sex),
+  );
+
+/* -------------------------------------------------------------------------- */
+/* Visit — asked at each request                                               */
+/* -------------------------------------------------------------------------- */
+
+export const VISIT_QUESTIONS: readonly ScreeningQuestion[] = [
   {
     key: 'well_today',
     text: 'Are you feeling well today — no fever, cold or infection?',
@@ -55,46 +134,39 @@ export const SCREENING_QUESTIONS: readonly ScreeningQuestion[] = [
     proceedOn: 'no',
     scope: 'visit',
   },
-  {
-    key: 'chronic_condition',
-    text:
-      'Do you have a heart condition, uncontrolled diabetes, epilepsy, or any condition you ' +
-      'take regular medication for?',
-    proceedOn: 'no',
-    scope: 'durable',
-  },
-  {
-    key: 'transmissible_infection',
-    text:
-      'Have you ever been told you have hepatitis B or C, HIV, or another infection that can ' +
-      'pass through blood?',
-    proceedOn: 'no',
-    scope: 'durable',
-  },
 ];
 
-export const QUESTION_COUNT = SCREENING_QUESTIONS.length;
+/**
+ * What a request asks. Named for the journey that uses it, because "the
+ * questions" is now ambiguous and a confusion here would put a durable answer
+ * on a journey row.
+ */
+export const SCREENING_QUESTIONS = VISIT_QUESTIONS;
+export const QUESTION_COUNT = VISIT_QUESTIONS.length;
 
 export const questionAt = (index: number): ScreeningQuestion | undefined =>
-  SCREENING_QUESTIONS[index];
+  VISIT_QUESTIONS[index];
+
+/* -------------------------------------------------------------------------- */
+/* Reading answers                                                             */
+/* -------------------------------------------------------------------------- */
 
 /** True when this answer means the donation should not go ahead today. */
 export const defersOn = (question: ScreeningQuestion, answer: 'yes' | 'no'): boolean =>
   answer !== question.proceedOn;
 
 /**
- * The durable answers out of a completed set, for the profile.
+ * The durable answers worth keeping, out of a completed signup set.
  *
- * Only ever the durable ones, and only ever the flagging answer. Recording
- * "no, I have never had hepatitis" on the profile would be storing a health
- * datum that changes nothing, which §2.10 says not to do.
+ * Only the flagging ones. Recording "no, I have never had hepatitis" on the
+ * profile would be storing a health datum that changes nothing, which §2.10
+ * says not to do — the absence of a row is the answer.
  */
 export function durableAnswersFrom(
   answers: Readonly<Record<string, string>>,
 ): { questionKey: string; answer: string }[] {
-  return SCREENING_QUESTIONS.filter(
+  return DURABLE_QUESTIONS.filter(
     (question) =>
-      question.scope === 'durable' &&
       answers[question.key] !== undefined &&
       defersOn(question, answers[question.key] as 'yes' | 'no'),
   ).map((question) => ({
@@ -104,10 +176,32 @@ export function durableAnswersFrom(
 }
 
 /**
- * A durable "yes, I have hepatitis" is a permanent deferral, and the donor
- * should not be asked again — that is `durable_flag_status`, not a rejection,
- * and the difference is whether the person is ever contacted again about
- * something they cannot change.
+ * A durable answer that should stop this donor being contacted at all, rather
+ * than merely flagged.
+ *
+ * `durable_flag_status`, not a rejection — the difference is whether the person
+ * is ever contacted again about something they cannot change. Everything else
+ * flagged waits for a human to look at it.
  */
 export const isPermanentDeferral = (questionKey: string): boolean =>
   questionKey === 'transmissible_infection';
+
+/**
+ * How the donor's durable answers read back on the summary (§5).
+ *
+ * Their own terms and their own order, with a tick against each one that is
+ * clear. A flagged answer says what it means for them, not what it means to us.
+ */
+export function durableSummaryLines(
+  sex: Sex,
+  answers: Readonly<Record<string, string>>,
+): { readonly text: string; readonly clear: boolean }[] {
+  return durableQuestionsFor(sex).map((question) => {
+    const answer = answers[question.key];
+    const clear = answer !== undefined && !defersOn(question, answer as 'yes' | 'no');
+    return {
+      text: clear ? (question.summary ?? question.text) : `You told us: ${question.text}`,
+      clear,
+    };
+  });
+}

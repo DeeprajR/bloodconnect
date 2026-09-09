@@ -39,6 +39,16 @@ export type OutgoingMessage = {
   readonly text: string;
   readonly choices?: readonly Choice[];
   /**
+   * Ask the platform for the person's own phone number (§5, step 1).
+   *
+   * The donor taps once and the number arrives **verified by the platform** —
+   * which is the difference between a number the counter can ring and a string
+   * somebody typed. An adapter whose platform cannot do this simply ignores the
+   * flag, and the flow falls back to asking them to type it; that fallback is
+   * the reason this is a hint rather than a separate port operation.
+   */
+  readonly requestContact?: boolean;
+  /**
    * Where the platform allows editing in place, the reference returned by an
    * earlier send. Editing a card beats posting a fourth copy of it.
    */
@@ -55,7 +65,7 @@ export type SendResult =
    */
   | { readonly ok: false; readonly permanent: boolean; readonly reason: string };
 
-/** What arrives from a person: a typed message, or a tap on a choice. */
+/** What arrives from a person: a typed message, a tap on a choice, or a shared contact. */
 export type IncomingUpdate =
   | {
       readonly kind: 'text';
@@ -68,6 +78,16 @@ export type IncomingUpdate =
       readonly address: ChannelAddress;
       readonly data: string;
       readonly messageRef: string;
+      readonly updateId: string;
+    }
+  /**
+   * The person tapped "share my number". The platform vouches for it, so this
+   * is the one path that produces a **verified** phone (§5).
+   */
+  | {
+      readonly kind: 'contact';
+      readonly address: ChannelAddress;
+      readonly phone: string;
       readonly updateId: string;
     };
 

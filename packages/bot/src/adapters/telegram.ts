@@ -44,6 +44,7 @@ type TelegramUpdate = {
     from?: { id: number };
     chat: { id: number };
     text?: string;
+    contact?: { phone_number?: string; user_id?: number };
   };
   callback_query?: {
     id: string;
@@ -106,7 +107,27 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
   }
 
   const keyboard = (message: OutgoingMessage): Record<string, unknown> | undefined => {
-    if (!message.choices || message.choices.length === 0) return undefined;
+    /**
+     * A contact request is a **reply** keyboard, not an inline one.
+     *
+     * Telegram only offers `request_contact` on the keyboard that replaces the
+     * user's own input area, so this cannot be combined with inline choices —
+     * and the flow above is written so it never needs to be: step 1 offers the
+     * tap and accepts a typed number in the same breath.
+     */
+    if (message.requestContact === true) {
+      return {
+        keyboard: [[{ text: 'Share my number', request_contact: true }]],
+        one_time_keyboard: true,
+        resize_keyboard: true,
+      };
+    }
+
+    if (!message.choices || message.choices.length === 0) {
+      // Clears a contact keyboard left over from step 1, so the button does not
+      // sit under every later message inviting a second tap.
+      return { remove_keyboard: true };
+    }
 
     const rows: { text: string; callback_data: string }[][] = [];
     for (let i = 0; i < message.choices.length; i += BUTTONS_PER_ROW) {
@@ -194,6 +215,20 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
           });
           // Telegram shows a spinner on the button until this is answered.
           await call('answerCallbackQuery', { callback_query_id: update.callback_query.id });
+          continue;
+        }
+
+        // A shared contact: the number arrives vouched for by the platform.
+        if (update.message?.contact?.phone_number) {
+          updates.push({
+            kind: 'contact',
+            address: {
+              channel: TELEGRAM_CHANNEL,
+              channelUserId: String(update.message.chat.id),
+            },
+            phone: update.message.contact.phone_number,
+            updateId: String(update.update_id),
+          });
           continue;
         }
 

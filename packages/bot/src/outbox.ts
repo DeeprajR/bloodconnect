@@ -36,6 +36,8 @@ export const MESSAGE_KINDS = [
   'thanks',
   'no_show',
   'reply',
+  /** The one nudge an abandoned signup gets, ever (§5). */
+  'signup_reminder',
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 

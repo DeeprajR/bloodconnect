@@ -20,7 +20,9 @@
  *  6. Counter outcomes, which roll intervals forward and thank people.
  *  7. Completions, which stand down whoever is left.
  *  8. Progress written back to the centre.
- *  9. The outbox drain, last, so everything queued this tick goes out in it.
+ *  9. One nudge for an abandoned signup — the least urgent thing here, so it
+ *     never delays a stand-down.
+ * 10. The outbox drain, last, so everything queued this tick goes out in it.
  */
 
 import type { BotContext } from './context.js';
@@ -35,6 +37,7 @@ import { applyCounterOutcomes, findCompletedRequests } from './use-cases/outcome
 import { promoteFromWaitlist } from './use-cases/journey.js';
 import { findRequestsDueAWave, sendWave } from './use-cases/waves.js';
 import { applyWalkIns } from './use-cases/walk-ins.js';
+import { remindAbandonedSignups } from './use-cases/reminders.js';
 
 export type TickResult = {
   readonly imported: number;
@@ -46,6 +49,7 @@ export type TickResult = {
   readonly outcomesApplied: number;
   readonly promoted: number;
   readonly walkInsCounted: number;
+  readonly signupsReminded: number;
   readonly standDownsQueued: number;
   readonly drain: DrainResult;
 };
@@ -134,7 +138,14 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     }
   }
 
-  /* --- 9. tell the centre, then send ------------------------------------ */
+  /* --- 9. one nudge for an abandoned signup ----------------------------- */
+  /**
+   * Last of the work, and deliberately after everything else: a reminder is the
+   * least urgent thing this loop does, and it must never delay a stand-down.
+   */
+  const reminders = await remindAbandonedSignups(ctx);
+
+  /* --- 10. tell the centre, then send ----------------------------------- */
   for (const id of touched) await writeBackProgress(ctx, id);
 
   const drain = await drainOutbox(ctx);
@@ -149,6 +160,7 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     outcomesApplied: outcomes.processed,
     promoted,
     walkInsCounted: walkIns.updated,
+    signupsReminded: reminders.reminded,
     standDownsQueued,
     drain,
   };
