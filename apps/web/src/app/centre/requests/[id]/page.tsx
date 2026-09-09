@@ -11,7 +11,7 @@ import {
   listDecisionBags,
   listDemands,
 } from '@blood-connect/centre';
-import { getRequestForDecision, isAdmissionOpen } from '@blood-connect/hospital';
+import { admissionStateFor, getRequestForDecision } from '@blood-connect/hospital';
 import {
   WORDING,
   bloodGroupLabel,
@@ -39,10 +39,10 @@ export default async function DecisionPage({
   const request = await getRequestForDecision(ctx, id);
   if (!request) notFound();
 
-  const [available, decision, admissionOpen] = await Promise.all([
+  const [available, decision, admission] = await Promise.all([
     availableUnits(ctx, request.bloodGroup, request.product),
     getDecisionForRequest(ctx, id),
-    isAdmissionOpen(ctx, id),
+    admissionStateFor(ctx, id),
   ]);
 
   const issued = decision ? await listDecisionBags(ctx, decision.id) : [];
@@ -78,7 +78,35 @@ export default async function DecisionPage({
         </div>
       ) : null}
 
-      {!admissionOpen ? (
+      {admission === 'none' ? (
+        <div className="ux4g-alert ux4g-alert-warning" role="alert">
+          <div className="ux4g-alert-content">
+            <p className="ux4g-alert-message">
+              {/*
+                The ordinary state of a new request (ADR 0010), and the one this
+                banner used to describe as a discharge — a different fact
+                entirely, and a frightening one to read about a patient nobody
+                had identified.
+              */}
+              <strong>No patient identified yet.</strong> The bystander has not
+              brought the ID to the counter. Take their details before issuing —
+              a unit has to be traceable to a named person.
+            </p>
+            {decision ? (
+              <p className="ux4g-body-s-default">
+                {/*
+                  Emergency is the one urgency that may be decided first (ADR
+                  0010), and the debt it leaves is shown as one until it is paid.
+                */}
+                This request was already answered without one, which only an
+                emergency allows. Completing the patient is outstanding.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {admission === 'discharged' ? (
         <div className="ux4g-alert ux4g-alert-warning" role="status">
           <div className="ux4g-alert-content">
             <p className="ux4g-alert-message">

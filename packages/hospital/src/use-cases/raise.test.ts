@@ -18,6 +18,7 @@ import {
 
 import { raiseRequest, type RaiseInput } from './raise.js';
 import { listRequestsForDoctor } from './records.js';
+import { admissionStateFor } from '../for-centre.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
@@ -389,6 +390,63 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
       };
       const rows = await listRequestsForDoctor(context({ actor: other }), other.userId);
       expect(rows).toHaveLength(0);
+    });
+  });
+
+  /* ==================================================================== */
+  /* What the centre is told about the patient                             */
+  /* ==================================================================== */
+
+  describe('the admission state the centre sees', () => {
+    /**
+     * This was a boolean, and an inner join made "no patient at all" look
+     * exactly like "discharged". The centre screen told a counter *"the patient
+     * has been discharged"* about a request where nobody had ever identified a
+     * patient — a different fact, and an alarming one to read.
+     */
+    it('says none when no patient has been attached', async () => {
+      const raised = await raise();
+      if (!raised.ok) throw new Error('not raised');
+
+      expect(await admissionStateFor(context(), raised.value.requestUuid)).toBe('none');
+    });
+
+    it('says admitted once a patient is on it', async () => {
+      const raised = await raise({
+        patient: {
+          name: 'Test Patient',
+          ipNo: 'IP-STATE-1',
+          bloodGroup: 'O+',
+          age: 30,
+          ageUnit: 'years',
+        },
+      });
+      if (!raised.ok) throw new Error('not raised');
+
+      expect(await admissionStateFor(context(), raised.value.requestUuid)).toBe('admitted');
+    });
+
+    it('says discharged only when there is somebody to discharge', async () => {
+      const raised = await raise({
+        patient: {
+          name: 'Test Patient',
+          ipNo: 'IP-STATE-2',
+          bloodGroup: 'O+',
+          age: 30,
+          ageUnit: 'years',
+        },
+      });
+      if (!raised.ok) throw new Error('not raised');
+
+      // Both together: `admissions_status_consistency` refuses a discharge
+      // with no time on it, which is the constraint doing its job.
+      await client`UPDATE hospital.admissions
+                      SET status = 'discharged', discharged_at = now()
+                    WHERE ip_no = 'IP-STATE-2'`;
+
+      expect(await admissionStateFor(context(), raised.value.requestUuid)).toBe(
+        'discharged',
+      );
     });
   });
 

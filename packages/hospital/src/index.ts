@@ -36,7 +36,8 @@ export {
 export {
   doctorOf,
   getRequestForDecision,
-  isAdmissionOpen,
+  admissionStateFor,
+  type AdmissionState,
   markRequestCancelled,
   listDecidedRequests,
   listRequestsAwaitingDecision,

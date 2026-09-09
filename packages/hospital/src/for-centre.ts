@@ -154,18 +154,37 @@ export async function getRequestForDecision(
   return row ? toDecisionView(row) : undefined;
 }
 
-/** Whether the admission is still open. Shown beside a decision, not enforced. */
-export async function isAdmissionOpen(
+/**
+ * Where the patient stands, in three states rather than two.
+ *
+ * This was a boolean — "is the admission open?" — and an inner join made a
+ * request with no patient at all indistinguishable from a discharged one. The
+ * centre screen then told the counter *"the patient has been discharged"* about
+ * a request where nobody had ever identified a patient, which is not a smaller
+ * version of the truth but a different fact entirely.
+ *
+ * Since ADR 0010 that is the ordinary case: a request is raised with four
+ * fields and the patient arrives later, with the bystander. So `none` is a
+ * state the screen has to be able to say out loud.
+ *
+ * Shown, never enforced — a discharged patient can still need blood that was
+ * requested while they were on the ward.
+ */
+export type AdmissionState = 'admitted' | 'discharged' | 'none';
+
+export async function admissionStateFor(
   ctx: UseCaseContext,
   requestUuid: string,
-): Promise<boolean> {
+): Promise<AdmissionState> {
   const [row] = await ctx.db
-    .select({ status: admissions.status })
+    .select({ admissionId: bloodRequests.admissionId, status: admissions.status })
     .from(bloodRequests)
-    .innerJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
+    // Left, so a request with no patient still returns its row.
+    .leftJoin(admissions, eq(admissions.id, bloodRequests.admissionId))
     .where(eq(bloodRequests.id, requestUuid));
 
-  return row?.status === 'admitted';
+  if (row?.admissionId == null) return 'none';
+  return row.status === 'admitted' ? 'admitted' : 'discharged';
 }
 
 export type DecidedStatus = 'approved' | 'partially_approved' | 'declined';
