@@ -15,7 +15,7 @@
  * Four rules the wording keeps, each because getting it wrong causes a specific
  * harm:
  *
- *  1. **A deferral is never a verdict.** "Not today" — never "rejected",
+ *  1. **A deferral is never a verdict.** "Not today", never "rejected",
  *     "eliminated" or "banned" (§2.7). Somebody who reads a temporary deferral
  *     as a permanent one does not come back.
  *  2. **A stand-down thanks them first.** Somebody who agreed to give blood and
@@ -38,7 +38,7 @@ export type HospitalSnapshot = {
 
 const group = (value: string): string => bloodGroupLabel(value as BloodGroup);
 
-/** "11 Sep" — a date somebody reads at a glance, not an ISO string. */
+/** "11 Sep". A date somebody reads at a glance, not an ISO string. */
 export function readableDay(day: string): string {
   const [year, month, date] = day.split('-').map(Number);
   if (!year || !month || !date) return day;
@@ -54,8 +54,8 @@ export const MESSAGES = {
 
   /**
    * The first thing anybody sees, and it arrives without them typing a command
-   * (§5). It says what this is and asks the first question in the same breath —
-   * a welcome that ends without a question leaves somebody wondering what to do.
+   * (§5). It says what this is and asks the first question in the same breath.
+   * A welcome that ends without a question leaves somebody wondering what to do.
    */
   welcome:
     'Hello, and thank you for coming here.\n\n' +
@@ -67,12 +67,12 @@ export const MESSAGES = {
     'Your phone number, please.\n\n' +
     'Only the blood centre sees it, and only once you have agreed to give for ' +
     'a particular patient.',
-  askDob: 'Your date of birth, please — like 1995-04-23.',
+  askDob: 'Your date of birth, please, like 1995-04-23.',
 
   /**
    * Year, then month, then day (§5).
    *
-   * Age is never asked directly, because people round it — and a rounded age
+   * Age is never asked directly, because people round it, and a rounded age
    * either side of a boundary is the difference between being asked and never
    * being asked.
    */
@@ -85,7 +85,7 @@ export const MESSAGES = {
 
   askLastDonation:
     'When did you last give blood?\n\n' +
-    'If you know the exact date, you can type it as YYYY-MM-DD — otherwise ' +
+    'If you know the exact date, you can type it as YYYY-MM-DD. Otherwise ' +
     'pick the closest.',
 
   askLocationLevel: (level: string): string =>
@@ -121,7 +121,7 @@ export const MESSAGES = {
 
   fixWhich:
     'Which ones need fixing?\n\n' +
-    'Tap each one — the list stays open — then “Fix these”.',
+    'Tap each one, the list stays open, then “Fix these”.',
 
   fixHelp: 'Tap the rows that are wrong, or send their numbers like “3, 5, 7”.',
 
@@ -141,14 +141,14 @@ export const MESSAGES = {
         `${readableDay(eligibleFrom)} onwards.`),
 
   /**
-   * Registered but not matchable — an **ending, not a rejection** (§5), and the
+   * Registered but not matchable. An **ending, not a rejection** (§5), and the
    * wording carries the difference. Each says what would change it.
    */
   registeredNotMatchable: (name: string, reason: string, until: string | null): string => {
     const why =
       reason === 'group_unknown'
         ? 'We do not know your blood group yet, so we cannot match you to a ' +
-          'patient. The centre will type you at your first donation — you can ' +
+          'patient. The centre will type you at your first donation. You can ' +
           'walk in any time, and then we can.'
         : reason === 'under_weight'
           ? 'Giving blood needs a weight above the safe minimum, so we will not ' +
@@ -171,7 +171,7 @@ ${why}`;
   profileSaved: 'Saved. Thank you for keeping it up to date.',
 
   /**
-   * "Not now" — kept, dormant, and one word from being on (§5, §8).
+   * "Not now". Kept, dormant, and one word from being on (§5, §8).
    *
    * It thanks them and says exactly how to change their mind, because somebody
    * who declines today and cannot find the way back tomorrow is lost twice.
@@ -181,7 +181,7 @@ ${why}`;
     `Thank you, ${name}. Your details are saved and we will not message you.
 
 ` +
-    'Send "resume" whenever you want to be asked — nothing to fill in again.',
+    'Send "resume" whenever you want to be asked, nothing to fill in again.',
 
   /**
    * Asked, and it filled before they answered (§8).
@@ -190,17 +190,17 @@ ${why}`;
    * holding is about to stop working.
    */
   covered: (bloodGroup: string): string =>
-    `That ${group(bloodGroup)} request is covered now — enough people came ` +
+    `That ${group(bloodGroup)} request is covered now. Enough people came ` +
     'forward. Nothing to do, and thank you for being there.',
   askSex:
     'And are you male or female?\n\n' +
     'This only sets how long you wait between donations.',
   askBloodGroup:
     'Which blood group are you?\n\n' +
-    'If you are not certain, pick your best guess — the centre tests every ' +
+    'If you are not certain, pick your best guess. The centre tests every ' +
     'unit before it is used.',
   askWeight: 'Roughly what do you weigh?',
-  askDistrict: 'Last one — which district are you in?',
+  askDistrict: 'Last one, which district are you in?',
 
   consentTitle: 'Almost done',
   consentBody:
@@ -210,23 +210,23 @@ ${why}`;
     'particular patient\n' +
     '• keep what you told us above\n\n' +
     'You can pause, stop, or delete everything at any time.\n\n' +
-    'This is not a medical check — the centre sees you on the day.',
+    'This is not a medical check. The centre sees you on the day.',
 
   registered: (name: string): string =>
     `Thank you, ${name}. You are registered.`,
 
-  abandoned: 'No problem — nothing was saved. Say hello any time to start again.',
+  abandoned: 'No problem, nothing was saved. Say hello any time to start again.',
 
   /**
    * One nudge, and never a second (§5).
    *
    * It says where they got to and what it costs to finish, and it does not ask
-   * a question — somebody who has already walked away from a form should not be
+   * a question, somebody who has already walked away from a form should not be
    * met with another one. If they come back, the next thing they see is the
    * question they stopped on.
    */
   signupReminder:
-    'You started registering with Blood Connect and did not finish — your ' +
+    'You started registering with Blood Connect and did not finish. Your ' +
     'answers are still here.\n\n' +
     'Send anything to pick up where you left off. If you would rather not, ' +
     'just ignore this; we will not ask again.',
@@ -234,7 +234,7 @@ ${why}`;
   /* ------------------------------------------------------ the demand board */
 
   boardEmpty:
-    'Nothing is needed right now. That is good news — we will message you when ' +
+    'Nothing is needed right now. That is good news. We will message you when ' +
     'something comes up.',
 
   boardHeading: (count: number): string =>
@@ -248,7 +248,7 @@ ${why}`;
     hospital: HospitalSnapshot,
     matchesMe: boolean,
   ): string =>
-    `${matchesMe ? '● ' : '○ '}${group(bloodGroup)} — ` +
+    `${matchesMe ? '● ' : '○ '}${group(bloodGroup)}: ` +
     `${String(unitsOutstanding)} ${unitsOutstanding === 1 ? 'unit' : 'units'} still needed ` +
     `by ${readableDay(neededBy)}\n   ${hospital.hospitalName}` +
     (matchesMe ? '\n   You can give for this one.' : ''),
@@ -264,15 +264,15 @@ ${why}`;
   boardBlocked: (reason: string, until: string): string => {
     switch (reason) {
       case 'not_registered':
-        return 'Send anything to register — it takes about a minute, and then we can tell you which of these you could give for.';
+        return 'Send anything to register. It takes about a minute, and then we can tell you which of these you could give for.';
       case 'group_unverified':
-        return 'We cannot match you yet because your blood group has not been confirmed. The centre types you at your first donation — walk in any time.';
+        return 'We cannot match you yet because your blood group has not been confirmed. The centre types you at your first donation. Walk in any time.';
       case 'flagged':
         return 'The centre wants a word before your next donation, so we are not asking for now. That is a conversation, not a no.';
       case 'paused':
         return `You have paused messages until ${readableDay(until)}. Send “resume” if you would like to be asked again.`;
       case 'interval':
-        return `You gave recently — the next time you can give is ${readableDay(until)}.`;
+        return `You gave recently. The next time you can give is ${readableDay(until)}.`;
       default:
         return '';
     }
@@ -285,7 +285,7 @@ ${why}`;
     `Someone at ${hospital.hospitalName} needs ${group(bloodGroup)} blood.
 
 ` +
-    'Let us get you registered first — it takes about a minute, and I will bring ' +
+    'Let us get you registered first. It takes about a minute, and I will bring ' +
     'you straight back to this.',
 
   linkResumed: (bloodGroup: string, hospital: HospitalSnapshot): string =>
@@ -293,7 +293,7 @@ ${why}`;
     `${hospital.hospitalName}.`,
 
   linkGone:
-    'That request has already been answered. Thank you for coming — here is ' +
+    'That request has already been answered. Thank you for coming. Here is ' +
     'what else is needed.',
 
   /* -------------------------------------------------------------- the ask */
@@ -305,7 +305,7 @@ ${why}`;
   /* ---------------------------------------------------------- the answers */
 
   declined:
-    'Thank you for letting us know. We will ask again next time — saying no ' +
+    'Thank you for letting us know. We will ask again next time. Saying no ' +
     'now changes nothing.',
 
   /**
@@ -315,7 +315,7 @@ ${why}`;
    */
   waitlisted:
     'Thank you for offering. Enough people have already said yes to this one, ' +
-    'so you are on the waiting list — we will message you straight away if a ' +
+    'so you are on the waiting list. We will message you straight away if a ' +
     'place opens.',
 
   promoted: (hospital: HospitalSnapshot, neededBy: string): string =>
@@ -325,7 +325,7 @@ ${why}`;
     'Please bring a photo ID.',
 
   confirmed: (hospital: HospitalSnapshot, neededBy: string): string =>
-    'Thank you — the centre is expecting you.\n\n' +
+    'Thank you. The centre is expecting you.\n\n' +
     `${hospital.hospitalName}\n${hospital.hospitalAddress}\n` +
     `By ${readableDay(neededBy)}\n\n` +
     'Please bring a photo ID. The centre will check you before you give.',
@@ -333,7 +333,7 @@ ${why}`;
   /** A deferral, never a verdict (§2.7). This request only, and no diagnosis. */
   deferred:
     'Thank you for answering honestly.\n\n' +
-    'For this one it is better not to — but that is about today, not about ' +
+    'For this one it is better not to, but that is about today, not about ' +
     'you, and you can still give another time. The blood centre can talk it ' +
     'through if you would like.',
 
@@ -345,7 +345,7 @@ ${why}`;
    * the first line says so.
    */
   standDown: (reason: 'completed' | 'cancelled' | 'expired'): string =>
-    'Thank you — you are no longer needed for that request.\n\n' +
+    'Thank you. You are no longer needed for that request.\n\n' +
     (reason === 'completed'
       ? 'Enough people came forward and the patient has what they need.'
       : reason === 'cancelled'
@@ -354,7 +354,7 @@ ${why}`;
     '\n\nPlease do not travel for this one. We will ask you again next time.',
 
   thanks: (nextEligible: string): string =>
-    'Thank you — the centre has recorded your donation.\n\n' +
+    'Thank you. The centre has recorded your donation.\n\n' +
     `You can give again from ${readableDay(nextEligible)}, and we will not ask ` +
     'before then.',
 
@@ -365,7 +365,7 @@ ${why}`;
   /* ------------------------------------------------------------ controls */
 
   snoozed: (until: string): string =>
-    `Of course — we will not ask again until ${readableDay(until)}.`,
+    `Of course. We will not ask again until ${readableDay(until)}.`,
 
   optedOut:
     'Done. We will not contact you again.\n\n' +
@@ -381,13 +381,13 @@ ${why}`;
   /**
    * What went, and what stayed, in two lines (§12.1).
    *
-   * "Deletion confirms what was removed" — and a donor told only "all deleted"
+   * "Deletion confirms what was removed", and a donor told only "all deleted"
    * who later learns the centre still holds a donation record was misled. The
    * count is theirs to know.
    */
   deleted: (donationsKept: number): string =>
     donationsKept === 0
-      ? 'All deleted — your name, your number and everything you told us. Thank you.'
+      ? 'All deleted. Your name, your number and everything you told us. Thank you.'
       : 'Deleted: your name, your number and everything you told us.\n\n' +
         `${String(donationsKept)} ${donationsKept === 1 ? 'donation stays' : 'donations stay'} ` +
         'on the blood centre’s record without your name, because the law ' +
@@ -400,7 +400,7 @@ ${why}`;
   /**
    * What a registered donor sees when they say anything we do not recognise.
    *
-   * Never "you are not registered" — that was being shown to people who had
+   * Never "you are not registered", that was being shown to people who had
    * just finished registering, which reads as though the whole minute was
    * wasted. If we know who somebody is, we say something useful about their
    * situation instead.
@@ -418,7 +418,7 @@ ${why}`;
     neededBy: string,
     hospital: HospitalSnapshot,
   ): string =>
-    `• ${String(units)} × ${group(bloodGroup)} by ${readableDay(neededBy)} — ${hospital.hospitalName}`,
+    `• ${String(units)} × ${group(bloodGroup)} by ${readableDay(neededBy)}: ${hospital.hospitalName}`,
 
   /** Appended to a line on the needs list, so it reads as part of it. */
   alreadyAsked: 'we have already messaged you about this one',
@@ -429,20 +429,20 @@ ${why}`;
   paused: (until: string): string =>
     `You are paused until ${readableDay(until)}. Say "resume" to start again sooner.`,
 
-  resumed: 'Welcome back — we will ask you again when someone nearby needs your blood group.',
+  resumed: 'Welcome back. We will ask you again when someone nearby needs your blood group.',
 
   /* -------------------------------------------------------------- errors */
 
-  alreadyAnswered: 'You have already answered this one — nothing more to do.',
+  alreadyAnswered: 'You have already answered this one, nothing more to do.',
 
   requestClosed: 'That request has already ended. Thank you for coming back to it.',
 
   help:
     'You can say:\n' +
-    '• "needs" — what is needed near you now\n' +
-    '• "pause" — stop being asked for a while\n' +
-    '• "resume" — start being asked again\n' +
-    '• "stop" — stop being asked at all\n' +
-    '• "delete" — remove everything about you\n\n' +
-    'We do not give medical advice — the blood centre checks you on the day.',
+    '• "needs" for what is needed near you now\n' +
+    '• "pause" to stop being asked for a while\n' +
+    '• "resume" to start being asked again\n' +
+    '• "stop" to stop being asked at all\n' +
+    '• "delete" to remove everything about you\n\n' +
+    'We do not give medical advice. The blood centre checks you on the day.',
 } as const;

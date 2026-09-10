@@ -2,7 +2,7 @@
  * The platform module's only entry point (§2).
  *
  * Accounts, sessions, authorization, audit, email and configuration. Another
- * module imports from here and never from a path inside — the boundary check in
+ * module imports from here and never from a path inside. The boundary check in
  * CI proves it.
  *
  * `platform` must never know what a blood request is. Nothing exported below

@@ -7,7 +7,7 @@
  * audit row written after the commit is a row that can go missing exactly when
  * it matters.
  *
- * The table is append-only by grant, not by convention — `app_web` holds no
+ * The table is append-only by grant, not by convention: `app_web` holds no
  * UPDATE or DELETE on it (migration 0004).
  */
 
@@ -28,7 +28,7 @@ export type AuditEntry = {
 export type AuditWriter = (entry: AuditEntry) => Promise<void>;
 
 /**
- * Metadata is for what a reader would need to understand the row later — never
+ * Metadata is for what a reader would need to understand the row later, never
  * a password, a token, an OTP or a session value. The audit log outlives the
  * incident it documents, and a secret in it is a secret with a long tail.
  */

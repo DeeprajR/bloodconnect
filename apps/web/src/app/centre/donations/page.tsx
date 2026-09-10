@@ -30,7 +30,7 @@ export default async function DonationsPage() {
         <p className="ux4g-body-m-default">
           {/*
             The counter is the authority on who gave blood (§4), so nothing here
-            is marked from this screen — it is marked on the roster, where the
+            is marked from this screen. It is marked on the roster, where the
             donor's phone number sits beside their name.
           */}
           Donors who have agreed to come, and the donations already recorded. Marking
@@ -46,7 +46,7 @@ export default async function DonationsPage() {
           <p className="ux4g-card-sub-title">
             {/*
               A withdrawn demand's donors are stood down by the bot, so they are
-              not people to expect — the read excludes them rather than showing
+              not people to expect. The read excludes them rather than showing
               a list somebody has to mentally filter.
             */}
             Confirmed donors for demands still recruiting, soonest first.

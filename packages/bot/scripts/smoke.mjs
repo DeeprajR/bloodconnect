@@ -3,8 +3,8 @@
  *
  * `TEST_DATABASE_URL` connects as `migrator`, which holds every privilege, so a
  * green suite says nothing about whether the grants permit the code that has to
- * run under them. That gap has bitten twice already — ADR 0005 on
- * `centre_decisions`, ADR 0008 on `donor_demand_confirmations` — and P7 adds a
+ * run under them. That gap has bitten twice already, ADR 0005 on
+ * `centre_decisions`, ADR 0008 on `donor_demand_confirmations`, and P7 adds a
  * third case: erasure has to reach the roster, which needs a grant the bot did
  * not have until migration 0016.
  *
@@ -76,7 +76,7 @@ const check = (label, condition, detail = '') => {
     console.log(`  ok   ${label}`);
   } else {
     failures += 1;
-    console.log(`  BAD  ${label}${detail ? ` — ${detail}` : ''}`);
+    console.log(`  BAD  ${label}${detail ? `: ${detail}` : ''}`);
   }
 };
 
@@ -296,7 +296,7 @@ async function main() {
 
   console.log(
     failures === 0
-      ? '\nTHE BOT RUNS AS app_bot — ALL OK'
+      ? '\nTHE BOT RUNS AS app_bot, ALL OK'
       : `\n${failures} problem(s). The grants and the code disagree.`,
   );
 }

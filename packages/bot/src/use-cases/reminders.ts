@@ -11,7 +11,7 @@
  *
  * **Once is enforced by the outbox, not by a flag.** `dedupe_key` is uniquely
  * indexed, so a second attempt for the same person inserts nothing whatever the
- * ticker does — the same mechanism that makes a replayed stand-down harmless.
+ * ticker does. The same mechanism that makes a replayed stand-down harmless.
  * A `reminded_at` column would have been a second source of truth for the same
  * fact, and one that a crash between the update and the send could desynchronise.
  */
@@ -28,7 +28,7 @@ import { DRAFT_TTL_HOURS } from './interview.js';
  * How long a draft sits untouched before the nudge.
  *
  * Long enough that somebody who put their phone down mid-question is not
- * chased, short enough that the draft has not expired — `DRAFT_TTL_HOURS` is
+ * chased, short enough that the draft has not expired: `DRAFT_TTL_HOURS` is
  * 48, and a reminder arriving after the answers were dropped would send
  * somebody back to a question they had already answered.
  */
@@ -51,7 +51,7 @@ export async function remindAbandonedSignups(
    * `expires_at` is written by the application as `now + DRAFT_TTL_HOURS`,
    * while `updated_at` is stamped by a database trigger using the server's
    * `now()`. Comparing a trigger timestamp against an injected-clock cutoff
-   * made this depend on the wall-clock time of day — it passed at half past
+   * made this depend on the wall-clock time of day. It passed at half past
    * three and failed at five, which a test caught and a production incident
    * would have caught later and worse (§3: the clock is injected so behaviour
    * is asserted rather than waited for).
@@ -73,7 +73,7 @@ export async function remindAbandonedSignups(
     .where(
       and(
         // Signup only. A donor half-way through editing their profile has
-        // nothing to be reminded about — they are already registered.
+        // nothing to be reminded about. They are already registered.
         eq(conversationState.flow, 'onboarding'),
         lt(conversationState.expiresAt, idleBy),
         /**

@@ -115,7 +115,7 @@ describe.skipIf(!testUrl)('the account update-request queue (§3, ADR 0011 §4)'
     const raised = await raise();
     expect(raised.ok).toBe(true);
 
-    // Something else edits the name in between — a rename by an admin, say.
+    // Something else edits the name in between. A rename by an admin, say.
     await db
       .update(users)
       .set({ fullName: 'A. Menon' })

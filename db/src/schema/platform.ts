@@ -1,7 +1,7 @@
 /**
  * The `hospital` schema, platform tables (§5.3).
  *
- * Accounts, sessions, throttling, audit and configuration — the things every
+ * Accounts, sessions, throttling, audit and configuration. The things every
  * module needs and none of them owns. `platform` may never know what a blood
  * request is (§2).
  */
@@ -104,7 +104,7 @@ export const sessions = hospitalSchema.table(
      * Which application issued this session (§1).
      *
      * The staff app and the admin app are separate deployments over one `users`
-     * table, and in development they share `localhost` — where cookies are not
+     * table, and in development they share `localhost`. Where cookies are not
      * isolated by port. Binding the session to its issuer means a staff cookie
      * presented to the admin app resolves to nobody, rather than relying on the
      * role check alone to notice.
@@ -134,7 +134,7 @@ export const sessionRelations = relations(sessions, ({ one }) => ({
  * Login and OTP throttling, in the database (§3, §13).
  *
  * In the database rather than in memory, so the limit survives a restart and
- * applies across every replica — an attacker who can trigger a redeploy must
+ * applies across every replica. An attacker who can trigger a redeploy must
  * not get a fresh allowance. The login and OTP throttles deliberately share
  * this table (§5.3).
  */
@@ -150,7 +150,7 @@ export const authRateLimits = hospitalSchema.table(
   'auth_rate_limits',
   {
     scope: text('scope').notNull(),
-    /** The IP or the lowercased email — never a user id, which we may not know. */
+    /** The IP or the lowercased email, never a user id, which we may not know. */
     key: text('key').notNull(),
     windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
     attempts: integer('attempts').notNull().default(0),

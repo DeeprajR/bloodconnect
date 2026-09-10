@@ -5,7 +5,7 @@ description: Apply the UX4G Design System contract when designing, implementing,
 
 # UX4G design workflow
 
-## Mandatory preflight — do not write code yet
+## Mandatory preflight: do not write code yet
 
 Before creating or changing any UX4G interface:
 
@@ -63,7 +63,7 @@ If the user chooses the default theme, do not add a redundant override block.
 As of v2.0.1, button default dimensions use a `:where()` wrapper at zero
 specificity. This eliminates cascade conflicts between variant and size classes
 after minification. Consuming projects no longer need `!important` overrides on
-button component selectors — overriding `--ux4g-color-primary-600/700/800` at
+button component selectors. Overriding `--ux4g-color-primary-600/700/800` at
 `:root` is sufficient to theme all button states (default, hover, active) via
 the semantic token cascade.
 

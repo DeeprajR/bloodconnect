@@ -6,7 +6,7 @@
  * rather than a performance one:
  *
  *  - A cached stock figure is a wrong stock figure. Units on the shelf, the
- *    status of a request, whether a donor confirmed — every one of those is
+ *    status of a request, whether a donor confirmed, every one of those is
  *    only safe if it came from the server just now.
  *  - A cached page is somebody's page. These devices are shared at a ward
  *    desk, and a dashboard served from cache after a different person signs in
@@ -14,7 +14,7 @@
  *
  * So: hashed build assets and icons are cached, because their URL changes when
  * their content does. Documents go to the network and fall back to an offline
- * notice — never to a stored copy of a real page. Everything else is passed
+ * notice, never to a stored copy of a real page. Everything else is passed
  * straight through.
  */
 
@@ -97,5 +97,5 @@ self.addEventListener('fetch', (event) => {
 
   // Data, RSC payloads, server actions, images behind a session: straight to
   // the network, never stored. Falling through without calling respondWith is
-  // deliberate — the browser handles it exactly as if there were no worker.
+  // deliberate. The browser handles it exactly as if there were no worker.
 });

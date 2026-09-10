@@ -30,7 +30,7 @@ import { raiseRequestAction, type FormState } from './hospital-actions';
  *     aim. It costs vertical space, which is the right thing to spend here.
  *  2. **The collapsed section is a native `<details>`.** No JavaScript decides
  *     whether it opens, so it works before hydration and on a bad hospital
- *     connection — and the fields inside are still in the form, so a doctor who
+ *     connection, and the fields inside are still in the form, so a doctor who
  *     opened it, filled it, and collapsed it again does not lose the answers.
  *  3. **Nothing inside it is required.** Opening it must never be able to stop
  *     the request going through; the centre fills in what is missing when the
@@ -229,7 +229,7 @@ export function RaiseRequestForm({
       {/* ------------------------------------------------ the rest ------- */}
       {/*
         Closed by default, and open when the doctor arrived from an admitted
-        patient — the one case where they already have the answers in front of
+        patient, the one case where they already have the answers in front of
         them and retyping would be the slow path.
       */}
       <details className="app-more" open={admissionId !== undefined}>
@@ -237,7 +237,7 @@ export function RaiseRequestForm({
           <span className="app-stack-tight">
             <span>Patient and clinical details</span>
             <span className="ux4g-label-m-default">
-              Optional — the blood centre fills these in
+              Optional, the blood centre fills these in
             </span>
           </span>
           {/*

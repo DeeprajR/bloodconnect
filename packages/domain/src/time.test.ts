@@ -73,7 +73,7 @@ describe('day arithmetic across boundaries', () => {
 describe('a day becoming a moment (§5.2)', () => {
   it('ends a day at 23:59:59.999 local, not at midnight UTC', () => {
     // India is UTC+5:30 and observes no DST, so the end of 7 Sep locally is
-    // 18:29:59.999 UTC — which is the whole point of converting in one place.
+    // 18:29:59.999 UTC, which is the whole point of converting in one place.
     expect(endOfDay(day('2026-09-07'), APP_TIMEZONE).toISOString()).toBe(
       '2026-09-07T18:29:59.999Z',
     );

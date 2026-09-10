@@ -167,7 +167,7 @@ async function seedCentreSettings(db: Database): Promise<void> {
  *
  * Idempotent through the unique unit number: re-running adds nothing, and a
  * bag that has since been reserved or issued keeps whatever happened to it.
- * Deliberately not a fixed set of ids — a seed that resurrected an issued unit
+ * Deliberately not a fixed set of ids. A seed that resurrected an issued unit
  * would be rewriting the register.
  */
 async function seedStock(db: Database): Promise<void> {
@@ -205,7 +205,7 @@ async function seedStock(db: Database): Promise<void> {
  * The synthetic donor pool.
  *
  * Placed across the real seeded hierarchy so the wave ordering of §7.7 is
- * visible on the first demand raised — the nearest locality first, then the
+ * visible on the first demand raised. The nearest locality first, then the
  * town, then the taluk. A pool that all sits in one place shows none of that.
  *
  * Idempotent through the unique `(channel, channel_user_id)` index: re-running
@@ -241,7 +241,7 @@ async function seedDonors(db: Database): Promise<void> {
 
   if (places.length === 0) {
     process.stdout.write(
-      '  donors:    skipped — no location hierarchy to place them in\n',
+      '  donors:    skipped, no location hierarchy to place them in\n',
     );
     return;
   }

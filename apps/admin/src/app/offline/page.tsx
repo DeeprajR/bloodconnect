@@ -6,8 +6,8 @@ export const metadata: Metadata = { title: 'Offline · Blood Connect' };
  * What the service worker serves when a navigation cannot reach the server
  * (§2.8).
  *
- * It carries no data, and that is the point. The alternative — a cached copy of
- * whatever page was last viewed — would show a stock figure, a request status
+ * It carries no data, and that is the point. The alternative, a cached copy of
+ * whatever page was last viewed, would show a stock figure, a request status
  * or somebody else's dashboard, all of which are wrong in a way that matters
  * clinically. Saying "you are offline" is the honest answer.
  *

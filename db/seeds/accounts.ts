@@ -73,7 +73,7 @@ export type SeededAccount = AccountSeed & {
  * Hashes once and reuses it across the four accounts.
  *
  * Argon2id is deliberately slow, and four hashes of the same password would
- * cost four times as much for no security benefit — these are all the same
+ * cost four times as much for no security benefit. These are all the same
  * published string, so the hashes carry no independent secret. Real accounts
  * never share a password and never take this path.
  */

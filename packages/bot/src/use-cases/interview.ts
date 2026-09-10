@@ -10,13 +10,13 @@
  *     abandoned interview leaves a draft that expires, not a half-donor who can
  *     be selected into a wave with no consent record behind them.
  *  3. **The re-ask is the original question, unchanged.** There is no second,
- *     lesser edit interface — the same prompts serve signup, the fix flow and
+ *     lesser edit interface. The same prompts serve signup, the fix flow and
  *     the profile editor, which is why they are one function and not three.
  *
  * The summary is the pivot: everything the donor said, played back, each row
  * numbered and correctable, and a single confirmation covering both *"these
  * details are correct"* and *"message me when someone near me needs my group"*.
- * §5 is firm that those two are inseparable in practice — consent to be
+ * §5 is firm that those two are inseparable in practice. Consent to be
  * contacted about a blood group is meaningless if the blood group is wrong.
  */
 
@@ -102,7 +102,7 @@ export const STEP_LABELS: Readonly<Record<InterviewStep, string>> = {
  * Every optional field admits `undefined` explicitly.
  *
  * `exactOptionalPropertyTypes` otherwise rejects `{ ...draft, dob: undefined }`,
- * and clearing a field by spreading is exactly how the fix flow resets a step —
+ * and clearing a field by spreading is exactly how the fix flow resets a step:
  * `delete` on a spread copy would be the alternative, and it reads worse.
  */
 export type InterviewDraft = {
@@ -112,7 +112,7 @@ export type InterviewDraft = {
   name?: string | undefined;
   dob?: string | undefined;
   sex?: Sex | undefined;
-  /** Absent when the donor answered "I don't know" — staff type them later. */
+  /** Absent when the donor answered "I don't know". Staff type them later. */
   bloodGroup?: string | undefined;
   groupUnknown?: boolean | undefined;
   weightBand?: WeightBand | undefined;
@@ -157,12 +157,12 @@ export type InterviewState = {
 export const DRAFT_TTL_HOURS = 48;
 
 /* -------------------------------------------------------------------------- */
-/* Prompts — one per step, and the only place a question is worded             */
+/* Prompts, one per step, and the only place a question is worded             */
 /* -------------------------------------------------------------------------- */
 
 const choice = (label: string, data: string): Choice => ({ label, data });
 
-/** Year buttons, newest first — a donor is far likelier to be 24 than 64. */
+/** Year buttons, newest first. A donor is far likelier to be 24 than 64. */
 function yearChoices(today: CalendarDay, minAge: number, maxAge: number): Choice[] {
   const thisYear = Number(today.slice(0, 4));
   const years: Choice[] = [];
@@ -201,7 +201,7 @@ export async function promptFor(
         /*
           The tap is the primary path and typing is the fallback, offered in the
           same breath (§5). A platform that cannot share contacts ignores the
-          flag and the donor simply types — no branch, no second screen.
+          flag and the donor simply types, no branch, no second screen.
         */
         requestContact: true,
       };
@@ -252,7 +252,7 @@ export async function promptFor(
         choices: [
           ...BLOOD_GROUPS.map((group) => choice(bloodGroupLabel(group), `group:${group}`)),
           // §5: eight buttons plus "I don't know". Guessing is worse than not
-          // knowing — staff type the donor at their first donation.
+          // knowing. Staff type the donor at their first donation.
           choice('I don’t know', 'group:unknown'),
         ],
       };
@@ -270,7 +270,7 @@ export async function promptFor(
       return {
         text: question.text,
         /*
-          `durable:`, not `screen:` — the journey's per-request questions own
+          `durable:`, not `screen:`. The journey's per-request questions own
           that prefix, and a callback routed to the wrong screening is a visit
           answer landing on a profile. The two really are different things
           (§5), so they do not share a namespace either.
@@ -392,7 +392,7 @@ export type SummaryRow = {
   readonly number: number;
   readonly label: string;
   readonly value: string;
-  /** Extra lines under the row — the screening answers in the donor's terms. */
+  /** Extra lines under the row. The screening answers in the donor's terms. */
   readonly detail?: readonly string[];
   /** Marked "updated" because the donor just changed it (§5). */
   readonly changed: boolean;
@@ -429,37 +429,37 @@ export async function summaryRows(
           ...base,
           value: draft.phone
             ? `${maskPhone(draft.phone)}${draft.phoneVerified === true ? '  (verified)' : ''}`
-            : '—',
+            : '-',
         };
       case 'name':
-        return { ...base, value: draft.name ?? '—' };
+        return { ...base, value: draft.name ?? '-' };
       case 'dob':
         return {
           ...base,
-          value: dob ? `${dob}  (age ${String(ageOn(dob, today))})` : '—',
+          value: dob ? `${dob}  (age ${String(ageOn(dob, today))})` : '-',
         };
       case 'sex':
-        return { ...base, value: draft.sex ? sexLabel(draft.sex) : '—' };
+        return { ...base, value: draft.sex ? sexLabel(draft.sex) : '-' };
       case 'blood_group':
         return {
           ...base,
           value:
             draft.groupUnknown === true || draft.bloodGroup === undefined
-              ? 'Not known yet — staff will type you at your first donation'
+              ? 'Not known yet. Staff will type you at your first donation'
               : `${bloodGroupLabel(draft.bloodGroup as BloodGroup)}  (to be confirmed by staff at your first donation)`,
         };
       case 'weight':
-        return { ...base, value: draft.weightBand ? weightBandLabel(draft.weightBand) : '—' };
+        return { ...base, value: draft.weightBand ? weightBandLabel(draft.weightBand) : '-' };
       case 'screening':
         return {
           ...base,
           value: 'You told us:',
           detail: durableSummaryLines(draft.sex ?? 'other', draft.screening ?? {}).map(
-            (line) => `${line.text}${line.clear ? '  ✓' : '  — we will check this with you'}`,
+            (line) => `${line.text}${line.clear ? '  ✓' : '. We will check this with you'}`,
           ),
         };
       case 'location':
-        return { ...base, value: location === '' ? '—' : location };
+        return { ...base, value: location === '' ? '-' : location };
       case 'last_donation':
         return { ...base, value: lastDonationValue(ctx, draft) };
     }
@@ -474,11 +474,11 @@ const sexLabel = (sex: Sex): string =>
 function lastDonationValue(ctx: BotContext, draft: InterviewDraft): string {
   if (draft.neverDonated === true) return 'Never donated';
   const day = parseCalendarDay(draft.lastDonatedOn ?? '');
-  if (!day) return '—';
+  if (!day) return '-';
 
   const eligible = nextEligibleOn(day, draft.sex ?? 'other', ctx.config.donor.intervalDays);
   return eligible
-    ? `${day}  — you can donate again from ${eligible}`
+    ? `${day}. You can donate again from ${eligible}`
     : day;
 }
 
@@ -500,8 +500,8 @@ export async function summaryMessage(
       choice('Fix something', 'sum:fix'),
       /*
         The third ending §5 asks for: "not now" is not "delete me". The
-        registration is kept and dormant, and turning it on later is one word —
-        making somebody retype ten answers to change their mind loses them
+        registration is kept and dormant, and turning it on later is one word.
+        Making somebody retype ten answers to change their mind loses them
         twice.
       */
       choice('Not now', 'sum:decline'),

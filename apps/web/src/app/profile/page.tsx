@@ -68,11 +68,11 @@ export default async function ProfilePage() {
           <dl className="app-stack-tight">
             <div className="app-row">
               <dt className="ux4g-label-m-strong">Name</dt>
-              <dd className="ux4g-body-s-default">{account?.fullName ?? '—'}</dd>
+              <dd className="ux4g-body-s-default">{account?.fullName ?? '-'}</dd>
             </div>
             <div className="app-row">
               <dt className="ux4g-label-m-strong">Email</dt>
-              <dd className="ux4g-body-s-default">{account?.email ?? '—'}</dd>
+              <dd className="ux4g-body-s-default">{account?.email ?? '-'}</dd>
             </div>
             <div className="app-row">
               <dt className="ux4g-label-m-strong">Registration</dt>

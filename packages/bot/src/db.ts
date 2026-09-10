@@ -4,7 +4,7 @@
  * A **different role** from the web application's, and that is the whole point:
  * `app_bot` can see the `bot` schema, read `reference`, and touch exactly the
  * contract columns of the two shared tables. It cannot read a patient row, and
- * not because the code avoids it — because the grant does not exist (§5.1).
+ * not because the code avoids it, because the grant does not exist (§5.1).
  *
  * This is the only file in the bot that names a connection string.
  */

@@ -1,4 +1,4 @@
-# ADR 0005 — The centre decision, and three things the database caught
+# ADR 0005: The centre decision, and three things the database caught
 
 Date: 2026-09-08 · Status: accepted
 
@@ -18,15 +18,15 @@ them.
 `blood_bags` from `blood_requests` inside it. So the boundary would have been a convention, and
 §11.2 is explicit that conventions are what fail here.
 
-**What was built instead.** `packages/hospital/src/for-centre.ts` is a narrow, purpose-built API —
-`listRequestsAwaitingDecision`, `getRequestForDecision`, `markRequestDecided` — and
+**What was built instead.** `packages/hospital/src/for-centre.ts` is a narrow, purpose-built API,
+`listRequestsAwaitingDecision`, `getRequestForDecision`, `markRequestDecided`, and
 `packages/centre/src/boundary.test.ts` reads Module 2's own source and fails the build if a
 Module 1 table name appears in it. Same shape as the CI grep §5.9 asks for on the bot's
 migrations, and for the same reason. The test also asserts that it *can* go red, because a
 boundary check that cannot fail reports safety it never established.
 
 **A property that falls out of this.** The centre reads the **frozen snapshot** (§2.6), never the
-live patient. That is not a compromise made to keep the boundary clean — it is the more correct
+live patient. That is not a compromise made to keep the boundary clean. It is the more correct
 answer. The snapshot is what the doctor told the centre, and editing a patient a week later must
 not change what the counter is answering.
 
@@ -43,15 +43,15 @@ writes `demand_id` onto the decision row as it is inserted.
 
 **Why.** Migration 0010 revokes `UPDATE` and `DELETE` on `centre_decisions` from `app_web`. A
 decision is a clinical record of what the centre answered; it is corrected by a later action
-against the request, never by rewriting the row — the same treatment `audit_log` gets. So the row
+against the request, never by rewriting the row. The same treatment `audit_log` gets. So the row
 has to be complete when it is inserted, which means the demand exists first.
 
 **What is unchanged.** Everything §7.2 is actually about. Both writes are in one transaction, so a
 shortfall still cannot exist without its demand row, and the loser of a decision race rolls the
 demand back along with everything else.
 
-**How this was found.** The first version updated the decision afterwards. Every test passed —
-they connect as `migrator`. The end-to-end run as the real `app_web` role failed with `permission
+**How this was found.** The first version updated the decision afterwards. Every test passed.
+They connect as `migrator`. The end-to-end run as the real `app_web` role failed with `permission
 denied for table centre_decisions`, which is exactly what that grant is for. The fix was to change
 the code, not the grant.
 
@@ -82,11 +82,11 @@ for recruiting donors, and only there.
 
 | Decision | Why |
 |---|---|
-| **The floor counts red cells only** — whole blood and PRBC | A floor met by bags of plasma reads as comfortable while there is nothing a walk-in donor could replace, and "recruit for groups below floor" would then raise a demand nobody can fill. Stated on the screen, not just here |
+| **The floor counts red cells only**: whole blood and PRBC | A floor met by bags of plasma reads as comfortable while there is nothing a walk-in donor could replace, and "recruit for groups below floor" would then raise a demand nobody can fill. Stated on the screen, not just here |
 | **Declining on the merits raises no demand** | A shortfall recruits; a refusal does not. Recruiting donors for a request the centre has just refused sends real people out for nothing. An empty shelf is the *fill* path with zero available, and that does recruit |
 | **The counter does not type a number of units** | It is whatever the shelf holds at the instant the transaction runs. A figure typed thirty seconds earlier is a figure that may already be wrong |
 | **A floor demand is for whole blood** | That is what a walk-in donor gives; the components are made from it |
-| **The stale-bag sweep exists but nothing schedules it** | `expireStaleBags` is written and tested. The `worker` process of §1 is not built yet, so it has no caller — said plainly rather than left looking automatic |
+| **The stale-bag sweep exists but nothing schedules it** | `expireStaleBags` is written and tested. The `worker` process of §1 is not built yet, so it has no caller: said plainly rather than left looking automatic |
 
 ### Spec deltas, to reconcile per §11.8
 
@@ -104,14 +104,14 @@ raise a demand while it is unset, rather than sending donors an address with a h
 
 ## 5. Tag collisions are detected and refused, not resolved
 
-§4's three cases are classified from the register — the presented tag's bag is on the shelf
-(case 3), live (case 1), or finished (case 2) — and each gets its own message naming what actually
+§4's three cases are classified from the register, the presented tag's bag is on the shelf
+(case 3), live (case 1), or finished (case 2), and each gets its own message naming what actually
 happened. **None of them offers a resolution.** The returns flow, the quarantine list and the
 discrepancy workflow are P6.
 
 Case 3 in particular will never get a "register it anyway" button. The register believing a bag is
 on the shelf while somebody holds its tag means the register is stale, two bags carry the same
-tag, or the tag is cloned — and every one of those can put the wrong unit into a patient. §4 and
+tag, or the tag is cloned, and every one of those can put the wrong unit into a patient. §4 and
 §14 both say the correct behaviour is to stop and make a person go and look.
 
 Deliberately absent tables, rather than present and unused: `bag_returns`, `bag_quarantines`,
@@ -129,7 +129,7 @@ keeping: **run it for real before believing it.**
 | Bug | How it presented | Fix |
 |---|---|---|
 | Two operators presenting the same **new** tag both inserted it | `duplicate key value violates rfid_tags_pkey`. `SELECT ... FOR UPDATE` locks nothing when the row does not exist yet | `INSERT ... ON CONFLICT DO NOTHING` first, then `FOR UPDATE`. The insert creates the row or waits for whoever is creating it |
-| The decision race was reported as a crash | Drizzle wraps the driver's error, so reading only the top level never saw the constraint | Walk the `cause` chain, and match **only** `centre_decisions_request_idx` — any other unique violation is a bug and must keep throwing |
+| The decision race was reported as a crash | Drizzle wraps the driver's error, so reading only the top level never saw the constraint | Walk the `cause` chain, and match **only** `centre_decisions_request_idx`: any other unique violation is a bug and must keep throwing |
 | The decision row was updated after insert | `permission denied for table centre_decisions`, as `app_web` | Raise the demand first and insert the decision complete. See §2 above |
 
 The contract grants now have their own suite (`db/src/schema/contract-grants.test.ts`) that
@@ -143,8 +143,8 @@ when the application logic is wrong.
 
 ## 7. Wording
 
-The §2.7 table gained Module 2's terms — `unitNumber`, `collectedOn`, `expiresOn`, `stockFloor`,
-`quarantine`, `walkIn` — pinned by the same regression test, written while the labels were being
+The §2.7 table gained Module 2's terms, `unitNumber`, `collectedOn`, `expiresOn`, `stockFloor`,
+`quarantine`, `walkIn`, pinned by the same regression test, written while the labels were being
 typed for the first time.
 
 None of them is abbreviated. A counter reads these under time pressure, and "Unit no." and "Exp."

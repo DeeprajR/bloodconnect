@@ -3,7 +3,7 @@
  *
  * The same `hospital.app_config` rows the web application reads, on a
  * SELECT-only grant. §12's second rule is that the SQL wave query and the
- * TypeScript predicate take their thresholds from the same place — and those
+ * TypeScript predicate take their thresholds from the same place, and those
  * two readings live in different processes, so "the same place" has to mean the
  * same table rather than two copies that happen to agree today.
  *
@@ -32,7 +32,7 @@ export async function loadBotConfig(db: BotDatabase): Promise<AppConfig> {
   for (const row of rows) {
     // `contract.version` shares this table but is not clinical configuration
     // (§6). Passing it to the resolver would report it as an unknown key and
-    // take every real override down with it — the same reason the web app's
+    // take every real override down with it. The same reason the web app's
     // loader skips it.
     if (row.key.startsWith('contract.')) continue;
     overrides[row.key] = row.value;
@@ -45,7 +45,7 @@ export async function loadBotConfig(db: BotDatabase): Promise<AppConfig> {
    * A bad row must not start the bot on silently different thresholds.
    *
    * §13 says a process refuses to start on a misconfiguration rather than
-   * running with a default nobody chose — and here that default would decide
+   * running with a default nobody chose, and here that default would decide
    * who gets asked to give blood.
    */
   throw new Error(

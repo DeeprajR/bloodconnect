@@ -10,7 +10,7 @@ import { AUDIENCE, SESSION_COOKIE } from '@/lib/session';
  * Next 16 calls this the `proxy` convention; it was `middleware` up to 15, and
  * that name is deprecated. Proxy always runs on the Node.js runtime, which is
  * what lets this resolve the session against the database rather than merely
- * noticing that a cookie exists — a `blood_centre` account cannot reach `/admin`
+ * noticing that a cookie exists. A `blood_centre` account cannot reach `/admin`
  * far enough to render a page.
  *
  * Proxy also allows no route-segment config, so there is no matcher: **every**

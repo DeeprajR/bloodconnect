@@ -18,7 +18,7 @@
  * | `empty`    | nothing on the shelf       | Dark red |
  *
  * They are graded by **what somebody does about it**, not by an even split of
- * the range: watch it, recruit, recruit tonight, and — at the bottom — the one
+ * the range: watch it, recruit, recruit tonight, and, at the bottom, the one
  * state where the next request for that group cannot be answered from stock at
  * all. `empty` stays separate from `critical` for that reason: one unit left and
  * no units left differ in kind, not in degree, and a screen that renders both
@@ -34,8 +34,8 @@ import type { BloodGroup } from './blood.js';
  * The order the groups are shown in, which is not the order they are stored in.
  *
  * `BLOOD_GROUPS` is ordered for iteration and for the compatibility tables (§2).
- * A counter reads a shelf in the clinical convention — A, B, AB, O, positive
- * before negative — and that is what the approved chart shows. A screen that
+ * A counter reads a shelf in the clinical convention, A, B, AB, O, positive
+ * before negative, and that is what the approved chart shows. A screen that
  * lists them the storage way makes somebody hunt for the row they want.
  *
  * A test asserts this is a permutation of `BLOOD_GROUPS`: a group silently
@@ -66,7 +66,7 @@ export type StockBand = (typeof STOCK_BANDS)[number];
 export const STOCK_BAND_LABELS: Readonly<Record<StockBand, string>> = {
   adequate: 'At or above the floor',
   low: 'Below the floor',
-  short: 'Short — recruit',
+  short: 'Short. Recruit',
   critical: 'Critically low',
   empty: 'None on the shelf',
 };
@@ -78,7 +78,7 @@ const atLeastZero = (value: number): number =>
 /**
  * The band for one group.
  *
- * @param onShelf units available now — reserved units are somebody else's
+ * @param onShelf units available now. Reserved units are somebody else's
  *   already, so the caller excludes them (`stockByGroup`)
  * @param floor `centre_settings.min_units_per_group`, per centre and editable
  * @param fractions `stock.low_fraction` and `stock.critical_fraction`, the two
@@ -105,8 +105,8 @@ export function stockBandFor(
   /**
    * Clamped, and ordered.
    *
-   * Config validates both at the boundary, but a pair that crossed over — a
-   * critical fraction above the low one — would silently swallow the `short`
+   * Config validates both at the boundary, but a pair that crossed over, a
+   * critical fraction above the low one, would silently swallow the `short`
    * band rather than fail, so the smaller of the two is always the lower edge.
    */
   const clamp = (value: number): number => Math.min(Math.max(value, 0), 1);

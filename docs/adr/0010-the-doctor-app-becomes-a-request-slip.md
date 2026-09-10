@@ -1,10 +1,10 @@
-# ADR 0010 — The doctor app becomes a request slip
+# ADR 0010: The doctor app becomes a request slip
 
 Date: 2026-09-09 · Status: accepted · Supersedes parts of §3
 
 A change of shape, not of scope: **the doctor's job is now four fields and an
-ID.** Everything else about a request — the patient, the admission, the clinical
-context, the sample — is entered by the blood centre.
+ID.** Everything else about a request, the patient, the admission, the clinical
+context, the sample, is entered by the blood centre.
 
 ---
 
@@ -16,7 +16,7 @@ previous transfusion and reaction, then the request itself. Around twenty fields
 at a bedside, on a phone, by somebody handling several patients at once.
 
 That is the wrong place to spend a doctor's attention. The information is not
-wrong or unnecessary — it is simply not theirs to type. The centre has a counter,
+wrong or unnecessary. It is simply not theirs to type. The centre has a counter,
 a person at it, and a bystander standing in front of them who knows the patient's
 name and can spell it.
 
@@ -26,7 +26,7 @@ So the split moves:
 |---|---|---|
 | Doctor | Patient, admission, full request | Blood group, product, units, urgency |
 | Centre | Decide, issue | All of the above, plus patient, admission, sample |
-| The handoff | — | An ID the doctor reads aloud to the bystander |
+| The handoff | - | An ID the doctor reads aloud to the bystander |
 
 The doctor's flow is: sign in → four fields → an ID on screen → read it to the
 bystander. The bystander carries it to the blood centre, and the centre's work
@@ -53,12 +53,12 @@ Four levels, each deriving a needed-by date rather than the doctor typing one:
 | Emergency | today | 15 minutes |
 | Very urgent | today | 1 hour |
 | Urgent | today | 4 hours |
-| Routine | +7 days | — |
+| Routine | +7 days | - |
 
 Three of the four land on the same date, and that is the point worth noticing:
 **the difference between them is how fast somebody walks, not what day it is.**
-A calendar date cannot express it, and the expiry sweep — which flags a request
-when `date_required` has passed — would not notice an unanswered emergency until
+A calendar date cannot express it, and the expiry sweep, which flags a request
+when `date_required` has passed, would not notice an unanswered emergency until
 midnight, which is several hours after it stopped mattering.
 
 So two things follow, and both are part of this change rather than a later
@@ -71,14 +71,14 @@ refinement:
   flags a request that has passed it. That is the clock an emergency runs on.
 
 `date_required` stays in the schema and keeps its meaning for everything
-downstream — the donor demand's date, the bot's needed-by, the expiry sweep — so
+downstream, the donor demand's date, the bot's needed-by, the expiry sweep, so
 none of that machinery changes. It is now derived rather than typed. Both the
 offsets and the response thresholds are configuration (§12), because they are
 exactly the kind of number a centre will want to tune in its first month.
 
 ## 4. The ID is an identifier, not a secret
 
-`DDMMYY-NNNNN` — `090926-00001` — with the date part prefilled wherever it is
+`DDMMYY-NNNNN`, `090926-00001`, with the date part prefilled wherever it is
 typed, so the counter enters five digits for a request raised today.
 
 It is read aloud in a corridor and typed at a counter, so it is short, it is
@@ -90,7 +90,7 @@ also a constraint to write down:
 Knowing it must never be enough to act on a request. At the counter a person is
 physically present and the centre verifies the patient by other means, which is
 what makes it safe there. It follows that nothing keyed on this ID alone may ever
-be exposed publicly — no status page, no API lookup, no "track your request"
+be exposed publicly, no status page, no API lookup, no "track your request"
 link. Anyone who later wants one needs a second factor, and this paragraph is why.
 
 The counter resets daily, so the sequence is per-day rather than per-year and
@@ -99,7 +99,7 @@ day, comfortably past any real load.
 
 ## 5. The emergency exception
 
-A request cannot normally be decided before a patient is attached — blood leaving
+A request cannot normally be decided before a patient is attached. Blood leaving
 a fridge has to be traceable to a named person, which is what §4's traceability
 and the crossmatch sample both assume.
 
@@ -125,7 +125,7 @@ Honest accounting, because some of this was built recently:
   surfacing on the doctor's dashboard (P5).
 - **The review screen.** Four fields on one screen are their own review.
 - **Patient and admission entry in the doctor app**, along with duplicate
-  detection — the last of which is not deleted but **moves**: the centre now
+  detection. The last of which is not deleted but **moves**: the centre now
   creates patients, so the centre needs the duplicate warning.
 - **`indication` as a doctor field.** It moves to the centre with the rest of the
   clinical context. Open question below.
@@ -142,8 +142,8 @@ moves.
    the simplification might have gone one field too far.
 2. **`patient_snapshot` moves.** It was frozen at submit (§2.6), when the patient
    was known. There is no patient at submit any more, so it freezes when the
-   patient is attached. The snapshot's purpose — a request keeps what it was
-   answered with — is unchanged.
+   patient is attached. The snapshot's purpose, a request keeps what it was
+   answered with, is unchanged.
 3. **Nothing carries the ID back to the doctor's phone.** The doctor sees their
    own requests and their status, which is enough. Whether a doctor should be
    notified when their request is answered, rather than checking, is a P8

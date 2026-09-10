@@ -107,13 +107,13 @@ export default async function DecisionPage({
             <p className="ux4g-alert-message">
               {/*
                 The ordinary state of a new request (ADR 0010), and the one this
-                banner used to describe as a discharge — a different fact
+                banner used to describe as a discharge. A different fact
                 entirely, and a frightening one to read about a patient nobody
                 had identified.
               */}
               <strong>No patient identified yet.</strong> The bystander has not
-              brought the ID to the counter. Take their details before issuing —
-              a unit has to be traceable to a named person.
+              brought the ID to the counter. Take their details before issuing.
+              A unit has to be traceable to a named person.
             </p>
             {decision ? (
               <p className="ux4g-body-s-default">
@@ -137,7 +137,7 @@ export default async function DecisionPage({
                 Shown, never enforced: a discharged patient can still need blood
                 that was requested while they were on the ward.
               */}
-              The patient has been discharged. The request still stands — check
+              The patient has been discharged. The request still stands. Check
               with the ward before issuing.
             </p>
           </div>
@@ -148,9 +148,9 @@ export default async function DecisionPage({
         <div className="ux4g-card-header">
           <h2 className="ux4g-card-title">{request.patient.name ?? 'Patient'}</h2>
           <p className="ux4g-card-sub-title app-figure">
-            {WORDING.ipNumber} {request.patient.ipNo ?? '—'} · {WORDING.ward}{' '}
-            {request.patient.ward ?? '—'} ·{' '}
-            {request.patient.bloodGroup ? bloodGroupLabel(request.patient.bloodGroup as never) : '—'}
+            {WORDING.ipNumber} {request.patient.ipNo ?? '-'} · {WORDING.ward}{' '}
+            {request.patient.ward ?? '-'} ·{' '}
+            {request.patient.bloodGroup ? bloodGroupLabel(request.patient.bloodGroup as never) : '-'}
           </p>
         </div>
         <div className="ux4g-card-body">
@@ -180,7 +180,7 @@ export default async function DecisionPage({
             <div className="app-stack-tight">
               <dt className="ux4g-label-m-strong">Requested by</dt>
               <dd className="ux4g-body-s-default">
-                {request.doctor.fullName ?? '—'}
+                {request.doctor.fullName ?? '-'}
                 {request.doctor.provisionalReg ? (
                   <span className="app-figure"> · {request.doctor.provisionalReg}</span>
                 ) : null}

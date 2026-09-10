@@ -1,7 +1,7 @@
 /**
  * The database connection for `app_web` (§5.1).
  *
- * One pool per process, reused across hot reloads in development — Next
+ * One pool per process, reused across hot reloads in development. Next
  * re-evaluates modules on every edit, and a new pool per reload exhausts
  * Postgres' connection limit within a few minutes of work.
  *
@@ -18,7 +18,7 @@ const connectionString = (): string => {
   const url = process.env['DATABASE_URL'];
   if (!url) {
     // Secrets are validated at boot and the process refuses to start on a
-    // missing one (§13). A default here would be a silent misconfiguration —
+    // missing one (§13). A default here would be a silent misconfiguration,
     // and the worst kind, because it would quietly connect somewhere.
     throw new Error(
       'DATABASE_URL is not set. From the workspace root: `cp .env.example .env`, ' +

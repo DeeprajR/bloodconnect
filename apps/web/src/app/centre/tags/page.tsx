@@ -96,11 +96,11 @@ export default async function TagsPage({
                   <div className="ux4g-alert-content">
                     <p className="ux4g-alert-message">
                       {/*
-                        Case 1. The register says this unit is out — so it has
+                        Case 1: the register says this unit is out, so it has
                         come back, and that is a return, not a new registration.
                       */}
                       This unit is out of the centre. If it has come back, record the
-                      return — do not register it again.
+                      return. Do not register it again.
                     </p>
                   </div>
                 </div>
@@ -120,7 +120,7 @@ export default async function TagsPage({
                         previous bag.
                       */}
                       The bag on this tag is finished ({found.bag.status}). Release the tag
-                      first, then register the new bag through the normal intake form — it
+                      first, then register the new bag through the normal intake form. It
                       is a new record with its own expiry, not an edit of the old one.
                     </p>
                   </div>
@@ -137,7 +137,7 @@ export default async function TagsPage({
                     <p className="ux4g-alert-message">
                       <strong>Stop.</strong> The register says {found.bag.unitNumber} is on
                       the shelf right now. That means the register is stale, two bags carry
-                      this tag, or the tag is cloned — and every one of those can put the
+                      this tag, or the tag is cloned, and every one of those can put the
                       wrong unit into a patient.
                     </p>
                     <p className="ux4g-body-s-default">
@@ -201,7 +201,7 @@ export default async function TagsPage({
                     Conflicting unit{' '}
                     <span className="app-figure">{row.conflictingUnitNumber}</span>, which
                     the register says is {row.conflictingStatus}.
-                    {row.note ? ` — ${row.note}` : ''}
+                    {row.note ? `: ${row.note}` : ''}
                   </p>
                 </div>
                 <div className="ux4g-card-body">

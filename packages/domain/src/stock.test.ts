@@ -24,7 +24,7 @@ describe('the stock bands (§4)', () => {
   /**
    * The prototype the centre approved, read back as assertions.
    *
-   * 25/25 green, 10/25 orange, 6/25 red — three points that pin the boundary
+   * 25/25 green, 10/25 orange, 6/25 red, three points that pin the boundary
    * between low and critical to somewhere in (0.24, 0.40].
    */
   it('grades a floor of 25 the way the centre reads it', () => {
@@ -39,7 +39,7 @@ describe('the stock bands (§4)', () => {
   /**
    * The counts that prompted the five-colour scale.
    *
-   * 1, 3 and 6 of 25 are all critical and share a colour, truthfully — they are
+   * 1, 3 and 6 of 25 are all critical and share a colour, truthfully. They are
    * the same call to action. What distinguishes them on screen is bar height and
    * the printed count, which is why the fill is proportional with no minimum
    * height worth speaking of.
@@ -172,7 +172,7 @@ describe('how much of the bar is filled', () => {
 
 describe('the order the groups are shown in', () => {
   it('is the clinical convention, not the storage one', () => {
-    // A, B, AB, O — positive before negative, as the approved chart shows.
+    // A, B, AB, O. Positive before negative, as the approved chart shows.
     expect([...STOCK_DISPLAY_ORDER]).toEqual([
       'A+',
       'A-',
@@ -188,7 +188,7 @@ describe('the order the groups are shown in', () => {
   it('shows every group exactly once', () => {
     /**
      * The assertion that matters. A group missing from this list is a group
-     * whose bar never appears, and nobody notices it has run out — the failure
+     * whose bar never appears, and nobody notices it has run out. The failure
      * being reordered introduces, and the only reason a second list of the
      * eight groups is tolerable at all.
      */

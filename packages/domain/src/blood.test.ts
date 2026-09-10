@@ -71,7 +71,7 @@ describe('ABO/Rh red-cell compatibility', () => {
     }
   });
 
-  it('is reflexive — every group can receive from itself', () => {
+  it('is reflexive, every group can receive from itself', () => {
     for (const group of BLOOD_GROUPS) {
       expect(canDonateRedCellsTo(group, group)).toBe(true);
     }

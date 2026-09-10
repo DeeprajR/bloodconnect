@@ -9,7 +9,7 @@
  *
  *  - **The conversation loop** long-polls the channel and handles what arrives.
  *    It has no timers: an update is handled when it appears.
- *  - **The ticker** runs on an interval and polls *columns* — `next_wave_at`,
+ *  - **The ticker** runs on an interval and polls *columns*: `next_wave_at`,
  *    the demand's status, `acknowledged_at`. Nothing that matters is held in
  *    this process, so a restart resumes rather than losing escalation (§5.7).
  *
@@ -62,7 +62,7 @@ function selectChannel(): ChannelPort {
    * An unrecognised channel refuses to start (§13).
    *
    * `CHANNEL` names the **platform**, and it is stored in
-   * `donor_channels.channel` — it is not the bot's @username, which is
+   * `donor_channels.channel`. It is not the bot's @username, which is
    * `TELEGRAM_BOT_USERNAME` and only appears in deep links. Anything else here
    * used to fall through to Telegram silently, so a value that meant nothing
    * looked like it was configuring something. It was set to the bot's username
@@ -79,7 +79,7 @@ function selectChannel(): ChannelPort {
   if (choice === 'memory' || token === '' || token === 'replace-me') {
     if (choice !== 'memory') {
       process.stdout.write(
-        'TELEGRAM_BOT_TOKEN is not set — running on the in-memory channel.\n' +
+        'TELEGRAM_BOT_TOKEN is not set. Running on the in-memory channel.\n' +
           'Recruitment, screening and stand-downs all work; nothing leaves the process.\n' +
           'Set the token from @BotFather in .env to talk to real donors.\n',
       );
@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 
   const health = await channel.check();
   process.stdout.write(
-    `channel ${channel.name}: ${health.ok ? 'ok' : 'UNREACHABLE'} — ${health.detail}\n`,
+    `channel ${channel.name}: ${health.ok ? 'ok' : 'UNREACHABLE'}: ${health.detail}\n`,
   );
 
   const context = async (): Promise<BotContext> => ({
@@ -140,7 +140,7 @@ async function main(): Promise<void> {
   const stop = (signal: string): void => {
     if (stopping) return;
     stopping = true;
-    process.stdout.write(`\n${signal} — finishing the current pass and stopping.\n`);
+    process.stdout.write(`\n${signal}. Finishing the current pass and stopping.\n`);
     controller.abort();
   };
   process.on('SIGINT', () => {
@@ -191,14 +191,14 @@ async function main(): Promise<void> {
             await handleUpdate(await context(), update);
           } catch (error) {
             // One malformed update must not stop the rest of the batch being
-            // handled — somebody else is waiting on theirs.
+            // handled, somebody else is waiting on theirs.
             process.stderr.write(`update ${update.updateId} failed: ${String(error)}\n`);
           }
         }
         /**
          * Send what those replies queued, **now**.
          *
-         * Replies go through the outbox so ordering holds — "you are confirmed"
+         * Replies go through the outbox so ordering holds: "you are confirmed"
          * must never arrive after "you are no longer needed". But the ticker was
          * the only thing draining it, so every tap waited up to a full tick
          * interval before anything came back, and the bot felt broken. Draining

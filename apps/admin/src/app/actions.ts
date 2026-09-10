@@ -42,7 +42,7 @@ import {
  * Each parses with Zod and calls exactly one use case. No rule lives here.
  *
  * `after()` drains the email outbox once the response is on its way. That is
- * the development stand-in for the worker of §1 — the outbox itself is the real
+ * the development stand-in for the worker of §1. The outbox itself is the real
  * mechanism, and moving the drain into a separate process changes nothing about
  * the transactions that write to it.
  */
@@ -55,7 +55,7 @@ const drainLater = (): void => {
  * A form field as a string.
  *
  * `FormData.get` returns `string | File | null`, and a File stringifies to
- * `[object Object]` — which would sail through validation as a perfectly good
+ * `[object Object]`, which would sail through validation as a perfectly good
  * 15-character password. Anything that is not a string is treated as absent.
  */
 function formValue(form: FormData, name: string): string {

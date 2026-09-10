@@ -108,7 +108,7 @@ export default async function CentrePage() {
               floor met by plasma would read as comfortable while there was
               nothing a walk-in donor could replace.
             */}
-            Whole blood and packed red cells — the components a donor can actually
+            Whole blood and packed red cells. The components a donor can actually
             replace. Reserved units are excluded; they belong to a decision already
             made.
           </p>
@@ -150,11 +150,11 @@ export default async function CentrePage() {
                     {row.short > 0 ? (
                       <span className="ux4g-badge-digit-danger">{row.short}</span>
                     ) : (
-                      '—'
+                      '-'
                     )}
                   </td>
                   <td className="app-figure">
-                    {row.expiringSoon > 0 ? row.expiringSoon : '—'}
+                    {row.expiringSoon > 0 ? row.expiringSoon : '-'}
                   </td>
                 </tr>
               ))}
@@ -223,7 +223,7 @@ export default async function CentrePage() {
                   contacted" are different things, and the screen says so.
                 */}
                 <span className="app-figure">{counts.awaitingImport}</span> not yet picked
-                up by the donor bot — nobody has been contacted for those.
+                up by the donor bot. Nobody has been contacted for those.
               </p>
             ) : null}
             <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/centre/demands">

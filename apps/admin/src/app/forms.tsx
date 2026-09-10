@@ -112,7 +112,7 @@ export function SignInForm() {
 
 /**
  * Creating a doctor sends the invite. There is no password field, because at
- * this moment no password exists — the doctor sets one from a link that only
+ * this moment no password exists. The doctor sets one from a link that only
  * their inbox receives (§2.3).
  */
 export function CreateDoctorForm() {

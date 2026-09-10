@@ -2,7 +2,7 @@
  * Who may do what (§9's role matrix, §13's three layers).
  *
  * Pure data and pure functions, shared by both applications. The three
- * independent layers — route proxy, page guard, use-case check — all read
+ * independent layers, route proxy, page guard, use-case check, all read
  * **this** file, so they cannot drift apart; what they do not share is the
  * moment they run, which is the point of having three (§3):
  *
@@ -27,7 +27,7 @@ export type Audience = 'staff' | 'admin';
 
 /**
  * The role split. Administration has no clinical function, and the clinical
- * roles have no administrative one — so an account compromised on either side
+ * roles have no administrative one, so an account compromised on either side
  * reaches only that side.
  */
 export const ROLES_BY_AUDIENCE: Readonly<Record<Audience, readonly UserRole[]>> = {
@@ -40,7 +40,7 @@ export const audienceFor = (role: UserRole): Audience =>
 
 /**
  * The actor every use case takes in its context. A use case never reads a
- * cookie, and never accepts a doctor id from the client (§2.5) — identity is
+ * cookie, and never accepts a doctor id from the client (§2.5). Identity is
  * resolved once at the edge and passed down.
  */
 export type Actor =
@@ -90,7 +90,7 @@ const ROLE_PERMISSIONS: Readonly<Record<UserRole, readonly Permission[]>> = {
    * separation §2.2 draws between raising and deciding intact no matter how
    * many roles one person is given.
    *
-   * `patients:read_all` is the exception and the one to watch — it lets a
+   * `patients:read_all` is the exception and the one to watch. It lets a
    * non-clinical account read patient records in order to see a doctor's
    * workload. Every read under it is audited, and its lawful basis is an open
    * question for counsel (§12.2).
@@ -129,7 +129,7 @@ export type RouteAccess =
   /** Signed in, any role the application admits. */
   | { readonly kind: 'authenticated' }
   | { readonly kind: 'roles'; readonly roles: readonly UserRole[] }
-  /** A device token, never a session — no browser reaches these (§9.2). */
+  /** A device token, never a session, no browser reaches these (§9.2). */
   | { readonly kind: 'device' };
 
 export type RouteRule = { readonly prefix: string; readonly access: RouteAccess };
@@ -139,7 +139,7 @@ export type RouteRule = { readonly prefix: string; readonly access: RouteAccess 
  * without depending on the order this array happens to be written in.
  *
  * Anything not matched is **denied**. A new route added without a rule is
- * inaccessible rather than open — the failure direction that gets noticed in
+ * inaccessible rather than open, the failure direction that gets noticed in
  * development instead of in production.
  */
 export const STAFF_ROUTE_RULES: readonly RouteRule[] = [
@@ -152,7 +152,7 @@ export const STAFF_ROUTE_RULES: readonly RouteRule[] = [
   { prefix: '/board', access: { kind: 'public' } },
   { prefix: '/reset', access: { kind: 'public' } },
   // The invite link and the address-change confirmation both arrive by email
-  // and are opened by someone who is not signed in — that is the whole point.
+  // and are opened by someone who is not signed in, that is the whole point.
   { prefix: '/invite', access: { kind: 'public' } },
   { prefix: '/confirm-email', access: { kind: 'public' } },
 

@@ -27,8 +27,8 @@ const getTransport = (): Transporter => {
 };
 
 /**
- * A 4xx SMTP reply is the server saying "not now" — a full mailbox, a greylist,
- * a rate limit — and is worth retrying. A 5xx is "no": a bad address or a
+ * A 4xx SMTP reply is the server saying "not now", a full mailbox, a greylist,
+ * a rate limit, and is worth retrying. A 5xx is "no": a bad address or a
  * rejected message, where retrying just burns the schedule and, on a bounce,
  * damages sender reputation.
  */

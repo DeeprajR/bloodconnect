@@ -70,7 +70,7 @@ function checkPatient(input: PatientInput): InvalidPatient | undefined {
   if (input.age !== null && input.age < 0) return invalidPatient('Age cannot be negative.');
 
   // A reaction without a previous transfusion is a contradiction, and the
-  // database refuses it — caught here so it reads as a sentence.
+  // database refuses it. Caught here so it reads as a sentence.
   if (input.previousReaction && input.previousTransfusion !== 'yes') {
     return invalidPatient(
       'A reaction can only be recorded when there was a previous transfusion.',
@@ -204,7 +204,7 @@ export async function dischargeAdmission(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Drafts — removed by ADR 0010                                                */
+/* Drafts. Removed by ADR 0010                                                */
 /* -------------------------------------------------------------------------- */
 
 /*
@@ -244,7 +244,7 @@ export type RequestListRow = {
  * A doctor's own requests.
  *
  * **Left joins, not inner ones.** A request is raised with four fields and no
- * patient (ADR 0010), and inner joins here dropped every one of them — the
+ * patient (ADR 0010), and inner joins here dropped every one of them. The
  * doctor submitted a request, got an ID, and then could not see it on their own
  * dashboard. The most common request in the system was the one it hid.
  */
@@ -376,7 +376,7 @@ export async function recordSample(
         requestId: requestUuid,
         sampleIdentifier: identifier,
         collectedAt: input.collectedAt,
-        // From the session, never the form (§2.5) — who drew the tube is part
+        // From the session, never the form (§2.5), who drew the tube is part
         // of the chain of custody.
         collectedByDoctorId: actorId,
         note: input.note,
@@ -446,7 +446,7 @@ export type PossibleDuplicate = {
  * shows them; the doctor decides.
  *
  * Trigram similarity rather than an exact match, because human-entered names
- * are misspelled, transliterated and abbreviated — `patients_name_trgm_idx`
+ * are misspelled, transliterated and abbreviated: `patients_name_trgm_idx`
  * exists for exactly this query, and an exact index would find none of it.
  */
 export async function findPossibleDuplicates(
@@ -468,7 +468,7 @@ export async function findPossibleDuplicates(
        * The column is named **fully**, not interpolated.
        *
        * Drizzle renders `${patients.id}` inside a select-list `sql` as a bare
-       * `"id"`, which inside this subquery resolves to `a.id` — the admission's
+       * `"id"`, which inside this subquery resolves to `a.id`. The admission's
        * own id. `a.patient_id = a.id` is never true, so every patient came back
        * with no open admission and nothing errored. A silent null, found by a
        * test that expected an IP number.

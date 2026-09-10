@@ -85,7 +85,7 @@ describe.skipIf(!testUrl)('bag intake, typed (§4, §10)', () => {
   /**
    * A draft request, for the one case that needs a bag to be held for
    * something. Written as SQL because this module may not import Module 1's
-   * use cases and must not name its tables in production code — a test is the
+   * use cases and must not name its tables in production code. A test is the
    * one place that distinction does not apply.
    */
   async function draftRequest(): Promise<string> {
@@ -120,7 +120,7 @@ describe.skipIf(!testUrl)('bag intake, typed (§4, §10)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    // PRBC at 42 days, from collection — not from intake. A bag does not become
+    // PRBC at 42 days, from collection, not from intake. A bag does not become
     // fresher by being handled.
     expect(result.value.expiresAt).toBe(addDays(collectedAt, 42));
     expect(result.value.expirySource).toBe('derived');
@@ -224,8 +224,8 @@ describe.skipIf(!testUrl)('bag intake, typed (§4, §10)', () => {
     const first = await registerBag(context(), bag({ tagUid }));
     if (!first.ok) return;
 
-    // A reserved bag must name the request it is held for — the CHECK refuses
-    // one that does not — so this sets up a real request rather than faking it.
+    // A reserved bag must name the request it is held for, the CHECK refuses
+    // one that does not, so this sets up a real request rather than faking it.
     const requestUuid = await draftRequest();
     await client`UPDATE hospital.blood_bags
                     SET status = 'reserved', reserved_for_request_id = ${requestUuid}
@@ -234,8 +234,8 @@ describe.skipIf(!testUrl)('bag intake, typed (§4, §10)', () => {
     const second = await registerBag(context(), bag({ tagUid }));
     expect(second.ok).toBe(false);
     if (!second.ok && second.error.kind === 'TagUnavailable') {
-      // If the unit has come back it is a return, not a new registration —
-      // the two must not share a button (§4).
+      // If the unit has come back it is a return, not a new registration.
+      // The two must not share a button (§4).
       expect(second.error.case).toBe('bag_live');
     }
   });

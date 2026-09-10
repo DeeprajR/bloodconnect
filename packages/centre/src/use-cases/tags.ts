@@ -9,9 +9,9 @@
  * ```
  *  register says      what happened                    the workflow
  *  ─────────────────────────────────────────────────────────────────────
- *  issued / reserved  case 1 — the bag came back       Return
- *  terminal           case 2 — the tag was reused      Release, then re-register
- *  available          neither. something is wrong      Blocked — a discrepancy
+ *  issued / reserved  case 1, the bag came back       Return
+ *  terminal           case 2, the tag was reused      Release, then re-register
+ *  available          neither. something is wrong      Blocked, a discrepancy
  * ```
  *
  * The classification is pure and lives in `classifyTag`, so the three cases can
@@ -20,7 +20,7 @@
  *
  * **Case 3 has no resolution on this transaction, by design.** The register
  * believing a bag is on the shelf while somebody holds its tag means the
- * register is stale, two bags carry the same tag, or the tag is cloned — and
+ * register is stale, two bags carry the same tag, or the tag is cloned, and
  * every one of those can put the wrong unit into a patient. §4 and §14 both say
  * the right behaviour is to stop and make a person go and look. The pressure to
  * add a "register it anyway" button will come from busy staff, and the answer is
@@ -91,7 +91,7 @@ export function classifyTag(
     return { kind: 'reuse', bagId: tag.currentBagId, bagStatus };
   }
 
-  // `issued` or `reserved` — the unit is out, and it has come back.
+  // `issued` or `reserved`. The unit is out, and it has come back.
   return { kind: 'return', bagId: tag.currentBagId, bagStatus };
 }
 
@@ -122,7 +122,7 @@ export type ResolvedTag = {
 /**
  * What the screen shows when a tag is presented.
  *
- * §4: it "shows everything known about the bag currently on it — group,
+ * §4: it "shows everything known about the bag currently on it. Group,
  * product, collection, expiry, status, and if issued, to which request and
  * when". A screen that says only "tag in use" makes somebody guess which of
  * three very different things happened.
@@ -172,7 +172,7 @@ export async function resolveTag(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Case 2 — release, so the tag can be re-registered                           */
+/* Case 2. Release, so the tag can be re-registered                           */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -182,7 +182,7 @@ export async function resolveTag(
  * re-registering on purpose: "a single reassign button invites someone to race
  * past the question of what happened to the previous bag". Re-registering then
  * goes through the whole intake form, producing a **new** bag with its own
- * collection date and its own derived expiry — the old bag's history stays
+ * collection date and its own derived expiry. The old bag's history stays
  * exactly as it was.
  */
 export async function releaseTag(
@@ -261,7 +261,7 @@ export async function releaseTag(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Case 3 — the discrepancy                                                    */
+/* Case 3. The discrepancy                                                    */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -269,7 +269,7 @@ export async function releaseTag(
  *
  * No resolution is offered here. The row names the conflicting bag so somebody
  * can physically go and find it, and it sits on the centre overview until a
- * person closes it — it never auto-resolves and never expires.
+ * person closes it. It never auto-resolves and never expires.
  */
 export async function raiseTagDiscrepancy(
   ctx: UseCaseContext,
@@ -335,13 +335,13 @@ export type DiscrepancyOutcome = {
  * Closes a discrepancy, exactly three ways (§4).
  *
  * Three findings, three fixed actions, and each requires the resolver's identity
- * and a note — the database refuses a row closed without all three.
+ * and a note. The database refuses a row closed without all three.
  *
  * | What they found | What happens |
  * |---|---|
- * | The conflicting bag **is on the shelf** — so the presented one wears a duplicate or cloned tag | The tag in hand is **retired** and can never carry a bag again |
- * | The conflicting bag **is not there** — it left without being scanned out | It is marked `lost`, which is a discard for stock purposes and a reportable event. The tag is released and can be re-registered |
- * | **A mis-scan** — wrong tag presented, or a mistaken intake | Dismissed. Nothing changes |
+ * | The conflicting bag **is on the shelf**, so the presented one wears a duplicate or cloned tag | The tag in hand is **retired** and can never carry a bag again |
+ * | The conflicting bag **is not there**, it left without being scanned out | It is marked `lost`, which is a discard for stock purposes and a reportable event. The tag is released and can be re-registered |
+ * | **A mis-scan**. Wrong tag presented, or a mistaken intake | Dismissed. Nothing changes |
  *
  * The presented bag is *not* registered by any of these. Re-registering it goes
  * through normal intake afterwards, on a fresh tag where the tag was retired.
@@ -406,7 +406,7 @@ export async function resolveTagDiscrepancy(
        * The register was wrong: the unit left without being scanned out.
        *
        * `lost` is a discard for stock purposes and a reportable event for the
-       * centre (§4). It is deliberately not `discarded` — nobody knows where
+       * centre (§4). It is deliberately not `discarded`, nobody knows where
        * this unit went, and recording a disposal route for it would be a
        * fiction.
        */

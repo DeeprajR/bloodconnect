@@ -1,5 +1,5 @@
 /*
- * UX4G root token overrides — two, both deliberate.
+ * UX4G root token overrides, two, both deliberate.
  *
  * Overrides tokens, never component selectors (Design.md §0.6). Every custom
  * property below is confirmed present in ux4g-web-components@2.1.0's
@@ -25,8 +25,8 @@
    * at 1.21:1 against the page and calls it a release blocker, not backlog:
    * under WCAG 1.4.11 the boundary of an input is a required 3:1 non-text
    * target when it is the only thing showing the control's extent. The contract
-   * states the fix — repoint at a darker step of the same ramp, do not add a
-   * colour — so this moves to neutral-500 (#737373), 4.54:1 on white.
+   * states the fix, repoint at a darker step of the same ramp, do not add a
+   * colour, so this moves to neutral-500 (#737373), 4.54:1 on white.
    *
    * Remove this when the design system ships the fix upstream.
    */
@@ -38,15 +38,15 @@
  * Application layout.
  *
  * No colour, radius, typography, border or state value is written here that a
- * UX4G token provides. Spacing uses the **semantic** axes of Design.md §5 —
+ * UX4G token provides. Spacing uses the **semantic** axes of Design.md §5,
  * Padding for a container's inside, Section for the rhythm between page
- * sections — picked by role rather than by value, because `--ux4g-padding-m`
+ * sections, picked by role rather than by value, because `--ux4g-padding-m`
  * and `--ux4g-section-xs` being 1rem apart today is not a promise.
  *
  * Every var() carries a fallback, and that is not belt-and-braces. An
  * undefined custom property makes the *whole declaration* invalid at
  * computed-value time, so a single wrong token name silently removes the
- * padding rather than warning about it — which is exactly how the header and
+ * padding rather than warning about it, which is exactly how the header and
  * the first section ended up touching: this file previously asked for
  * `--ux4g-space-9`, and the shipped ramp skips 9. Design.md §3 lists it, so
  * that is contract drift; the fallbacks mean the next one costs nothing.
@@ -114,7 +114,7 @@
   padding: var(--ux4g-padding-m, 1rem);
   display: flex;
   flex-direction: column;
-  /* Section rhythm, not container padding — a different axis on purpose. */
+  /* Section rhythm, not container padding. A different axis on purpose. */
   gap: var(--ux4g-section-xs, 1.5rem);
 }
 
@@ -202,7 +202,7 @@
 
 /*
  * A table that does not force the page to scroll sideways. The wrapper scrolls,
- * the document does not — on a phone, a horizontally scrolling page makes every
+ * the document does not, on a phone, a horizontally scrolling page makes every
  * other control hard to hit.
  */
 .app-scroll-x {
@@ -212,7 +212,7 @@
 
 /* ---------------------------------------------------------------------------
  * Breakpoints, from Design.md §8. The mode names there do not match device
- * reality — a portrait tablet resolves to Mobile — so these are written as
+ * reality, a portrait tablet resolves to Mobile, so these are written as
  * min-widths against the stated ranges rather than by name.
  * ------------------------------------------------------------------------- */
 

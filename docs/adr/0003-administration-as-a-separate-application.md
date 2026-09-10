@@ -1,4 +1,4 @@
-# ADR 0003 — Administration becomes a separate application
+# ADR 0003: Administration becomes a separate application
 
 Date: 2026-09-08 · Status: accepted · Supersedes parts of §1, §2, §3 and §9
 
@@ -14,7 +14,7 @@ role inside it. This splits administration out into its own deployment and narro
 **Why it is defensible.** Administration is the only surface with no clinical function. It cannot
 raise a blood request, cannot decide one, and cannot issue a unit. Separating it means an
 administrator account compromised reaches no clinical action at all, and a clinical account
-reaches no account management — which is a stronger version of the separation §2.2 already draws
+reaches no account management, which is a stronger version of the separation §2.2 already draws
 between raising a request and deciding it.
 
 **What it costs.** A second deployment, a second build, and one more thing to keep in step. The
@@ -30,7 +30,7 @@ shared code is now a package rather than a directory, which is the right shape b
 `sessions.audience` is `staff` or `admin`, and `resolveActor` will not match across it.
 
 **Why a column and not just a cookie name.** In development both applications are on
-`localhost`, and cookies are **not** isolated by port — a staff cookie is visible to the admin
+`localhost`, and cookies are **not** isolated by port. A staff cookie is visible to the admin
 app and vice versa. Relying on the role check alone would work, but it makes the isolation a
 consequence of application logic rather than a fact. A session that names its issuer is refused
 before any role is consulted.
@@ -46,13 +46,13 @@ rule "apps may not import each other" made the shared module's home wrong.
 
 So `apps/web/src/modules/platform` became `packages/platform`, and it owns the database
 connection as well. Both applications import it by name. The boundary check now cruises each
-application under its own path mapping, because both use `@/*` for their own source — one shared
+application under its own path mapping, because both use `@/*` for their own source, one shared
 mapping silently resolved the admin app's imports into the staff app and reported violations
 that were not there.
 
 ## 4. What administration can do
 
-**Doctors only.** Create, read, update, deactivate and reactivate — name, provisional
+**Doctors only.** Create, read, update, deactivate and reactivate. Name, provisional
 registration number, email address and seal. Creating one sends an invite; there is no password
 field, because at that moment no password exists.
 
@@ -60,7 +60,7 @@ field, because at that moment no password exists.
 `volunteer:view`. §9's matrix changes accordingly: the admin column is now **no** on every staff
 surface.
 
-**Patients per doctor — full records, with a caveat this ADR exists to record.**
+**Patients per doctor. Full records, with a caveat this ADR exists to record.**
 
 The decision is that an administrator sees everything the doctor sees, including diagnosis,
 history and the request contents. That is a large disclosure surface for a non-clinical account,
@@ -70,7 +70,7 @@ reach a patient column, and Module 4 sees aggregates only.
 What follows from it:
 
 - `patients:read_all` is its own permission, held by nobody else.
-- Every read under it is audited individually — not a page view, but each record opened.
+- Every read under it is audited individually, not a page view, but each record opened.
 - **Its lawful basis is an open question for counsel** (§12.2), joining the list in §19.3. This
   is the one item here that a demonstration can ship without and a deployment cannot.
 
@@ -87,7 +87,7 @@ that is replaced by a self-confirmed change:
 3. Opening the link applies the change.
 
 **Why this is the stronger of the two.** An approval queue proves an administrator agreed. A link
-delivered to the proposed address proves the person actually holds it — which is the thing that
+delivered to the proposed address proves the person actually holds it, which is the thing that
 matters, because the risk being defended against is an account quietly moving to someone else's
 inbox. The warning to the old address means an unauthorised change is visible to the person about
 to lose the account, whichever route it took.
@@ -102,16 +102,16 @@ address, for the same reason.
 ## 6. Known debt
 
 - **The email drain runs in `after()`**, not in the `worker` process §1 describes. The outbox
-  itself is the real mechanism — rows commit with their cause and a failed send retries with
-  backoff — and moving the drain into a separate process changes nothing about the transactions.
+  itself is the real mechanism, rows commit with their cause and a failed send retries with
+  backoff, and moving the drain into a separate process changes nothing about the transactions.
   But until it moves, a message is only sent when a request happens to trigger a drain.
 - **Seal uploads are validated, not re-encoded.** §3 asks for server-side re-encoding, which
   needs a native image library. What is done instead: the PNG signature is checked, the chunk
   structure is walked, the real dimensions are read from IHDR, and any trailing byte after IEND
-  is rejected — which is where a polyglot file hides its second payload. The serving route sends
+  is rejected, which is where a polyglot file hides its second payload. The serving route sends
   `nosniff`, an explicit content type and a restrictive CSP. The residual gap is a PNG that is
   also valid as something else *within* its chunk structure.
 - **A user with audit history cannot be deleted.** `audit_log.actor_user_id` references `users`
-  with no cascade, so deletion is refused. That is correct — an audit log that vanishes with its
-  subject is not one — and it means deactivation, not deletion, is how a staff account ends.
+  with no cascade, so deletion is refused. That is correct, an audit log that vanishes with its
+  subject is not one, and it means deactivation, not deletion, is how a staff account ends.
   Erasure under §12.2 will need de-identification, as it already does for donors.

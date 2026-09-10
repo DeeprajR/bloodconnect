@@ -17,7 +17,7 @@ export type RequestNotFound = { readonly kind: 'RequestNotFound'; readonly messa
  * The draft endpoints refuse anything already submitted (§8.2).
  *
  * Carries the status it actually found, because "you cannot edit this" is much
- * less useful than "this was submitted" — one of them tells the doctor what to
+ * less useful than "this was submitted", one of them tells the doctor what to
  * do next.
  */
 export type RequestNotADraft = {

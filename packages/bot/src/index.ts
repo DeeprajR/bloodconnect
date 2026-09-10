@@ -4,7 +4,7 @@
  * The donor bot: onboarding, waves, screening, confirmation, and the endings.
  * It may import the shared packages; it must never import `hospital` or
  * `centre`, and it reaches the two shared contract tables on granted columns
- * only — everything else in `hospital` is a permission error, not a convention.
+ * only, everything else in `hospital` is a permission error, not a convention.
  */
 
 export { createBotDatabase, type BotDatabase, type BotTransaction } from './db.js';

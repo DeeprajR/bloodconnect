@@ -13,7 +13,7 @@
  *     somebody already acted on.
  *
  * The centre writes only its own columns here. The bot's progress counters are
- * not merely left alone — `app_web` holds no grant on them, so a mistake in
+ * not merely left alone: `app_web` holds no grant on them, so a mistake in
  * this file fails at the database rather than corrupting a recruitment count.
  */
 
@@ -52,7 +52,7 @@ export type CentreSnapshot = {
  * Reads the settings a demand needs, or says what is missing.
  *
  * A demand with no district is a message telling somebody to come and give
- * blood without saying where — so this refuses rather than raising one with a
+ * blood without saying where, so this refuses rather than raising one with a
  * hole in it. The settings screen is one click away and the error names it.
  */
 export async function readCentreSnapshot(
@@ -93,7 +93,7 @@ export type DemandInput = {
  * Takes a `Transaction` rather than a context because of the rule §7.2 exists
  * to keep: a shortfall must never be able to exist without its demand row. If
  * this opened its own transaction, a crash between the decision commit and the
- * demand commit would leave a request answered short and nobody recruited —
+ * demand commit would leave a request answered short and nobody recruited,
  * which is precisely the silent failure this system is built to avoid.
  *
  * Returns `undefined` when `onConflictDoNothing` swallowed the insert, which
@@ -161,7 +161,7 @@ export type RecruitResult = {
  * One demand per group that is short and has no open floor demand already (§4).
  *
  * Pressing this twice in a row must not double-recruit, and the guarantee is
- * the partial unique index rather than a check-then-insert — two people
+ * the partial unique index rather than a check-then-insert, two people
  * pressing it at the same instant is exactly the case a read-then-write would
  * get wrong.
  */
@@ -231,7 +231,7 @@ export async function recruitForFloor(
  * The centre sets the status and stops there. It does not send stand-down
  * messages, because it cannot: the donors are the bot's, reached over a channel
  * the centre knows nothing about. The bot's ticker sees `cancelled` and runs
- * §7.6, which fans out every stand-down through its outbox — that indirection
+ * §7.6, which fans out every stand-down through its outbox, that indirection
  * is what makes "a demand closed without its stand-down messages sent" a state
  * the system cannot reach.
  *
@@ -258,7 +258,7 @@ export async function cancelDemand(
         and(
           eq(donorDemand.id, demandId),
           // The centre may withdraw an open or fulfilled demand and nothing
-          // else — `packages/contract` holds the same table as data (§6).
+          // else: `packages/contract` holds the same table as data (§6).
           sql`${donorDemand.status} IN ('open', 'fulfilled')`,
         ),
       )

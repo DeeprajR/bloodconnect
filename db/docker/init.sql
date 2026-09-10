@@ -37,8 +37,8 @@ GRANT CONNECT ON DATABASE blood_connect TO migrator, app_web, app_bot;
 GRANT CREATE ON DATABASE blood_connect TO migrator;
 
 -- PostgreSQL 15 revoked CREATE on `public` from everyone but the owner. The
--- shared `set_updated_at()` trigger function lives there — one function for
--- every schema rather than a copy per schema — so the migrator needs it back.
+-- shared `set_updated_at()` trigger function lives there, one function for
+-- every schema rather than a copy per schema, so the migrator needs it back.
 GRANT CREATE, USAGE ON SCHEMA public TO migrator;
 
 -- The suite truncates every table between tests, so it gets its own database

@@ -3,7 +3,7 @@
 --
 -- A unit leaving the fridge has to be traceable to a named person. **Emergency
 -- is the only exception**, because waiting for a bystander to arrive before
--- releasing units in a real emergency is the worse failure — and the refusal
+-- releasing units in a real emergency is the worse failure, and the refusal
 -- for every other urgency now lives in `decideRequest` rather than in a
 -- convention.
 --

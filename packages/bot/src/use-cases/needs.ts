@@ -3,7 +3,7 @@
  *
  * The answer to "so what happens next?" for somebody who has registered. §5 has
  * a public demand board; this is the same information narrowed to the one
- * question a registered donor is actually asking — *can I help today?*
+ * question a registered donor is actually asking: *can I help today?*
  *
  * Two things it does not do:
  *
@@ -93,7 +93,7 @@ export async function standingFor(
        *
        * Drizzle renders a column reference inside a select-list `sql` without
        * its table, so `${botRequests.id}` became a bare `"id"` that resolved to
-       * `r.id` inside the subquery — `r.bot_request_id = r.id`, never true.
+       * `r.id` inside the subquery: `r.bot_request_id = r.id`, never true.
        * This flag was silently always false. The same mistake was in Module 1's
        * duplicate-patient query, and one test caught both.
        */
@@ -140,7 +140,7 @@ export async function standingFor(
 /**
  * Open requests this donor has not been asked about, for the ticker.
  *
- * Not used by the conversation — it is here so a later phase can offer somebody
+ * Not used by the conversation. It is here so a later phase can offer somebody
  * who came looking a way in, without a wave having reached them. `notExists`
  * rather than a left join, so the shape matches §7.7's own predicate.
  */

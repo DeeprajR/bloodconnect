@@ -31,7 +31,7 @@ export type EmailPort = {
  * Bumped whenever the wording of a template changes.
  *
  * Recorded on every delivery row, so "what did we actually send that person"
- * is answerable a year later — which matters most for the messages that carry
+ * is answerable a year later, which matters most for the messages that carry
  * a consequence, like an address change.
  */
 export const TEMPLATE_VERSION = '1';
@@ -89,7 +89,7 @@ const TEMPLATES: Readonly<
       '',
       `It expires in ${v['expiresInMinutes'] ?? '10'} minutes and can be used once.`,
       '',
-      'If this was not you, no action is needed — your password has not changed.',
+      'If this was not you, no action is needed. Your password has not changed.',
     ].join('\n'),
   }),
 
@@ -132,7 +132,7 @@ const TEMPLATES: Readonly<
       `A request was made to change this account's address to ${v['newEmail'] ?? 'a new address'}.`,
       'It takes effect only when that address confirms it.',
       '',
-      'If you did not ask for this, contact your administrator now —',
+      'If you did not ask for this, contact your administrator now:',
       'someone else may have access to your account.',
     ].join('\n'),
   }),

@@ -75,7 +75,7 @@ export async function signOut(
  *
  * Called by the password reset and the password change (§3), and by an admin
  * deactivating an account. `except` keeps the caller's own session alive when
- * they are changing their own password — signing someone out of the tab they
+ * they are changing their own password. Signing someone out of the tab they
  * are working in is a punishment for doing the right thing.
  */
 export async function revokeAllSessions(

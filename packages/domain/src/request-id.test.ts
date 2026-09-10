@@ -50,7 +50,7 @@ describe('the request identifier', () => {
   });
 
   it('reads back what somebody typed at the counter', () => {
-    // Transcribed by ear, so the separator is whatever they used — or none.
+    // Transcribed by ear, so the separator is whatever they used, or none.
     for (const typed of ['080926-00001', '080926 00001', '08092600001', ' 080926/00001 ']) {
       expect(parseRequestNumber(typed)?.sequence).toBe(1);
     }

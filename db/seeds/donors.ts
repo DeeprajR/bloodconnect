@@ -119,7 +119,7 @@ export function buildDonorSeed(
     const sex: Sex = i % 3 === 0 ? 'female' : i % 7 === 0 ? 'other' : 'male';
     const band = WEIGHT_BANDS_USABLE[i % WEIGHT_BANDS_USABLE.length] ?? '60_70';
 
-    // Ages spread across the eligible range, none at the boundary — the
+    // Ages spread across the eligible range, none at the boundary. The
     // boundaries are the test suite's business, not the demo dataset's.
     const age = 21 + Math.floor(random() * 40);
     const dob = addDays(today, -(age * 365 + Math.floor(random() * 300)));

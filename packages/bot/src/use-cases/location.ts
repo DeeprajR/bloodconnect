@@ -7,8 +7,8 @@
  * knew the district would wake half a city for a hospital two streets away.
  *
  * **Matched against the reference dataset, never stored as typed.** Kerala
- * locality names have several romanised spellings each — Koyilandy and Quilandy
- * are one place — and a donor pool keyed on free text cannot be sorted by
+ * locality names have several romanised spellings each, Koyilandy and Quilandy
+ * are one place, and a donor pool keyed on free text cannot be sorted by
  * proximity, because the same place appears four ways. So the matched id is
  * stored, with the donor's own wording kept beside it for the reviewer.
  *
@@ -33,7 +33,7 @@ export type LocationNode = {
 /**
  * The level below this one, or `undefined` at the bottom.
  *
- * Used to walk down the chain, and to know when the chain has ended — which is
+ * Used to walk down the chain, and to know when the chain has ended, which is
  * also what makes "changing the district resets everything under it" (§5) a
  * loop rather than four special cases.
  */
@@ -59,7 +59,7 @@ export const normalise = (value: string): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
-/** Every district in the dataset — the one level offered as a plain list. */
+/** Every district in the dataset. The one level offered as a plain list. */
 export async function listDistricts(
   ctx: BotContext,
   limit = 40,
@@ -75,7 +75,7 @@ export async function listDistricts(
 /**
  * The children of one node, for the level below it.
  *
- * A short list is offered whole — a district with four cities in it does not
+ * A short list is offered whole. A district with four cities in it does not
  * need a type-ahead, and making somebody type when four buttons would do is
  * worse than either.
  */
@@ -100,7 +100,7 @@ export async function listChildren(
  * way to tell which one they picked.
  *
  * Matches a prefix **and** an interior word, because "Feroke" should be found by
- * typing "fer" and "Cheruvannur / Nallalam" by typing "nall" — the dataset's
+ * typing "fer" and "Cheruvannur / Nallalam" by typing "nall". The dataset's
  * names carry alternatives separated by slashes, and only matching the start
  * would hide half of them.
  */
@@ -160,7 +160,7 @@ export type LocationChoice = {
 };
 
 /**
- * The path as one line — "Kozhikode › Kozhikode › Feroke › Karuvanthiruthi".
+ * The path as one line: "Kozhikode › Kozhikode › Feroke › Karuvanthiruthi".
  *
  * Read back on the summary, so the donor confirms a place they recognise rather
  * than four ids. Levels not yet chosen are simply absent: a donor who stopped at
@@ -180,7 +180,7 @@ export async function describeLocation(
     .from(locationNodes)
     /*
       `inArray`, not `ANY(${ids})`: Drizzle expands a JS array inside a raw
-      `sql` into a tuple — `($1, $2, $3)` — which Postgres refuses on the right
+      `sql` into a tuple, `($1, $2, $3)`, which Postgres refuses on the right
       of ANY. It fails loudly here; the same mistake in a filter would simply
       have matched nothing.
     */

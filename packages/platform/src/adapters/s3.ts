@@ -12,8 +12,8 @@ import type { StoragePort, StoredObject } from '../ports/storage.js';
  * S3-compatible object storage, pointed at MinIO in development (§10).
  *
  * Path-style addressing, because MinIO on `localhost:9000` has no per-bucket
- * DNS. The bucket is private and nothing here ever produces a public URL —
- * objects are read back through an authenticated route.
+ * DNS. The bucket is private and nothing here ever produces a public URL.
+ * Objects are read back through an authenticated route.
  */
 
 let client: S3Client | undefined;

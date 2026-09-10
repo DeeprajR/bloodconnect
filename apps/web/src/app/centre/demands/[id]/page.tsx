@@ -24,7 +24,7 @@ const OUTCOME_LABELS: Readonly<Record<string, string>> = {
  * It is a **separate page** on purpose. Donor names and phone numbers are the
  * only donor contact details that cross into the centre's half of the database
  * (§2.10), and they belong on the screen where somebody is actually calling a
- * name at a desk — not spread across a list of every demand ever raised.
+ * name at a desk, not spread across a list of every demand ever raised.
  */
 export default async function RosterPage({
   params,
@@ -194,10 +194,10 @@ export default async function RosterPage({
                   <tr key={row.id}>
                     <td>{row.donorName}</td>
                     <td>{OUTCOME_LABELS[row.status] ?? row.status}</td>
-                    <td className="app-figure">{row.bagIdentifier ?? '—'}</td>
+                    <td className="app-figure">{row.bagIdentifier ?? '-'}</td>
                     <td className="app-figure">
                       {row.donatedBloodGroup === null
-                        ? '—'
+                        ? '-'
                         : bloodGroupLabel(row.donatedBloodGroup as never)}
                       {row.donatedBloodGroup !== null &&
                       row.donatedBloodGroup !== row.bloodGroup ? (
@@ -207,7 +207,7 @@ export default async function RosterPage({
                         </span>
                       ) : null}
                     </td>
-                    <td className="app-figure">{row.donatedAt ?? '—'}</td>
+                    <td className="app-figure">{row.donatedAt ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>

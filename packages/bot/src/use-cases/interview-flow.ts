@@ -2,8 +2,8 @@
  * What happens when a donor answers (§5, §8.4).
  *
  * `interview.ts` says what the screens are; this says how one moves between
- * them. The split matters because the *same* screens serve three entry points —
- * signup, the fix-several checklist and the profile editor — and the navigation
+ * them. The split matters because the *same* screens serve three entry points,
+ * signup, the fix-several checklist and the profile editor, and the navigation
  * is the only thing that differs between them.
  *
  * The rule that shapes all of it: **nothing is committed until the final
@@ -312,7 +312,7 @@ async function handleAnswer(
 ): Promise<AnswerResult> {
   const step = state.step as InterviewStep;
   let draft: InterviewDraft = { ...state.draft };
-  /** Set when a step is answered in parts — a date, or a location level. */
+  /** Set when a step is answered in parts. A date, or a location level. */
   let stayOnStep = false;
 
   switch (step) {
@@ -457,7 +457,7 @@ async function handleAnswer(
          * The most recent day in each range, deliberately.
          *
          * Assuming somebody donated **more** recently than they did only ever
-         * delays their next donation, which is the safe direction — the same
+         * delays their next donation, which is the safe direction. The same
          * choice §12 makes for the unspecified interval. A donor who knows the
          * exact date can type it, and the prompt says so.
          */
@@ -525,7 +525,7 @@ async function handleLocation(
 
     const node = await nodeById(ctx, id);
     if (!node) {
-      // An id that no longer exists — a stale card after a dataset update.
+      // An id that no longer exists. A stale card after a dataset update.
       return { kind: 'invalid', message: 'That place is not in the list any more.' };
     }
 
@@ -598,7 +598,7 @@ async function handleSummary(
   if (value === 'sum:confirm') return commit(ctx, address, state, true);
 
   /**
-   * "Not now" — kept, dormant, reversible (§5, §8).
+   * "Not now". Kept, dormant, reversible (§5, §8).
    *
    * The profile is written exactly as it would have been, and the one thing
    * missing is the acknowledgement: no consent row, and `consent_current_at`
@@ -741,7 +741,7 @@ async function commit(
       dob,
       sex,
       bloodGroup: draft.bloodGroup ?? 'O+',
-      // Unverified until staff type them at a donation — §7.7 recruits nobody
+      // Unverified until staff type them at a donation: §7.7 recruits nobody
       // on a self-declared group, which is exactly the point of the column.
       bloodGroupVerifiedAt: null,
       weightBand,
@@ -792,7 +792,7 @@ async function commit(
      * Durable answers, and only the flagging ones.
      *
      * Recording "no, I have never had hepatitis" would be storing a health
-     * datum that changes nothing (§2.10) — the absence of a row is the answer.
+     * datum that changes nothing (§2.10). The absence of a row is the answer.
      */
     if (flagged.length > 0) {
       await tx

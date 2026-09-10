@@ -3,7 +3,7 @@
  *
  * Each is a discriminated union plus its legal edges as **data**, so a new state
  * breaks the build everywhere it must be handled rather than silently falling
- * through a switch. Nothing here decides *who* may make a transition — for the
+ * through a switch. Nothing here decides *who* may make a transition, for the
  * two shared tables that is `packages/contract`, which scopes these same edges
  * by writer (§6).
  *
@@ -56,7 +56,7 @@ export const bloodRequestTransitions: Transitions<BloodRequestStatus> = {
    * §3: "Cancelling releases any reserved bags, cancels an open donor demand,
    * and requires a reason. It is the one post-submit action a doctor has, and
    * without it the centre chases units nobody needs." Bags are only ever
-   * reserved *by* a decision — so if these were terminal, the sentence about
+   * reserved *by* a decision, so if these were terminal, the sentence about
    * releasing them could never fire, and units would sit held for a patient who
    * has improved, died or been referred.
    *
@@ -75,7 +75,7 @@ export const bloodRequestTransitions: Transitions<BloodRequestStatus> = {
  * Overdue is **derived**, never stored (§3): a request is overdue when its
  * required day has passed and no decision exists. A stored flag would need a
  * job, and a request that becomes overdue at 00:01 must read as overdue at
- * 00:01 — not whenever the sweep next runs.
+ * 00:01, not whenever the sweep next runs.
  */
 export const isRequestDecided = (status: BloodRequestStatus): boolean =>
   status === 'approved' || status === 'partially_approved' || status === 'declined';
@@ -105,7 +105,7 @@ export const bagTransitions: Transitions<BagStatus> = {
   returned: ['available', 'quarantined', 'discarded'],
   quarantined: ['available', 'discarded'],
   // An expired unit is still physically present and still needs a disposal
-  // route (§12.1), so expired is not the end of the bag — discarded is.
+  // route (§12.1), so expired is not the end of the bag. Discarded is.
   expired: ['discarded'],
   discarded: [],
   lost: [],
@@ -125,8 +125,8 @@ export const DEMAND_STATUSES = [
 export type DemandStatus = (typeof DEMAND_STATUSES)[number];
 
 /**
- * A demand closes exactly one way of four — completed, cancelled, expired, or
- * fulfilled then completed (§5) — and whichever it is, the closure fans out the
+ * A demand closes exactly one way of four, completed, cancelled, expired, or
+ * fulfilled then completed (§5), and whichever it is, the closure fans out the
  * stand-down messages in the same pass (§7.6).
  */
 export const demandTransitions: Transitions<DemandStatus> = {
@@ -141,7 +141,7 @@ export const isDemandClosed = (status: DemandStatus): boolean =>
   isTerminal(demandTransitions, status);
 
 /* -------------------------------------------------------------------------- */
-/* 4. Donor journey (§5) — one row per donor per request                       */
+/* 4. Donor journey (§5), one row per donor per request                       */
 /* -------------------------------------------------------------------------- */
 
 export const DONOR_JOURNEY_STATUSES = [

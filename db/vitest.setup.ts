@@ -2,7 +2,7 @@
  * Global test setup: bring the test database up to both migration sets.
  *
  * The suite runs against real Postgres (§17), and the schema it runs against
- * must be the one the migrations produce — not one a test built for itself. So
+ * must be the one the migrations produce, not one a test built for itself. So
  * this applies `db/migrations` to `TEST_DATABASE_URL` before anything runs, and
  * every database test then asserts against the real thing.
  *
@@ -24,7 +24,7 @@ export async function setup(): Promise<void> {
   const url = process.env['TEST_DATABASE_URL'];
   if (!url) {
     process.stdout.write(
-      'TEST_DATABASE_URL is not set — database suites will skip. Run `pnpm up` to include them.\n',
+      'TEST_DATABASE_URL is not set. Database suites will skip. Run `pnpm up` to include them.\n',
     );
     return;
   }

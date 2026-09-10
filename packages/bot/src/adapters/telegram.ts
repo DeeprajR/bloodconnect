@@ -2,8 +2,8 @@
  * The Telegram adapter (§2.11, §10).
  *
  * The **only** file in this package that knows Telegram exists. Everything above
- * it speaks the channel port's vocabulary — an address, a message, some choices
- * — which is what makes adding WhatsApp later an adapter rather than a rewrite.
+ * it speaks the channel port's vocabulary, an address, a message, some choices
+ *, which is what makes adding WhatsApp later an adapter rather than a rewrite.
  *
  * **Long polling, not webhooks.** No public URL, no TLS certificate, no tunnel:
  * the bot runs from a laptop behind a hospital's network, which is the
@@ -111,7 +111,7 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
      * A contact request is a **reply** keyboard, not an inline one.
      *
      * Telegram only offers `request_contact` on the keyboard that replaces the
-     * user's own input area, so this cannot be combined with inline choices —
+     * user's own input area, so this cannot be combined with inline choices,
      * and the flow above is written so it never needs to be: step 1 offers the
      * tap and accepts a typed number in the same breath.
      */
@@ -135,7 +135,7 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
         message.choices.slice(i, i + BUTTONS_PER_ROW).map((c) => ({
           text: c.label,
           // Telegram caps callback data at 64 bytes. The ids are UUIDs with a
-          // short verb, which fits — but truncating silently would produce a
+          // short verb, which fits, but truncating silently would produce a
           // callback that matches no journey, so it is checked.
           callback_data: c.data.slice(0, 64),
         })),
@@ -176,7 +176,7 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
           reason: `telegram ${String(code)}: ${response.description ?? 'unknown error'}`,
         };
       } catch (error) {
-        // A network failure is temporary by definition — the outbox retries it.
+        // A network failure is temporary by definition. The outbox retries it.
         return {
           ok: false,
           permanent: false,
@@ -198,7 +198,7 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
 
       for (const update of response.result) {
         // Advance the cursor for every update, including ones this bot does not
-        // handle — leaving one unacknowledged makes Telegram redeliver it
+        // handle. Leaving one unacknowledged makes Telegram redeliver it
         // forever and the poll never progresses.
         offset = Math.max(offset, update.update_id + 1);
 
@@ -250,7 +250,7 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
 
     async check(): Promise<{ ok: boolean; detail: string }> {
       try {
-        // `getMe` verifies the token and that the platform is reachable — a
+        // `getMe` verifies the token and that the platform is reachable. A
         // real check, not a process-liveness ping (§11.9).
         const response = await call<{ username?: string }>('getMe', {});
         return response.ok

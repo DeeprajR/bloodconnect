@@ -2,7 +2,7 @@
  * What a doctor does with their own account (§3, §8.1).
  *
  * Activation from an invite, password reset by one-time code, and changing the
- * address — confirmed by the person holding the new inbox rather than by an
+ * address. Confirmed by the person holding the new inbox rather than by an
  * administrator. A link delivered to the proposed address proves they hold it;
  * an approval queue only proves someone agreed.
  *
@@ -84,7 +84,7 @@ export type ConsumeInviteResult = {
 /**
  * Setting the password signs them in and lands them on their dashboard (§3).
  *
- * Never back on a sign-in form to retype the password they just chose — that is
+ * Never back on a sign-in form to retype the password they just chose. That is
  * the ending §8 names for this flow, and it is the whole reason a session is
  * issued here rather than a redirect.
  */
@@ -150,7 +150,7 @@ export async function consumeInvite(
  * Always succeeds, whatever address is given.
  *
  * "The response to send-me-a-code is identical whether or not the address
- * exists" (§3) — a reset form must not become an account-enumeration oracle.
+ * exists" (§3). A reset form must not become an account-enumeration oracle.
  * The only visible failure is the throttle, which applies to addresses that do
  * not exist just as much as to ones that do.
  */
@@ -176,8 +176,8 @@ export async function requestPasswordOtp(
       return err(rateLimited(secondsUntilWindowEnds(now, throttle.windowMinutes)));
     }
 
-    // Counted for every request, not only the ones that find an account —
-    // otherwise the throttle itself would answer "does this address exist".
+    // Counted for every request, not only the ones that find an account.
+    // Otherwise the throttle itself would answer "does this address exist".
     await recordFailedAttempt(tx, 'otp_ip', ipKey, now, throttle.windowMinutes);
     await recordFailedAttempt(tx, 'otp_account', email, now, throttle.windowMinutes);
 
@@ -332,7 +332,7 @@ export async function requestEmailChange(
       expiresAt: new Date(now.getTime() + ttlHours * 3_600_000),
     });
 
-    // The link goes to the address being claimed — that is what proves they
+    // The link goes to the address being claimed. That is what proves they
     // hold it.
     await queueEmail(tx, {
       kind: 'email_change_confirm',
@@ -408,7 +408,7 @@ export async function confirmEmailChange(
   });
 }
 
-/** Withdrawing a change they started — the flow's third ending (§8). */
+/** Withdrawing a change they started. The flow's third ending (§8). */
 export async function cancelPendingEmailChange(
   ctx: UseCaseContext,
 ): Promise<Result<Record<string, never>, NotAuthorized>> {

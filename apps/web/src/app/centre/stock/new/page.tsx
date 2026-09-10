@@ -34,7 +34,7 @@ export default async function NewBagPage({
         <p className="ux4g-body-m-default">
           {/*
             §10 requires the typed path regardless of hardware, so it is the path
-            that was built — a scanner presents as a keyboard and fills the same
+            that was built. A scanner presents as a keyboard and fills the same
             fields when one arrives.
           */}
           Type the unit number, or read it with a scanner. The expiry is worked out

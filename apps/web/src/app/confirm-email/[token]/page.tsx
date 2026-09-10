@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: 'Confirm your address · Blood Connec
  * The address-change confirmation (§3).
  *
  * Applied on open rather than behind a button. The person has already made the
- * decision — twice, once when requesting it and once by opening a link that
- * only reaches the address being claimed — and a second confirmation step is a
+ * decision, twice, once when requesting it and once by opening a link that
+ * only reaches the address being claimed, and a second confirmation step is a
  * chance to abandon the flow half-done.
  *
  * Usable while signed out on purpose: the new inbox may be on a phone that has

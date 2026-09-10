@@ -19,7 +19,7 @@ export default async function SettingsPage() {
     getCentreSettings(ctx),
     getShelfLives(ctx),
     // The shared `reference` hierarchy, readable by both modules by design
-    // (§5.8) — this is not another module's table.
+    // (§5.8). This is not another module's table.
     ctx.db
       .select({ id: locationNodes.id, name: locationNodes.name })
       .from(locationNodes)

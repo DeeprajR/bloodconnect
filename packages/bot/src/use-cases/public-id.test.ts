@@ -12,7 +12,7 @@ import { makePublicId } from './import-demand.js';
  * sharing one would send donors to the wrong demand.
  *
  * The first version derived it from the **start** of a UUIDv7, which is a
- * millisecond timestamp — so ids minted in the same second produced the same
+ * millisecond timestamp, so ids minted in the same second produced the same
  * public id. It passed every unit test that generated one id at a time, and
  * failed the second import of a real run. This test is written the way that
  * failure would have been caught.

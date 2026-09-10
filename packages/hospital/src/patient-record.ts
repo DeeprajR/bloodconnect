@@ -4,7 +4,7 @@
  * **One implementation, two callers.** The doctor may fill this in from the
  * collapsed half of the request form if they happen to have it; the centre fills
  * it in at the counter, which is the ordinary path. Two copies would drift, and
- * the thing they would drift about is what a patient record must contain — which
+ * the thing they would drift about is what a patient record must contain, which
  * is exactly the thing that must not vary by who typed it.
  *
  * The `ip_no` is the admission's identity, so an existing one is reused rather
@@ -22,7 +22,7 @@ import type { Transaction, UseCaseContext } from '@blood-connect/platform';
 export type PatientDetails = {
   readonly name: string;
   readonly ipNo: string;
-  /** The patient's own group — **not** the group being requested. */
+  /** The patient's own group: **not** the group being requested. */
   readonly bloodGroup: string;
   readonly ward?: string | undefined;
   readonly dob?: string | undefined;
@@ -75,8 +75,8 @@ export function validatePatient(input: PatientDetails): PatientProblem | undefin
   }
   /**
    * The patient's **own** group. Not the same claim as the group being
-   * requested — an emergency is often answered with O− whatever the patient
-   * turns out to be — so it is asked for rather than assumed.
+   * requested, an emergency is often answered with O− whatever the patient
+   * turns out to be, so it is asked for rather than assumed.
    */
   if (!isBloodGroup(input.bloodGroup)) {
     return problem('bloodGroup', 'Give the patient’s own blood group.');
@@ -173,7 +173,7 @@ export async function createPatientAndAdmit(
   /**
    * NOT NULL on the admission, and the counter may not have been told.
    *
-   * Recorded as unstated rather than invented — a made-up ward is worse than an
+   * Recorded as unstated rather than invented. A made-up ward is worse than an
    * absent one, because somebody will go looking for the patient there.
    */
   const ward = blank(input.ward) ?? 'not stated';

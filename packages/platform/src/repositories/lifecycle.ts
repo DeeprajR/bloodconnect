@@ -3,7 +3,7 @@
  *
  * They share a shape on purpose (see the schema), so they share these helpers.
  * Every "supersede" is an UPDATE that runs *before* the new row is inserted,
- * because the partial unique index allows exactly one live row per user — the
+ * because the partial unique index allows exactly one live row per user. The
  * database is what enforces "only one link works", not the order these calls
  * happen to be written in.
  */

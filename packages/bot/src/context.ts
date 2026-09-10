@@ -7,7 +7,7 @@
  *
  * One connection, two schemas. `db` owns everything in `bot`; it also reaches
  * `hospital.donor_demand` and `hospital.donor_demand_confirmations`, which it
- * does **not** own — those are the shared contract (§7), and what keeps the bot
+ * does **not** own. Those are the shared contract (§7), and what keeps the bot
  * inside its half of them is not this type but the column-level grants: it
  * physically cannot set `units`, and every attempt to reach any other
  * `hospital` table is a permission error rather than a code review finding.

@@ -29,7 +29,7 @@ const testUrl = process.env['TEST_DATABASE_URL'];
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
 
 /**
- * Raising a request — the four fields, and the ID that comes back (§7.1).
+ * Raising a request. The four fields, and the ID that comes back (§7.1).
  *
  * The doctor's whole job. These assert what a doctor at a bedside experiences:
  * four answers is enough, the ID is sayable, and the optional half never gets in
@@ -69,7 +69,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
 
   beforeEach(async () => {
     // The clock is shared and one test moves it a day forward. Without this,
-    // whatever runs next starts in the future and its dates are wrong — an
+    // whatever runs next starts in the future and its dates are wrong. An
     // order dependency that passes alone and fails in the suite.
     clock.set(START);
     await client`TRUNCATE hospital.audit_log, hospital.blood_requests, hospital.admissions,
@@ -105,7 +105,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    // No patient, and that is the ordinary case now — they are identified at
+    // No patient, and that is the ordinary case now. They are identified at
     // the counter when the bystander arrives (ADR 0010).
     expect(result.value.awaitingPatient).toBe(true);
 
@@ -267,7 +267,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
       await raise({ patient: withPatient });
 
       // A second request for one admitted patient is the ordinary case, not an
-      // error — and it must not create a second patient record.
+      // error, and it must not create a second patient record.
       expect(await db.select().from(admissions)).toHaveLength(1);
       expect(await db.select().from(patients)).toHaveLength(1);
       expect(await db.select().from(bloodRequests)).toHaveLength(2);
@@ -334,7 +334,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
      * The bug this describes, found in use.
      *
      * `listRequestsForDoctor` inner-joined the admission and the patient, so a
-     * request raised with four fields — which is now the ordinary one — was
+     * request raised with four fields, which is now the ordinary one, was
      * dropped from the doctor's own dashboard. They submitted, read out an ID,
      * and then could not see the request anywhere.
      */
@@ -409,7 +409,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
      * This was a boolean, and an inner join made "no patient at all" look
      * exactly like "discharged". The centre screen told a counter *"the patient
      * has been discharged"* about a request where nobody had ever identified a
-     * patient — a different fact, and an alarming one to read.
+     * patient. A different fact, and an alarming one to read.
      */
     it('says none when no patient has been attached', async () => {
       const raised = await raise();
@@ -524,7 +524,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
       /**
        * Silently repointing a request at a different patient is how a unit ends
        * up recorded against the wrong person. A correction is an edit to the
-       * patient record, which is versioned — not a re-attach.
+       * patient record, which is versioned, not a re-attach.
        */
       expect(again.ok).toBe(false);
     });
@@ -614,7 +614,7 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
       if (!raised.ok) throw new Error('not raised');
       const id = raised.value.requestId;
 
-      // Transcribed by ear, so the separator is whatever they used — or none.
+      // Transcribed by ear, so the separator is whatever they used, or none.
       for (const typed of [id, id.replace('-', ' '), id.replace('-', ''), ` ${id} `]) {
         expect((await findRequestByNumber(context(), typed))?.id).toBe(
           raised.value.requestUuid,
@@ -627,8 +627,8 @@ describe.skipIf(!testUrl)('raising a blood request (§3, §7.1)', () => {
 
       /**
        * A wrong digit is a **different request**, not this one. Handing the
-       * counter somebody else's record is the failure worth refusing over —
-       * there is a person standing there who can read it again.
+       * counter somebody else's record is the failure worth refusing over.
+       * There is a person standing there who can read it again.
        */
       // One digit out in the sequence: a different request, and there is not
       // one. The clock is at 2026-09-08, so 00001 *is* the one just raised.

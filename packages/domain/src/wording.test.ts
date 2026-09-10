@@ -7,7 +7,7 @@ import { PRODUCTS, bloodGroupLabel, productLabel } from './blood.js';
  * The §2.7 wording regression.
  *
  * Written now, while the labels are being typed for the first time, because
- * this is the test that is worthless if it is written later — by then the
+ * this is the test that is worthless if it is written later, by then the
  * strings it would pin are whatever they drifted to.
  */
 describe('clinical vocabulary (§2.7)', () => {

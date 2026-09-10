@@ -3,7 +3,7 @@
 -- §12 is explicit that the SQL wave query and the TypeScript predicate must take
 -- their thresholds from the same place, so that a revised inter-donation
 -- interval cannot move one and not the other. Those two readings live in
--- different processes, on different roles — so the bot needs to see the rows.
+-- different processes, on different roles, so the bot needs to see the rows.
 --
 -- SELECT only, and only on `app_config`. The bot cannot change a clinical
 -- threshold: shortening an interval is the one edit in this system that could

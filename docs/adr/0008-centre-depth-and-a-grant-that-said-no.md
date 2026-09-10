@@ -1,4 +1,4 @@
-# ADR 0008 — Centre depth, and a grant that said no
+# ADR 0008: Centre depth, and a grant that said no
 
 Date: 2026-09-09 · Status: accepted
 
@@ -20,7 +20,7 @@ to somebody holding a reader:
 | `discarded` · `expired` · `lost` | The tag outlived its bag | **Release**, then register anew |
 | `available` | Two bags, a stale register, or a cloned tag | **Nothing.** Raise a discrepancy |
 
-`classifyTag` is pure and total — a test walks every bag status through it —
+`classifyTag` is pure and total, a test walks every bag status through it,
 because a status nobody classified would fall through to "unassigned" and open
 the intake form on a tag carrying a live unit.
 
@@ -33,7 +33,7 @@ and physically find the conflicting unit.
 Case 2 is deliberately **two steps** rather than one "reassign" button. A
 single button invites somebody to race past what happened to the previous bag,
 and the new bag is a new record with its own collection date and its own
-expiry — never an edit of the old one.
+expiry, never an edit of the old one.
 
 A discrepancy never auto-resolves, never expires, and is touched by no
 scheduled job. It closes exactly three ways, each requiring a person, a finding
@@ -50,7 +50,7 @@ somebody to report a shorter time next time.
 `bag_returns_restock_check` enforces it in the database:
 `outcome <> 'restock' OR out_of_storage_band = 'under_30m'`. No screen and no
 future code path can put a unit back that was out too long, or out for a time
-nobody can say — where §4's answer is quarantine, because the conservative
+nobody can say. Where §4's answer is quarantine, because the conservative
 reading of "we do not know" is never the shelf.
 
 **The expiry is never recalculated on return.** It is a property of the
@@ -79,14 +79,14 @@ contradicted the ownership table two sections above it; the grant is the
 authority, and the grant won.
 
 So a walk-in is now the centre's own record in its own table,
-`hospital.walk_in_donations` — the third table in the contract, and a minor
+`hospital.walk_in_donations`. The third table in the contract, and a minor
 bump to **1.2.0** since it is additive from both sides.
 
 ### The bot has to see it
 
 The first version of the fix stopped there, and would have been quietly wrong.
 A demand for three units with two walk-ins against it still shows the bot three
-units outstanding, so it keeps recruiting — and the people it recruits are real
+units outstanding, so it keeps recruiting, and the people it recruits are real
 ones who would travel to a counter that does not need them. That is the same
 harm §7.6's stand-down exists to prevent, arriving by a different road.
 
@@ -94,7 +94,7 @@ harm §7.6's stand-down exists to prevent, arriving by a different road.
 from a read of the centre's table. It sits **beside** `units_needed` rather than
 being subtracted from it, so the original need stays legible: three units were
 wanted, one walked in, two donors are still worth calling. Every question of the
-form "does this still need people?" counts it — the accept guard, waitlist
+form "does this still need people?" counts it. The accept guard, waitlist
 promotion, what a donor is told is outstanding, and the completed ending.
 
 Donors who already confirmed are **not** stood down when walk-ins cover the
@@ -105,7 +105,7 @@ yes is its own harm. What stops is new invitations.
 
 Everything in §3 was found by `pnpm smoke:centre`, which runs P6's writes as
 `app_web` against a real database and then asserts what that role must **not**
-be able to do — insert a confirmation, rewrite a walk-in, edit a discard, delete
+be able to do. Insert a confirmation, rewrite a walk-in, edit a discard, delete
 a return, a quarantine or a discrepancy.
 
 `TEST_DATABASE_URL` connects as `migrator`. A green suite therefore says nothing
@@ -120,7 +120,7 @@ Both times the fix was the code, not the grant.
 - **`donated_blood_group`** on the confirmation row (contract 1.1.0, recorded in
   ADR 0007 as an open question). The counter types the group off the unit it
   collected, and that is the only thing that can ever set
-  `bot.donors.blood_group_verified_at` — without which §7.7 recruits nobody.
+  `bot.donors.blood_group_verified_at`, without which §7.7 recruits nobody.
   When the typed group differs from what the donor believed, the typed one wins
   and `donor.group_corrected` records both.
 - **The roster is its own page**, not a section of the demand list. Donor names
@@ -137,7 +137,7 @@ Both times the fix was the code, not the grant.
   centre's overview should show a combined figure is a wording question for the
   centre, not a technical one.
 - `walk_in_donations` holds a name and a phone number with no consent record
-  behind them — the person gave them at a desk, not through the bot's consent
+  behind them. The person gave them at a desk, not through the bot's consent
   flow. §12.1's disposal rules cover the unit; what retention applies to the
   donor's details here is part of the same question counsel already has about
   full patient records (§12.2).

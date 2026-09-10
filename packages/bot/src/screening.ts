@@ -3,7 +3,7 @@
  *
  * **Two sets, asked at different times, and the distinction is the point.**
  *
- * | | Durable — at signup | Visit — at each request |
+ * | | Durable, at signup | Visit, at each request |
  * |---|---|---|
  * | Asks about | What does not change week to week | What changes today |
  * | A disqualifying answer | Flags the profile for a human; the donor is not matched until it is resolved | Defers the donor from **this request only**; the profile is untouched |
@@ -44,20 +44,20 @@ export type ScreeningQuestion = {
    * excluded from every request for a year.
    */
   readonly summary?: string;
-  /** Asked only of some donors — pregnancy, which depends on the sex answer. */
+  /** Asked only of some donors. Pregnancy, which depends on the sex answer. */
   readonly appliesTo?: readonly Sex[];
 };
 
 /* -------------------------------------------------------------------------- */
-/* Durable — asked once, at signup                                             */
+/* Durable. Asked once, at signup                                             */
 /* -------------------------------------------------------------------------- */
 
 export const DURABLE_QUESTIONS: readonly ScreeningQuestion[] = [
   {
     key: 'long_term_condition',
     text:
-      'Do you have a long-term illness — a heart condition, uncontrolled diabetes, ' +
-      'epilepsy — or take regular medication for one?',
+      'Do you have a long-term illness, a heart condition, uncontrolled diabetes, ' +
+      'epilepsy, or take regular medication for one?',
     proceedOn: 'no',
     scope: 'durable',
     summary: 'No long-term illness or medication',
@@ -74,7 +74,7 @@ export const DURABLE_QUESTIONS: readonly ScreeningQuestion[] = [
   {
     /**
      * Asked only where it applies (§5): sex is collected to set the donation
-     * interval and to decide whether this question is asked at all — never for
+     * interval and to decide whether this question is asked at all, never for
      * display.
      */
     key: 'pregnant_or_breastfeeding',
@@ -94,7 +94,7 @@ export const DURABLE_QUESTIONS: readonly ScreeningQuestion[] = [
 ];
 
 /**
- * The durable set for one donor — three questions, or four.
+ * The durable set for one donor, three questions, or four.
  *
  * §5 puts the whole set at "three or four taps", and this is why: the pregnancy
  * question is asked where it applies and skipped where it does not, rather than
@@ -106,13 +106,13 @@ export const durableQuestionsFor = (sex: Sex): readonly ScreeningQuestion[] =>
   );
 
 /* -------------------------------------------------------------------------- */
-/* Visit — asked at each request                                               */
+/* Visit. Asked at each request                                               */
 /* -------------------------------------------------------------------------- */
 
 export const VISIT_QUESTIONS: readonly ScreeningQuestion[] = [
   {
     key: 'well_today',
-    text: 'Are you feeling well today — no fever, cold or infection?',
+    text: 'Are you feeling well today, no fever, cold or infection?',
     proceedOn: 'yes',
     scope: 'visit',
   },
@@ -160,7 +160,7 @@ export const defersOn = (question: ScreeningQuestion, answer: 'yes' | 'no'): boo
  *
  * Only the flagging ones. Recording "no, I have never had hepatitis" on the
  * profile would be storing a health datum that changes nothing, which §2.10
- * says not to do — the absence of a row is the answer.
+ * says not to do. The absence of a row is the answer.
  */
 export function durableAnswersFrom(
   answers: Readonly<Record<string, string>>,
@@ -179,7 +179,7 @@ export function durableAnswersFrom(
  * A durable answer that should stop this donor being contacted at all, rather
  * than merely flagged.
  *
- * `durable_flag_status`, not a rejection — the difference is whether the person
+ * `durable_flag_status`, not a rejection. The difference is whether the person
  * is ever contacted again about something they cannot change. Everything else
  * flagged waits for a human to look at it.
  */

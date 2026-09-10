@@ -11,7 +11,7 @@ import path from 'node:path';
  * tell `blood_bags` from `blood_requests` inside it.
  *
  * So this reads the source and fails on the table name. It is the same shape as
- * the CI check §5.9 asks for — grep the bot's migrations for `donor_demand` —
+ * the CI check §5.9 asks for, grep the bot's migrations for `donor_demand`,
  * and it is here for the same reason: a boundary nobody checks is a boundary
  * that has already been crossed somewhere, in a commit that looked reasonable.
  *
@@ -61,7 +61,7 @@ const BOT_TABLES = [
  * One matcher, built once, so every check here is escaped the same way.
  *
  * `String.raw` because `\b` inside an ordinary template literal is a backspace
- * character, not a word boundary — which is how the bot check below was first
+ * character, not a word boundary, which is how the bot check below was first
  * written. It passed against every file, and would have passed against a
  * violation too.
  */
@@ -139,7 +139,7 @@ describe('module boundaries (§11.2)', () => {
   it('never lets the web release name a bot table', () => {
     // §1: the bot is a separate deployable on a different database role, and
     // `app_web` holds no grant on the `bot` schema at all. A name appearing
-    // here would be code that cannot run — and the reason it cannot is the
+    // here would be code that cannot run, and the reason it cannot is the
     // privacy boundary of §5.1, so it is worth failing the build over.
     const offences: string[] = [];
 

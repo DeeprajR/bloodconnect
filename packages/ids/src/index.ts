@@ -2,7 +2,7 @@
  * Branded identifiers, UUIDv7 (§5.2).
  *
  * Time-ordered so index locality is good, and a key does not leak a count.
- * Branded in TypeScript so a `BagId` is not assignable to a `DemandId` — the
+ * Branded in TypeScript so a `BagId` is not assignable to a `DemandId`. The
  * mistake this package exists to make unrepresentable.
  *
  * Ids are generated in application code, never by a column default, so a use
@@ -72,7 +72,7 @@ export const newId = <B extends string>(): Uuid<B> => uuidv7() as Uuid<B>;
 
 export const idGenerator: IdGenerator = { next: newId };
 
-/** True only for a well-formed version-7 UUID — a v4 is not acceptable here. */
+/** True only for a well-formed version-7 UUID. A v4 is not acceptable here. */
 export const isUuidV7 = (value: string): boolean =>
   uuidValidate(value) && uuidVersion(value) === 7;
 

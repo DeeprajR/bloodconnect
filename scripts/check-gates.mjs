@@ -6,7 +6,7 @@
  * so these are build failures rather than review comments.
  *
  *   1. **Every page guards** (§13). The three authorization layers only work if
- *      layer two is actually present on each page — the proxy runs on a matcher
+ *      layer two is actually present on each page. The proxy runs on a matcher
  *      a new route can be added without, and the role-matrix test asserts the
  *      shared decision function rather than any particular page calling it. So a
  *      page with no guard passes every existing test and leaks.
@@ -17,7 +17,7 @@
  * Both are file-level rather than function-level, which is coarser than §14's
  * wording and is stated here rather than glossed: a file that writes and audits
  * somewhere passes, even if one function in it does not. It catches the case
- * that actually happens — a whole new use case added without one — and does not
+ * that actually happens, a whole new use case added without one, and does not
  * pretend to more.
  *
  *   node scripts/check-gates.mjs
@@ -59,7 +59,7 @@ const codeOf = (file) =>
  * Pages that are public by design.
  *
  * Every entry is a deliberate decision, and adding one should feel like a
- * decision — which is why they are listed here rather than inferred from the
+ * decision. Which is why they are listed here rather than inferred from the
  * route table. `/` and the sign-in page render for anonymous visitors; the
  * offline and forbidden pages are what somebody is shown *instead of* content.
  */
@@ -88,7 +88,7 @@ for (const file of pages) {
   const code = codeOf(file);
   if (!GUARDS.some((guard) => code.includes(guard))) {
     bad(
-      `${relative} decides no access. Layer 2 of §13 is per page — call ` +
+      `${relative} decides no access. Layer 2 of §13 is per page. Call ` +
         'requireAccess, or add it to PUBLIC_PAGES here with a reason.',
     );
   }
@@ -107,9 +107,9 @@ const OPENS_TRANSACTION = '.transaction(';
  *
  * **A use case opens the transaction; a repository is handed one.** So a file
  * that opens a transaction *and* writes is a use case, and owes an audit row. A
- * file that only ever receives a `tx` — every repository, and the deliberate
+ * file that only ever receives a `tx`, every repository, and the deliberate
  * seams like `for-centre.ts` and `enqueue` that join somebody else's
- * transaction — is recorded by its caller, which is where the context to write
+ * transaction, is recorded by its caller, which is where the context to write
  * a useful row actually is.
  *
  * This also settles the adapters without naming them: `hash.update()` and an

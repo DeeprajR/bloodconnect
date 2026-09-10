@@ -57,7 +57,7 @@ export default async function StockPage({
         <div className="app-stack-tight">
           <h1 className="ux4g-heading-l-strong">The register</h1>
           <p className="ux4g-body-m-default">
-            One row per physical bag, shortest-dated first — which is the order units
+            One row per physical bag, shortest-dated first, which is the order units
             are issued in.
           </p>
         </div>
@@ -75,7 +75,7 @@ export default async function StockPage({
             <p className="ux4g-alert-message">
               {/*
                 The label won and the bag was registered. Flagged, not blocked
-                (§4) — the operator has the unit in their hand, the system does
+                (§4). The operator has the unit in their hand, the system does
                 not.
               */}
               That bag was registered with the expiry printed on its label, which
@@ -193,7 +193,7 @@ export default async function StockPage({
                       </td>
                       <td className="app-figure">
                         {left === null ? (
-                          '—'
+                          '-'
                         ) : left < 0 ? (
                           <span className="ux4g-badge-digit-danger">expired</span>
                         ) : left <= 7 ? (

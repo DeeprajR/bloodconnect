@@ -149,7 +149,7 @@ const MATRIX: readonly {
 
 describe('the role and surface matrix (§9)', () => {
   for (const row of MATRIX) {
-    describe(`${row.surface} — ${row.path}`, () => {
+    describe(`${row.surface}: ${row.path}`, () => {
       it(`anonymous: ${row.anonymous ? 'yes' : 'no'}`, () => {
         expect(decideAccess(row.path, anonymousActor).allowed).toBe(row.anonymous);
       });
@@ -335,7 +335,7 @@ describe('the same-origin check (§3)', () => {
  * Administration is a separate application (§1).
  *
  * The two share one `users` table, so the thing worth asserting is that a role
- * reaches exactly one of them — an administrator has no clinical surface, and
+ * reaches exactly one of them. An administrator has no clinical surface, and
  * no clinical role reaches administration.
  */
 describe('the administration application', () => {

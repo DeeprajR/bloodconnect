@@ -15,14 +15,14 @@
  *      holding a place (§7.6).
  *
  * A request showing cancelled while units stay held for it, or while donors are
- * still being recruited, is worse than not cancelling at all — so it is one
+ * still being recruited, is worse than not cancelling at all, so it is one
  * transaction.
  *
  * **Why this lives in `packages/centre` when a doctor performs it.** §11.2 lets
  * exactly one of these two modules see the other, and it is this one. Module 1
  * cannot name `blood_bags` or `donor_demand`; this module can, and it reaches
  * the request through `hospital`'s own narrow seam rather than its tables. The
- * permission checked below is the doctor's, not the counter's — where a use case
+ * permission checked below is the doctor's, not the counter's. Where a use case
  * lives and who may run it are different questions.
  */
 
@@ -51,7 +51,7 @@ export type CancelResult = {
   readonly cancelledFrom: string;
   /** Units put back on the shelf. Zero unless the request had been decided. */
   readonly bagsReleased: number;
-  /** Demands withdrawn — the bot stands their donors down (§7.6). */
+  /** Demands withdrawn. The bot stands their donors down (§7.6). */
   readonly demandsCancelled: number;
 };
 
@@ -101,7 +101,7 @@ export async function cancelRequest(
     /* --- 2. units go back on the shelf -------------------------------- */
     /**
      * Only `reserved` ones. A bag that has been `issued` has physically left
-     * the fridge and is not the register's to reclaim — that is a return, which
+     * the fridge and is not the register's to reclaim. That is a return, which
      * is a decision somebody makes with the unit in their hand (§4).
      */
     const released = await tx
@@ -117,7 +117,7 @@ export async function cancelRequest(
 
     /* --- 3. recruitment stops ----------------------------------------- */
     /**
-     * The centre sets the status and nothing else — it cannot message a donor,
+     * The centre sets the status and nothing else. It cannot message a donor,
      * because the donors are the bot's and it knows nothing about the channel.
      * The bot's ticker sees `cancelled` and runs §7.6, which fans out a
      * stand-down to every donor still holding a place.

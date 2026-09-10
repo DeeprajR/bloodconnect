@@ -288,7 +288,7 @@ describe.skipIf(!testUrl)('signIn (§8.1, §13, §15)', () => {
       if (!result.ok) expect(result.error.kind).toBe('InvalidCredentials');
     }
 
-    // The next attempt is refused before the password is even considered — and
+    // The next attempt is refused before the password is even considered, and
     // the correct password does not get through either.
     const blocked = await signIn(context(), {
       email: 'active@blood-connect.invalid',

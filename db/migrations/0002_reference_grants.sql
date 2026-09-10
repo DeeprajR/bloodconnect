@@ -5,7 +5,7 @@
 -- seeded by the migrator and served to the web app and the bot read-only.
 --
 -- The line worth defending in review is the last one. Module 4 reads "the bot's
--- progress counters" (§6) — but the bot writes those onto `hospital.donor_demand`,
+-- progress counters" (§6), but the bot writes those onto `hospital.donor_demand`,
 -- so the volunteer dashboard needs no access to the `bot` schema at all, and the
 -- web app is given none. A privacy boundary that is a missing grant (§2.10)
 -- cannot be crossed by a careless join.
@@ -27,7 +27,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE migrator IN SCHEMA "reference"
   GRANT SELECT ON TABLES TO app_web, app_bot;
 --> statement-breakpoint
 
--- The bot's schema does not exist yet — `db/migrations-bot` creates it, applied
+-- The bot's schema does not exist yet: `db/migrations-bot` creates it, applied
 -- by the bot's own release (§5.9). The revoke that keeps the web app out of it
 -- belongs to that set, next to the tables it protects, so it cannot be applied
 -- against a schema that is not there.

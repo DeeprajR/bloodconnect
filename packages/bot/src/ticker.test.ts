@@ -26,7 +26,7 @@ const DISTRICT_ID = 'TEST_TICK_DISTRICT';
  * This file exists because of a bug it would have caught and the use-case suite
  * did not: `findRequestsDueAWave` interpolated a JavaScript `Date` into a raw
  * `sql` template, which the driver cannot bind. Every use case passed, because
- * every test called them directly — nothing ran the poll that the *process*
+ * every test called them directly, nothing ran the poll that the *process*
  * runs. A unit suite that never exercises the caller proves the callee and
  * nothing else.
  */
@@ -157,7 +157,7 @@ describe.skipIf(!testUrl)('the ticker', () => {
     const result = await tick(context());
     expect(result.cancelled).toBe(1);
     expect(result.standDownsQueued).toBe(1);
-    // Queued *and* sent in the same pass — the drain runs last for this reason.
+    // Queued *and* sent in the same pass. The drain runs last for this reason.
     expect(result.drain.sent).toBe(1);
 
     const messages = channel.sent.map((m) => m.message.text);
@@ -201,7 +201,7 @@ describe.skipIf(!testUrl)('the ticker', () => {
     await openDemand(2);
     await makeDonor(1);
 
-    // The donors above are on `memory`. This process runs `telegram` only —
+    // The donors above are on `memory`. This process runs `telegram` only,
     // which is exactly what happened the first time the bot was pointed at a
     // real token with a seeded pool behind it.
     const telegramOnly: BotContext = {

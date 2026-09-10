@@ -26,7 +26,7 @@ import { locationNodes } from './reference.js';
  * The tenant a request belongs to.
  *
  * §5.4 puts `centre_id` on `blood_requests` and `donor_demand` from day one so
- * multi-tenant is not a retrofit, even though v1 runs one centre — but it names
+ * multi-tenant is not a retrofit, even though v1 runs one centre, but it names
  * no table for that id to point at. A NOT NULL column referring to nothing is
  * worse than the retrofit it avoids, so this is the referent. `centre_settings`
  * in P3 holds the single deployment's configuration and hangs off it.
@@ -186,7 +186,7 @@ export const bloodRequests = hospitalSchema.table(
      * cannot drive the expiry sweep. Each answers what the other cannot.
      */
     urgency: text('urgency'),
-    /** Recorded by whoever has it — the doctor if they had a moment, else the centre. */
+    /** Recorded by whoever has it. The doctor if they had a moment, else the centre. */
     indication: text('indication'),
     /** The centre records a day, not an instant (§5.2). */
     dateRequired: date('date_required'),
@@ -200,7 +200,7 @@ export const bloodRequests = hospitalSchema.table(
      * Frozen at submit (§2.6).
      *
      * The patient's details and the doctor's identity as they were when the
-     * request was made — because a request is a clinical record of what was
+     * request was made, because a request is a clinical record of what was
      * asked for, and editing a patient's name a month later must not silently
      * rewrite what the centre was told. Never joined on.
      */
@@ -228,7 +228,7 @@ export const bloodRequests = hospitalSchema.table(
      *
      * **The patient is no longer among them** (ADR 0010): a request is raised
      * with four fields, and the patient is identified later at the counter. So
-     * `patient_snapshot` and `indication` left this list — what remains is
+     * `patient_snapshot` and `indication` left this list. What remains is
      * exactly what the doctor supplies, and a request missing any of it is a
      * request nobody could act on.
      *
@@ -254,7 +254,7 @@ export const bloodRequests = hospitalSchema.table(
      *
      * They are written together when the centre attaches one, and a snapshot
      * without an admission would be a frozen copy of a record nothing points
-     * at — unreadable and unverifiable (§2.6).
+     * at. Unreadable and unverifiable (§2.6).
      */
     check(
       'blood_requests_patient_check',
@@ -283,7 +283,7 @@ export const bloodRequests = hospitalSchema.table(
 /**
  * The pre-transfusion compatibility testing sample (§5.4, §15).
  *
- * §2.7 calls it that, never "blood sample" — the wording table exists because
+ * §2.7 calls it that, never "blood sample". The wording table exists because
  * the imprecise term is what somebody reaches for under pressure.
  *
  * `sample_identifier` is unique **on its own**, not per request. §15 wants it
@@ -307,7 +307,7 @@ export const bloodSamples = hospitalSchema.table(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // Globally unique, deliberately — see above.
+    // Globally unique, deliberately. See above.
     uniqueIndex('blood_samples_identifier_idx').on(table.sampleIdentifier),
     index('blood_samples_request_idx').on(table.requestId, table.collectedAt.desc()),
   ],

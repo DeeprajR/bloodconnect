@@ -199,7 +199,7 @@ export const updateRequestRejected = (
   message: {
     unchanged: 'That is what it already says. Nothing to change.',
     already_pending: 'You already have a request waiting for this. Withdraw it first.',
-    no_reason: 'Say why it needs changing — an administrator has to decide on something.',
+    no_reason: 'Say why it needs changing. An administrator has to decide on something.',
     empty_value: 'Fill in the new value.',
     reg_taken: 'That registration number already belongs to another account.',
     not_found: 'That request no longer exists.',

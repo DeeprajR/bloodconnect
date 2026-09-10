@@ -22,7 +22,7 @@ import { createEventWriter } from '../events.js';
 export type WalkInSyncResult = {
   /** Requests whose count moved. */
   readonly updated: number;
-  /** Requests now covered, counting walk-ins — no longer recruiting. */
+  /** Requests now covered, counting walk-ins, no longer recruiting. */
   readonly fulfilled: number;
   /** The requests touched, for the caller's write-back set. */
   readonly touched: readonly string[];
@@ -116,7 +116,7 @@ export async function applyWalkIns(ctx: BotContext): Promise<WalkInSyncResult> {
        *
        * The same edge `acceptRequest` owns, reached a different way: there, a
        * donor filled the last place; here, somebody already had. Donors who
-       * confirmed are **not** stood down — they committed, they are expected,
+       * confirmed are **not** stood down. They committed, they are expected,
        * and turning them away after they said yes is its own harm. What stops
        * is new invitations and waitlist promotion.
        */

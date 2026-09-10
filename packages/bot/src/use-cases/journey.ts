@@ -4,8 +4,8 @@
  * Every transition here is a **conditional UPDATE guarded on the status it
  * expects**, reporting whether it actually moved. That is not defensive style;
  * it is what makes a redelivered chat callback a no-op. Chat platforms redeliver
- * — a tap that timed out, a network retry, a card somebody found in their
- * history a week later — and a read-then-write would process each one again.
+ *, a tap that timed out, a network retry, a card somebody found in their
+ * history a week later, and a read-then-write would process each one again.
  *
  * The claim on the last unit (§7.3) is the sharpest case: two donors finishing
  * screening in the same instant contend on one row, exactly one matches, and the
@@ -162,7 +162,7 @@ export type ScreeningStep =
  * Records one answer and returns what happens next.
  *
  * The index is compared against `screening_index` **on the row**, so a duplicate
- * tap on question three is recognised as already answered (§7.4) — and the flow
+ * tap on question three is recognised as already answered (§7.4), and the flow
  * survives a process restart, because the progress is in the database rather
  * than in session memory.
  */
@@ -204,8 +204,8 @@ export async function answerScreeningQuestion(
     /**
      * **This request only, and never the profile** (§5).
      *
-     * Every question asked here is a visit question — fever today, a meal, a
-     * course of antibiotics — and none of them describes the person. The
+     * Every question asked here is a visit question, fever today, a meal, a
+     * course of antibiotics, and none of them describes the person. The
      * durable set is asked once, at signup, and is the only thing that can flag
      * a profile. Writing a visit answer to `donor_screening_answers` would
      * defer somebody for a year for having skipped breakfast, which is why
@@ -404,7 +404,7 @@ async function claimUnit(
      *
      * This is the only place a donor's name and phone number cross into the
      * centre's half of the database, and it happens exactly when the person has
-     * agreed to give blood for a specific patient — which is what the consent
+     * agreed to give blood for a specific patient, which is what the consent
      * text says (§5).
      */
     await tx
@@ -459,7 +459,7 @@ async function claimUnit(
  *
  * A waitlist that never resolves is worse than never offering one, so this is
  * built in the same phase as the waitlisting itself rather than left as a
- * follow-up. The claim is the same conditional UPDATE as §7.3 — a place is
+ * follow-up. The claim is the same conditional UPDATE as §7.3. A place is
  * freed and a person takes it, and two promotions racing cannot both win.
  */
 export async function promoteFromWaitlist(

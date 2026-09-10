@@ -3,7 +3,7 @@
  *
  * §11.2 forbids one module reading another's tables, so anything outside
  * Module 1 that needs its data gets a purpose-built view type through a
- * function — not a table. When the centre is split into its own deployment
+ * function, not a table. When the centre is split into its own deployment
  * these become HTTP calls and nothing else changes.
  *
  * The administration application reads through here too. It is a different
@@ -44,7 +44,7 @@ export type PatientRow = {
  *
  *  1. It requires `patients:read_all`, which only an administrator has.
  *  2. Every call writes an audit row naming the doctor whose patients were
- *     read and how many records that was — the question a later investigation
+ *     read and how many records that was. The question a later investigation
  *     asks is "who looked", and a page-view metric does not answer it.
  *  3. Its lawful basis is an open question for counsel (§12.2). The code is
  *     ready; the authority to run it in production is not settled.
@@ -106,7 +106,7 @@ export async function getPatientsForDoctor(
 }
 
 /**
- * Counts only — no patient is identifiable from this.
+ * Counts only, no patient is identifiable from this.
  *
  * Answers "is this doctor working" without disclosing anyone's record, so it
  * needs no special permission and writes no audit row. Used on the doctor list,
@@ -120,7 +120,7 @@ export async function getDoctorActivity(
    * Work in progress, whether or not a patient has been attached yet.
    *
    * A left join: a request raised with four fields has no admission (ADR 0010),
-   * and an inner one counted it as no work at all — which is the opposite of
+   * and an inner one counted it as no work at all, which is the opposite of
    * true, since nobody has even identified the patient yet.
    */
   const [open] = await ctx.db

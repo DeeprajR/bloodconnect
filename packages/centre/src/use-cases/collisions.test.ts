@@ -63,7 +63,7 @@ describe('the three collision cases (§4)', () => {
   });
 
   it('calls a live bag coming back a return (case 1)', () => {
-    // The unit is out — surplus, or taken in error. It is a return, and it must
+    // The unit is out. Surplus, or taken in error. It is a return, and it must
     // not share a button with re-registering.
     expect(classifyTag(assigned(), 'issued').kind).toBe('return');
     expect(classifyTag(assigned(), 'reserved').kind).toBe('return');
@@ -136,7 +136,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
 
   let counter: Actor;
   let counterId: string;
-  /** A live bag must name the request it is held for — the CHECK says so. */
+  /** A live bag must name the request it is held for. The CHECK says so. */
   let requestId: string;
   // A counter, not a slice of a UUIDv7: those share a prefix within a
   // millisecond, and three bags registered in one test collided on the unique
@@ -238,7 +238,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
 
   /* ---------------------------------------------------------------- case 1 */
 
-  describe('case 1 — the return', () => {
+  describe('case 1. The return', () => {
     it('restocks a unit that was barely out of storage', async () => {
       const { bagId, expiresAt } = await bagOnTag('issued');
 
@@ -359,7 +359,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
 
   /* ---------------------------------------------------------------- case 2 */
 
-  describe('case 2 — release, then re-register', () => {
+  describe('case 2. Release, then re-register', () => {
     it('releases a tag whose bag is finished, and leaves that bag alone', async () => {
       const { bagId, tagUid } = await bagOnTag('discarded');
 
@@ -370,7 +370,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
       expect(tag?.status).toBe('unassigned');
       expect(tag?.currentBagId).toBeNull();
 
-      // The old bag's history stays intact — it is not edited into the new one.
+      // The old bag's history stays intact. It is not edited into the new one.
       const [bag] = await db.select().from(bloodBags).where(eq(bloodBags.id, bagId));
       expect(bag?.status).toBe('discarded');
 
@@ -385,7 +385,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
     it('refuses to release a tag whose bag is still live', async () => {
       const { tagUid } = await bagOnTag('issued');
 
-      // That is a return, not a release — and letting it through would strand a
+      // That is a return, not a release, and letting it through would strand a
       // unit nobody can find.
       const result = await releaseTag(context(), tagUid, 'Wrong button');
       expect(result.ok).toBe(false);
@@ -454,7 +454,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
 
   /* ---------------------------------------------------------------- case 3 */
 
-  describe('case 3 — the discrepancy, which closes exactly three ways', () => {
+  describe('case 3. The discrepancy, which closes exactly three ways', () => {
     async function blocked(): Promise<{ tagUid: string; bagId: string; discrepancyId: string }> {
       const { tagUid, bagId } = await bagOnTag('available');
       const raised = await raiseTagDiscrepancy(context(), tagUid, 'Second bag presented');
@@ -510,7 +510,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
 
       const [tag] = await db.select().from(rfidTags).where(eq(rfidTags.tagUid, tagUid));
       expect(tag?.status).toBe('retired');
-      // The bag that was there is untouched — it was never the problem.
+      // The bag that was there is untouched. It was never the problem.
       const [bag] = await db.select().from(bloodBags).where(eq(bloodBags.id, bagId));
       expect(bag?.status).toBe('available');
     });
@@ -602,7 +602,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
        * The guarantee §4 asks for, tested as an absence.
        *
        * Every scheduled thing in this module runs, and the discrepancy is still
-       * open afterwards. It never auto-resolves and never expires — it is the
+       * open afterwards. It never auto-resolves and never expires. It is the
        * one alarm here worth being loud.
        */
       await expireStaleBags(context());
@@ -616,7 +616,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
 
   /* ------------------------------------------------------------ quarantine */
 
-  describe('quarantine — a waiting room, not a destination', () => {
+  describe('quarantine. A waiting room, not a destination', () => {
     async function quarantined(collectedDaysAgo = 0): Promise<string> {
       const { bagId } = await bagOnTag('issued', collectedDaysAgo);
       await returnBag(context(), {
@@ -693,7 +693,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
     });
 
     it('discards a quarantined unit that reaches its expiry, with that as the reason', async () => {
-      // The single automatic exit §4 grants — nothing sits here indefinitely.
+      // The single automatic exit §4 grants, nothing sits here indefinitely.
       const bagId = await quarantined(60);
       await client`UPDATE hospital.blood_bags SET expires_at = ${subtractDays(clock.today(), 1)}
                     WHERE id = ${bagId}`;
@@ -795,7 +795,7 @@ describe.skipIf(!testUrl)('returns, quarantine and discrepancies (§4, §7.5)', 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    // "Group, product, collection, expiry, status" — a screen that says only
+    // "Group, product, collection, expiry, status". A screen that says only
     // "tag in use" makes somebody guess which of three things happened.
     expect(result.value.resolution.kind).toBe('return');
     expect(result.value.bag?.id).toBe(bagId);

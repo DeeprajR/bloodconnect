@@ -6,7 +6,7 @@ import type { NextConfig } from 'next';
  * Load the workspace root `.env`.
  *
  * Next reads `.env` from the application directory, not from the root of a
- * monorepo — so without this, `pnpm dev` starts with no `DATABASE_URL` and the
+ * monorepo, so without this, `pnpm dev` starts with no `DATABASE_URL` and the
  * first request that touches the database fails at runtime rather than at boot.
  *
  * One `.env` at the root rather than a copy per app, because the connection

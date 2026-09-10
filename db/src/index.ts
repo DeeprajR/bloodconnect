@@ -1,6 +1,6 @@
 /**
  * What the `hospital`/`reference` release exposes to the applications: the
- * schema, and the connection helpers. No use case lives here — those belong to
+ * schema, and the connection helpers. No use case lives here. Those belong to
  * `apps/web/src/modules/*` (§2).
  */
 export * from './schema/index.js';

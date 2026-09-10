@@ -1,7 +1,7 @@
 /**
  * An in-memory channel (§10, §17).
  *
- * Not a convenience for tests — it is what makes the stand-down guarantee of
+ * Not a convenience for tests. It is what makes the stand-down guarantee of
  * §7.6 **provable** rather than asserted. The whole loop runs against it with no
  * network, no token and no external account, which is also the degraded mode
  * §10 asks for: the system must be demonstrable when the chat platform is not

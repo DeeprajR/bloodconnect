@@ -12,13 +12,13 @@ import { attachPatientAction, type FormState } from './centre-actions';
  *
  * The other half of the request slip: a doctor gave four fields and read an ID
  * aloud; somebody carried it here, and this is where the patient finally gets a
- * name. Until it is filled the request cannot be reserved against or issued —
- * except for an emergency, which may be answered first and completed after.
+ * name. Until it is filled the request cannot be reserved against or issued.
+ * Except for an emergency, which may be answered first and completed after.
  *
  * **Four fields are demanded and the rest are offered**, in the order somebody
  * actually asks them: who is this, where are they, how old, what group. The four
  * are what the record cannot exist without. Everything else is worth asking
- * while the person is standing there, which is why it is on the page at all —
+ * while the person is standing there, which is why it is on the page at all,
  * but behind a disclosure, because it must never be what delays a unit.
  */
 
@@ -202,7 +202,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
         id="dob"
         label={WORDING.dateOfBirth}
         type="date"
-        hint="Give this or the age above — the record needs one of them."
+        hint="Give this or the age above. The record needs one of them."
       />
 
       <div className="ux4g-form-group app-stack-tight">
@@ -224,14 +224,14 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
 
       {/*
         Worth asking while the person is at the desk, but never what delays a
-        unit — so it is offered, not demanded.
+        unit, so it is offered, not demanded.
       */}
       <details className="app-more">
         <summary className="app-more-summary">
           <span className="app-stack-tight">
             <span>Contact and clinical context</span>
             <span className="ux4g-label-m-default">
-              Optional — ask while they are here
+              Optional, ask while they are here
             </span>
           </span>
           <svg

@@ -176,7 +176,7 @@ export default async function DemandsPage() {
           needs them; a page showing every demand ever raised does not.
         */}
         Donor names and numbers are on each roster, where somebody is calling a name
-        at a desk — not on this list.
+        at a desk, not on this list.
       </p>
 
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">

@@ -16,7 +16,7 @@ import {
  * §11.2 names a one-sided change to `donor_demand` as the single most likely
  * way this system breaks in production. `packages/contract` states the
  * ownership as data; this file connects **as each application role** and proves
- * the database agrees — because the package is a convention two codebases have
+ * the database agrees, because the package is a convention two codebases have
  * to keep, and the grant is a fact neither of them can get around.
  *
  * The three checks worth reading:
@@ -188,7 +188,7 @@ describe.skipIf(!testUrl)('the contract tables, as the application roles', () =>
 
   it('does not let the centre invent a roster row', async () => {
     // Someone who never confirmed in the bot is recorded as a walk-in, which is
-    // its own flow with its own record — not a fabricated confirmation (§4).
+    // its own flow with its own record, not a fabricated confirmation (§4).
     await expect(
       web`INSERT INTO hospital.donor_demand_confirmations
             (id, demand_id, donor_id, channel, donor_name, donor_phone, blood_group)
@@ -232,7 +232,7 @@ describe.skipIf(!testUrl)('the contract tables, as the application roles', () =>
     /**
      * The centre's updatable set is narrower than its ownership set, and that
      * is deliberate. `id`, `centre_id`, `blood_group`, `units` and the rest
-     * describe what was asked for and are written once — a grant to update them
+     * describe what was asked for and are written once. A grant to update them
      * would be a grant to rewrite a demand donors have already been shown.
      */
     const centreUpdatable = actual('app_web');

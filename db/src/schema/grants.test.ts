@@ -6,7 +6,7 @@ import postgres from 'postgres';
  *
  * §11.5 asks for ownership the database itself enforces, and the point of that
  * is that it holds when the application logic is wrong. These tests connect **as
- * the application roles** and check what they cannot do — which is the half of a
+ * the application roles** and check what they cannot do, which is the half of a
  * grant that never gets exercised by normal use and therefore never fails until
  * it matters.
  *

@@ -13,7 +13,7 @@
  *    clinical decision a human makes, not one this system takes silently.
  *  - **Recruiting donors uses the red-cell matrix.** A wave is selected on
  *    `blood_group = ANY(compatibleDonorGroupsFor(need))` (§7.7), and demand is
- *    only ever raised for whole blood or packed red cells (§4) — so the red-cell
+ *    only ever raised for whole blood or packed red cells (§4), so the red-cell
  *    direction is the only one recruitment can ask for.
  */
 
@@ -47,7 +47,7 @@ export const isBloodGroup = (value: unknown): value is BloodGroup =>
 export function parseBloodGroup(value: unknown): BloodGroup | undefined {
   if (typeof value !== 'string') return undefined;
   // Accept the display minus sign on the way in; store the ASCII form.
-  const normalised = value.trim().toUpperCase().replace(/−|–|—/g, '-');
+  const normalised = value.trim().toUpperCase().replace(/−|–|:/g, '-');
   return isBloodGroup(normalised) ? normalised : undefined;
 }
 
@@ -68,8 +68,8 @@ const ABO_ANTIGENS: Readonly<Record<AboGroup, readonly ('A' | 'B')[]>> = {
 /**
  * Red-cell compatibility: may a unit from `donor` be transfused to `recipient`?
  *
- * ABO — the donor's antigens must be a subset of the recipient's, so the
- * recipient has no antibody against them. Rh — RhD-negative units go to anyone;
+ * ABO. The donor's antigens must be a subset of the recipient's, so the
+ * recipient has no antibody against them. Rh. RhD-negative units go to anyone;
  * RhD-positive units only to RhD-positive recipients.
  */
 export function canDonateRedCellsTo(donor: BloodGroup, recipient: BloodGroup): boolean {
@@ -85,7 +85,7 @@ export function compatibleDonorGroupsFor(recipient: BloodGroup): BloodGroup[] {
   return BLOOD_GROUPS.filter((donor) => canDonateRedCellsTo(donor, recipient));
 }
 
-/** The patients a unit of `donor` could serve — used by stock pressure views. */
+/** The patients a unit of `donor` could serve. Used by stock pressure views. */
 export function compatibleRecipientGroupsFor(donor: BloodGroup): BloodGroup[] {
   return BLOOD_GROUPS.filter((recipient) => canDonateRedCellsTo(donor, recipient));
 }

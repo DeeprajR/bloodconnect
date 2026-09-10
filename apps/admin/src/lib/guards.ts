@@ -21,7 +21,7 @@ import { AUDIENCE, currentActor, requestMetadata } from './session';
  * Layer 2 of §13: the page guard.
  *
  * Every protected server component calls this before rendering. It repeats what
- * the middleware already decided, deliberately — middleware runs on a matcher
+ * the middleware already decided, deliberately. Middleware runs on a matcher
  * that a new route can be added without, and a page that renders when the
  * matcher is wrong is a page that leaks. Two layers means one mistake is not
  * enough.

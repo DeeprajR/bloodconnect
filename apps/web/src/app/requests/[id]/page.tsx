@@ -32,7 +32,7 @@ const CANCELLABLE = ['submitted', 'approved', 'partially_approved'];
  * A draft is editable; anything else is a record.
  *
  * One route rather than two, because the doctor arrives at the same place
- * either way — from the dashboard, or from having just submitted. What changes
+ * either way, from the dashboard, or from having just submitted. What changes
  * is whether there is a form on it.
  */
 export default async function RequestPage({
@@ -54,7 +54,7 @@ export default async function RequestPage({
 
   const { request } = row;
 
-  // Rendered from the snapshot, not from the live patient record — that is the
+  // Rendered from the snapshot, not from the live patient record. That is the
   // whole point of freezing it (§2.6). Empty until the centre attaches one.
   const patient = (request.patientSnapshot ?? {}) as Record<string, string | null>;
   const doctor = (request.doctorSnapshot ?? {}) as Record<string, string | null>;
@@ -111,7 +111,7 @@ export default async function RequestPage({
               <div className="app-row">
                 <dt className="ux4g-label-m-strong">{WORDING.product}</dt>
                 <dd className="ux4g-body-s-default">
-                  {request.product ? productLabel(request.product as Product) : '—'}
+                  {request.product ? productLabel(request.product as Product) : '-'}
                 </dd>
               </div>
               <div className="app-row">
@@ -123,7 +123,7 @@ export default async function RequestPage({
                 <dd className="ux4g-body-s-default app-figure">
                   {request.bloodGroup
                     ? bloodGroupLabel(request.bloodGroup as BloodGroup)
-                    : '—'}
+                    : '-'}
                 </dd>
               </div>
               <div className="app-row">
@@ -186,8 +186,8 @@ export default async function RequestPage({
             {decision.demandId ? (
               <p className="ux4g-body-s-default">
                 {/*
-                  The shortfall recruits donors, and the doctor should know it —
-                  cancelling now reaches real people who agreed to come in.
+                  The shortfall recruits donors, and the doctor should know it.
+                  Cancelling now reaches real people who agreed to come in.
                 */}
                 Donors are being asked for the units the shelf could not cover.
               </p>
@@ -225,8 +225,8 @@ export default async function RequestPage({
                   <tr key={sample.id}>
                     <td className="app-figure">{sample.sampleIdentifier}</td>
                     <td className="app-figure">{when.format(sample.collectedAt)}</td>
-                    <td>{sample.collectedBy ?? '—'}</td>
-                    <td>{sample.note ?? '—'}</td>
+                    <td>{sample.collectedBy ?? '-'}</td>
+                    <td>{sample.note ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>

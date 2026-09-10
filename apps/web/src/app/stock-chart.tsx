@@ -15,8 +15,8 @@ import {
  * numbers the page already fetched.
  *
  * **Colour is never the only signal** (WCAG 1.4.1, Design.md §9). Three things
- * carry the same information independently — the height of each fill, the count
- * printed on it, and `aria-valuetext` naming the band in words — so the chart
+ * carry the same information independently, the height of each fill, the count
+ * printed on it, and `aria-valuetext` naming the band in words, so the chart
  * survives a screen reader, a monochrome print and the eight percent of men who
  * would read the orange and the green as the same colour.
  */
@@ -33,7 +33,7 @@ const BAND_CLASSES: Readonly<Record<StockBand, string>> = {
  * Below this share of the track, the count is printed above the bar instead of
  * inside it.
  *
- * A 240px track makes this about 48px — comfortably more than the line box the
+ * A 240px track makes this about 48px. Comfortably more than the line box the
  * figure needs. Forcing every fill to be at least that tall instead is what
  * made 1/25, 3/25 and 6/25 render as three identical bars.
  */
@@ -69,8 +69,8 @@ export function StockChart({
             /**
              * The meter's range has to contain its own value.
              *
-             * A group above the floor is the ordinary case — 33 against a floor
-             * of 25 — and reporting `aria-valuenow="33"` inside a range that
+             * A group above the floor is the ordinary case, 33 against a floor
+             * of 25, and reporting `aria-valuenow="33"` inside a range that
              * stops at 25 is invalid ARIA that a screen reader is free to clamp
              * or to read as nonsense. The bar is capped at full; the range is
              * not, and the surplus stays audible.
@@ -99,7 +99,7 @@ export function StockChart({
                   aria-valuemax={range}
                   aria-valuenow={row.onShelf}
                   // The band in words. Without it a screen reader reads "6 of
-                  // 25" and the colour — the whole point — is simply lost.
+                  // 25" and the colour, the whole point, is simply lost.
                   aria-valuetext={`${reading}. ${STOCK_BAND_LABELS[band]}`}
                   aria-label={`${group} stock against the floor`}
                 >
@@ -129,7 +129,7 @@ export function StockChart({
       {/*
         The legend earns its space: four colours whose order is not obvious
         until somebody has been told, and "none" is not simply "worse than
-        critical" — it is the state where a request cannot be answered at all.
+        critical". It is the state where a request cannot be answered at all.
       */}
       <ul className="app-legend ux4g-label-m-default" aria-label="What the colours mean">
         {STOCK_BANDS.map((band) => (

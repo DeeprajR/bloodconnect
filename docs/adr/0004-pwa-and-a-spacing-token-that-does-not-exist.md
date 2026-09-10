@@ -1,4 +1,4 @@
-# ADR 0004 — Both applications are installable, and the spacing bug that found a contract drift
+# ADR 0004: Both applications are installable, and the spacing bug that found a contract drift
 
 Date: 2026-09-08 · Status: accepted
 
@@ -9,14 +9,14 @@ Date: 2026-09-08 · Status: accepted
 **Cause.** The layout asked for `var(--ux4g-space-9)`. That custom property does **not exist** in
 `ux4g-web-components@2.1.0`.
 
-An undefined custom property does not fall back to nothing sensible — it makes the *whole
+An undefined custom property does not fall back to nothing sensible. It makes the *whole
 declaration* invalid at computed-value time. So `padding: var(--ux4g-space-9)` did not become a
 small padding or a default one; it removed the padding entirely, along with the `gap` between
 sections. The header and the first card ended up flush against each other, with no error anywhere.
 
 **Why it happened.** Design.md §3 lists a 15-step spacing ramp including `space-9`. The shipped
 stylesheet has 1–8, 10, 12 and 13. I took the token name from the contract's table without
-confirming it in the package — which is the exact thing §0.6 says not to do, and it says so for
+confirming it in the package, which is the exact thing §0.6 says not to do, and it says so for
 this reason.
 
 **Contract drift found, worth reporting upstream:**
@@ -24,11 +24,11 @@ this reason.
 | Design.md says | Ships? |
 |---|---|
 | `space-9` (32), `space-11` (48), `space-14` (80) | **No** |
-| `Stack/*` and `Inline/*` semantic axes (§5) | **No** — only `Padding/*` and `Section/*` ship |
+| `Stack/*` and `Inline/*` semantic axes (§5) | **No**: only `Padding/*` and `Section/*` ship |
 | `space-4` = 8px | Ships as `0.5rem`, which agrees |
 
-**The fix, and the wider one.** The layout now uses the semantic axes that do ship — `Padding` for
-what is inside a container, `Section` for the rhythm between page sections — chosen by role
+**The fix, and the wider one.** The layout now uses the semantic axes that do ship, `Padding` for
+what is inside a container, `Section` for the rhythm between page sections, chosen by role
 rather than by value, as §5 asks. And **every `var()` carries a fallback**. That is not
 decoration: it means the next missing token costs a slightly wrong gap instead of a collapsed
 page.
@@ -47,13 +47,13 @@ Manifest, icons, offline page and a service worker, for the staff app and admini
 network-only data", and in this system that is a clinical rule rather than a performance choice:
 
 - **A cached stock figure is a wrong stock figure.** Units on the shelf, whether a request has
-  been decided, whether a donor confirmed — each is only safe if it came from the server just
+  been decided, whether a donor confirmed, each is only safe if it came from the server just
   now. There is no version of "slightly stale" that is acceptable for any of them.
 - **A cached page is somebody's page.** These are shared ward devices. A dashboard served from
   cache after a different person signs in is a disclosure, not a stale render.
 
 So: hashed build output and icons are cached, because their URL changes when their content does.
-Documents go to the network and fall back to an offline notice that carries no data at all —
+Documents go to the network and fall back to an offline notice that carries no data at all,
 never to a stored copy of a real page. Everything else falls through untouched, which leaves the
 browser behaving exactly as if there were no worker.
 
@@ -78,7 +78,7 @@ Three things that are requirements rather than preferences:
 - **Zooming stays enabled.** `maximumScale: 5`, `userScalable: true`. Disabling pinch-to-zoom
   fails WCAG 1.4.4, and it is how a lot of people read a screen.
 - **44×44 minimum targets** (§9), and wide content scrolls inside its own container so the
-  document never scrolls sideways — a horizontally scrolling page makes every other control hard
+  document never scrolls sideways. A horizontally scrolling page makes every other control hard
   to hit on a phone.
 - **`prefers-reduced-motion` is honoured.** Nothing here animates yet, but the UX4G runtime's
   drawer and modal do.
@@ -93,6 +93,6 @@ two links.
 
 The 8 MB UX4G stylesheet ([ADR 0002](0002-phase-1-decisions.md) §8) matters more now, not less.
 An installable application that ships 8 MB of base64 fonts on first load, to doctors on hospital
-wifi, is the opposite of what a PWA is for. Design.md names the fix — ship fonts as separate
+wifi, is the opposite of what a PWA is for. Design.md names the fix. Ship fonts as separate
 `woff2` with `font-display: swap`, and offer a components-only build. It should be resolved
 before the demonstration.

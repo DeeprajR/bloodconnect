@@ -54,16 +54,16 @@ export default async function AdmissionPage({
               <dd className="ux4g-body-s-default app-figure">
                 {row.patient.age !== null
                   ? `${row.patient.age} ${row.patient.ageUnit ?? ''}`
-                  : (row.patient.dob ?? '—')}
+                  : (row.patient.dob ?? '-')}
               </dd>
             </div>
             <div className="app-row">
               <dt className="ux4g-label-m-strong">{WORDING.hospitalId}</dt>
-              <dd className="ux4g-body-s-default app-figure">{row.patient.uhid ?? '—'}</dd>
+              <dd className="ux4g-body-s-default app-figure">{row.patient.uhid ?? '-'}</dd>
             </div>
             <div className="app-row">
               <dt className="ux4g-label-m-strong">{WORDING.knownDiagnosis}</dt>
-              <dd className="ux4g-body-s-default">{row.patient.diagnosis ?? '—'}</dd>
+              <dd className="ux4g-body-s-default">{row.patient.diagnosis ?? '-'}</dd>
             </div>
             <div className="app-row">
               <dt className="ux4g-label-m-strong">{WORDING.previousTransfusion}</dt>

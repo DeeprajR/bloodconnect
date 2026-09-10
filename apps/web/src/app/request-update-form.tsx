@@ -16,7 +16,7 @@ const FIELDS = [
  * Asking for the two fields a doctor cannot change themselves (§3).
  *
  * The current value is prefilled into the box, because almost every request
- * here is a correction — a missing initial, a transposed digit — and retyping a
+ * here is a correction, a missing initial, a transposed digit, and retyping a
  * long registration number from memory is how a second mistake gets in.
  */
 export function RequestUpdateForm({

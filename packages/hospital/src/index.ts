@@ -3,7 +3,7 @@
  *
  * Patients, admissions and blood requests. It may import `platform` and the
  * shared packages; it must never read a `blood_bags` row, and nothing outside
- * it may read its tables — the narrow read API below is how the centre and the
+ * it may read its tables. The narrow read API below is how the centre and the
  * administration application get what they need.
  */
 

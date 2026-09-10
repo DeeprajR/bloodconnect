@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Quarantine · Blood Connect' };
  *
  * "Quarantined units age visibly; one unresolved past a threshold is escalated,
  * and a quarantined bag that reaches its expiry is discarded automatically."
- * The age is the whole point of the screen — a list without it would let a unit
+ * The age is the whole point of the screen. A list without it would let a unit
  * sit here for a month without anybody noticing.
  */
 export default async function QuarantinePage() {

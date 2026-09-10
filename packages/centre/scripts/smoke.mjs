@@ -1,7 +1,7 @@
 /**
  * P6's writes, run as `app_web` against the real database.
  *
- * The test suite connects as `migrator`, which holds every privilege — so a
+ * The test suite connects as `migrator`, which holds every privilege, so a
  * green suite says nothing about whether the column-level grants in migrations
  * 0010, 0013 and 0014 actually permit the code that has to run under them. That
  * gap has already bitten once: `decide()` passed every test and then hit
@@ -75,7 +75,7 @@ const check = (label, condition, detail = '') => {
     console.log(`  ok   ${label}`);
   } else {
     failures += 1;
-    console.log(`  BAD  ${label}${detail ? ` — ${detail}` : ''}`);
+    console.log(`  BAD  ${label}${detail ? `: ${detail}` : ''}`);
   }
 };
 
@@ -148,7 +148,7 @@ async function main() {
 
   /* ------------------------------------------------------- case 1: return */
 
-  console.log('\ncase 1 — a unit that went out and came back');
+  console.log('\ncase 1. A unit that went out and came back');
   {
     const { bagId, tagUid } = await bagOnTag('RET');
     // Issued by the migrator: how it leaves is Module 1's decision path, and
@@ -186,7 +186,7 @@ async function main() {
 
   /* -------------------------------------------------------- case 2: reuse */
 
-  console.log('\ncase 2 — a tag whose bag is finished');
+  console.log('\ncase 2. A tag whose bag is finished');
   {
     const { bagId, tagUid } = await bagOnTag('REU');
     await attempt('the finished unit is discarded with a route', () =>
@@ -206,7 +206,7 @@ async function main() {
 
   /* ------------------------------------------------------ case 3: blocked */
 
-  console.log('\ncase 3 — a tag whose bag is on the shelf');
+  console.log('\ncase 3. A tag whose bag is on the shelf');
   {
     const { tagUid } = await bagOnTag('BLK');
     const resolved = await attempt('the tag resolves', () => resolveTag(ctx(), tagUid));
@@ -232,13 +232,13 @@ async function main() {
 
   /* ------------------------------------------------------------ the counter */
 
-  console.log('\nthe counter — roster and walk-in');
+  console.log('\nthe counter. Roster and walk-in');
   try {
     /**
      * A group with no open floor demand already.
      *
      * `donor_demand_open_floor_idx` allows one open stock-floor demand per
-     * group, which is the point of it — "recruit for groups below floor" must
+     * group, which is the point of it: "recruit for groups below floor" must
      * not double-raise. A run on a database that already has one is not a
      * failure, so this picks a free group rather than fighting the index.
      */
@@ -348,7 +348,7 @@ async function main() {
     await admin`DELETE FROM hospital.bag_quarantines WHERE bag_id = ANY(${created.bags})`;
     await admin`DELETE FROM hospital.bag_returns WHERE bag_id = ANY(${created.bags})`;
     await admin`DELETE FROM hospital.tag_assignments WHERE bag_id = ANY(${created.bags})`;
-    // Status and bag move together, or the assigned check refuses it — as it
+    // Status and bag move together, or the assigned check refuses it, as it
     // should: an assigned tag with no bag on it is the state case 3 exists for.
     await admin`UPDATE hospital.rfid_tags SET current_bag_id = NULL, status = 'unassigned'
                  WHERE current_bag_id = ANY(${created.bags})`;
@@ -361,7 +361,7 @@ async function main() {
 
   console.log(
     failures === 0
-      ? '\nP6 RUNS AS app_web — ALL OK'
+      ? '\nP6 RUNS AS app_web, ALL OK'
       : `\n${failures} problem(s). The grants and the code disagree.`,
   );
 }

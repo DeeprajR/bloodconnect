@@ -2,7 +2,7 @@
  * Turning an incoming update into one use-case call (§3, §9.5).
  *
  * The equivalent of a route handler: it parses, dispatches, and formats a reply.
- * No rule lives here — whether a donor may give, whether a place is still open,
+ * No rule lives here. Whether a donor may give, whether a place is still open,
  * whether a tap is a replay, are all decided inside a use case, on a
  * transaction. This file only decides what the person sees.
  *
@@ -11,7 +11,7 @@
  * through gets the next one; somebody registered gets an answer about their own
  * situation. Nobody has to know that `/start` exists.
  *
- * That ordering — *who is this?* before *what did they say?* — is also the fix
+ * That ordering, *who is this?* before *what did they say?*, is also the fix
  * for a bad bug. The router used to fall through to the onboarding handler for
  * any unrecognised text, and with no conversation row it replied "you are not
  * registered yet" to people who had just finished registering.
@@ -86,7 +86,7 @@ async function reply(
 /**
  * Their own situation, and what is open that they could answer.
  *
- * This is the default reply for a registered donor — the answer to "so what
+ * This is the default reply for a registered donor. The answer to "so what
  * now?", which is what somebody who has just finished a minute of questions is
  * actually asking. Never "you are not registered".
  */
@@ -102,7 +102,7 @@ async function standingMessage(
   if (standing.pausedUntil !== null) {
     lines.push(MESSAGES.paused(standing.pausedUntil));
   } else if (standing.eligibleFrom !== null) {
-    // The reason they are not being asked, said before the list — otherwise an
+    // The reason they are not being asked, said before the list. Otherwise an
     // empty list reads as "nobody needs blood", which is not what it means.
     lines.push(MESSAGES.notEligibleYet(standing.eligibleFrom));
   }
@@ -118,7 +118,7 @@ async function standingMessage(
           need.unitsOutstanding,
           need.neededBy,
           need.hospital,
-        ) + (need.alreadyAsked ? ` — ${MESSAGES.alreadyAsked}` : ''),
+        ) + (need.alreadyAsked ? `: ${MESSAGES.alreadyAsked}` : ''),
       );
     }
     if (standing.pausedUntil === null && standing.eligibleFrom === null) {
@@ -132,7 +132,7 @@ async function standingMessage(
 /**
  * The demand board, as one message (§5).
  *
- * Open to everyone — a visitor asking "what is needed?" gets an answer, not a
+ * Open to everyone. A visitor asking "what is needed?" gets an answer, not a
  * signup form. A registered donor's matches lead the list and are marked; the
  * rest stay visible below, because "nothing for you" and "nothing at all" are
  * different facts and a donor should be able to tell them apart.
@@ -182,7 +182,7 @@ function boardMessage(board: Board): OutgoingMessage {
       a wave would have created.
     */
     choices: mine.map((entry) => ({
-      label: `Give ${entry.bloodGroup} — ${entry.hospital.hospitalName}`,
+      label: `Give ${entry.bloodGroup}: ${entry.hospital.hospitalName}`,
       data: `board:${entry.publicId}`,
     })),
   };
@@ -230,7 +230,7 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
   /* ------------------------------------------------------- a deep link */
   /**
    * "A donor arriving on a request link is onboarded first, then lands back on
-   * that request — **the link is never lost**" (§5).
+   * that request: **the link is never lost**" (§5).
    *
    * The target is written onto the draft rather than held anywhere, so it
    * survives the whole interview, a restart, and a night's sleep.
@@ -265,7 +265,7 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
   /* --------------------------------------------------- somebody new ---- */
   /**
    * No command needed. Whatever they said, the useful reply is the welcome and
-   * the first question — asking somebody to type `/start` first is a step that
+   * the first question. Asking somebody to type `/start` first is a step that
    * exists for the system's convenience, not theirs.
    */
   const begun = await beginInterview(ctx, address);
@@ -359,7 +359,7 @@ const question = (journeyId: string, index: number, text: string): OutgoingMessa
  * The public id inside a deep link, if this is one.
  *
  * Telegram delivers `/start <payload>` when somebody opens `t.me/bot?start=x`,
- * which is why this is the one place a command word still matters — it is the
+ * which is why this is the one place a command word still matters. It is the
  * platform's wire format, not something a person is expected to type.
  */
 function deepLinkTarget(said: string): string | undefined {
@@ -405,7 +405,7 @@ async function handleDeepLink(
   /**
    * A visitor: onboard first, holding the link **on the draft**.
    *
-   * §5 — "the link is never lost". Writing it into the interview state is what
+   * §5: "the link is never lost". Writing it into the interview state is what
    * makes that true across a restart and a night's sleep, rather than only
    * across the next few messages.
    */
@@ -444,7 +444,7 @@ async function handleBoardTap(
   }
 
   if (!donor) {
-    // Onboard first, then come back to it — the same behaviour as a deep link.
+    // Onboard first, then come back to it. The same behaviour as a deep link.
     await handleDeepLink(ctx, address, publicId, updateId);
     return;
   }
@@ -463,7 +463,7 @@ async function handleBoardTap(
   );
 }
 
-/** The request card — the same one a wave sends (§5). */
+/** The request card. The same one a wave sends (§5). */
 const requestCard = (
   bloodGroup: string,
   neededBy: string,
@@ -510,7 +510,7 @@ async function handleRegistered(
   }
 
   if (word === 'resume' || word === 'start') {
-    // "start" from somebody already registered is not a re-registration — it is
+    // "start" from somebody already registered is not a re-registration. It is
     // almost always somebody looking for the menu, or coming back after a pause.
     await resumeDonor(ctx, donorId);
     await reply(
@@ -594,7 +594,7 @@ async function handleRegistered(
 /**
  * Turns one interview outcome into what the donor sees.
  *
- * Every branch ends with a question or with an ending — never with a statement
+ * Every branch ends with a question or with an ending, never with a statement
  * that leaves somebody unsure whether to answer or to wait (§8).
  */
 async function showInterview(
@@ -659,8 +659,8 @@ async function showInterview(
   /**
    * Came in on a request link → **straight back to that request** (§5).
    *
-   * "That is what they came for." The alternative — a generic list of what is
-   * needed — loses the one person who already had a reason to act, which is
+   * "That is what they came for." The alternative, a generic list of what is
+   * needed, loses the one person who already had a reason to act, which is
    * the most expensive donor in the system to lose.
    */
   if (result.returnToRequest !== undefined) {
@@ -682,7 +682,7 @@ async function showInterview(
       return;
     }
     // It closed while they were registering. Say so, then show what else there
-    // is — an ending, not a dead end (§8).
+    // is. An ending, not a dead end (§8).
     await reply(
       ctx,
       address,

@@ -60,7 +60,7 @@ export type ReturnInput = {
  *
  * Pure, so the screen can grey out the impossible choice rather than offering it
  * and refusing afterwards. Restocking is a clinical judgement with a hard time
- * limit in every transfusion SOP — the threshold is configuration, and the
+ * limit in every transfusion SOP. The threshold is configuration, and the
  * conservative reading of "we do not know" is quarantine, never the shelf.
  */
 export function allowedOutcomes(band: StorageBand): readonly ReturnOutcome[] {
@@ -140,7 +140,7 @@ export async function returnBag(
      * The bag's new status, and **nothing about its expiry**.
      *
      * `reserved_for_request_id` and `issued_to_request_id` are cleared because
-     * the unit is back in the centre's custody — but the decision that issued it
+     * the unit is back in the centre's custody, but the decision that issued it
      * stands, and this return is recorded against the bag rather than reopening
      * the request (§4).
      */
@@ -206,7 +206,7 @@ export async function returnBag(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Quarantine — a waiting room with exactly two exits                          */
+/* Quarantine. A waiting room with exactly two exits                          */
 /* -------------------------------------------------------------------------- */
 
 export type QuarantineRow = {
@@ -255,7 +255,7 @@ export async function listQuarantine(ctx: UseCaseContext): Promise<QuarantineRow
 /**
  * Closes a quarantine, to one of exactly two ends, by a named person (§4).
  *
- * There is no third option and no "leave it for now" — that is what the row
+ * There is no third option and no "leave it for now". That is what the row
  * already is, and §4 is explicit that nothing sits here indefinitely.
  */
 export async function resolveQuarantine(
@@ -397,7 +397,7 @@ export async function discardBag(
 
     await tx.update(bloodBags).set({ status: 'discarded' }).where(eq(bloodBags.id, bagId));
 
-    // Any open quarantine closes with it — a bag cannot be both waiting for a
+    // Any open quarantine closes with it. A bag cannot be both waiting for a
     // decision and finished.
     await tx
       .update(bagQuarantines)
@@ -434,7 +434,7 @@ export async function discardBag(
  * is left waiting for a decision about a unit that can no longer be used.
  *
  * **It touches no discrepancy.** The `tag_discrepancies` table is reached by no
- * scheduled work at all — that absence is the guarantee §4 asks for, and it is
+ * scheduled work at all, that absence is the guarantee §4 asks for, and it is
  * asserted by a test.
  */
 export async function discardExpiredQuarantine(
@@ -504,7 +504,7 @@ export async function returnTimeLimitMinutes(ctx: UseCaseContext): Promise<numbe
   return row?.minutes ?? 30;
 }
 
-/** Quarantined units past the ageing threshold — the §11.9 escalation. */
+/** Quarantined units past the ageing threshold. The §11.9 escalation. */
 export async function countOverdueQuarantine(ctx: UseCaseContext): Promise<number> {
   const cutoff = new Date(
     ctx.clock.now().getTime() - ctx.config.ageing.quarantineDays * 86_400_000,

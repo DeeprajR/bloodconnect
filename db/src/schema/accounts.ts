@@ -4,7 +4,7 @@
  *
  * Four one-live-at-a-time tables with the same shape, deliberately. An invite,
  * an OTP and an email-change confirmation are all "a single-use secret sent to
- * an address, valid for a while, superseded by a newer one" — so they share a
+ * an address, valid for a while, superseded by a newer one", so they share a
  * partial unique index on `(user_id) WHERE consumed_at IS NULL AND
  * superseded_at IS NULL`, which makes "only one live at a time" a database
  * constraint rather than something the application remembers to enforce.
@@ -36,7 +36,7 @@ import { hospitalSchema, users } from './platform.js';
  * The admin creates the account; the invite is how the person first gets in.
  *
  * There is no password field on account creation and the admin never knows one
- * (§2.3) — setting it happens here, on a link only the recipient's inbox has.
+ * (§2.3). Setting it happens here, on a link only the recipient's inbox has.
  */
 export const accountInvites = hospitalSchema.table(
   'account_invites',
@@ -97,7 +97,7 @@ export const passwordResetOtps = hospitalSchema.table(
 );
 
 /* -------------------------------------------------------------------------- */
-/* Email change — confirmed by the doctor, not by an admin                     */
+/* Email change. Confirmed by the doctor, not by an admin                     */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -140,7 +140,7 @@ export const emailChangeRequests = hospitalSchema.table(
 );
 
 /* -------------------------------------------------------------------------- */
-/* Account update requests — the identity fields an admin has to agree to      */
+/* Account update requests. The identity fields an admin has to agree to      */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -183,7 +183,7 @@ export const accountUpdateRequests = hospitalSchema.table(
     proposedValue: text('proposed_value').notNull(),
     reason: text('reason').notNull(),
     status: text('status').notNull().default('pending'),
-    /** The note on a rejection — the reason the person gets to act on. */
+    /** The note on a rejection. The reason the person gets to act on. */
     adminNote: text('admin_note'),
     decidedBy: uuid('decided_by').references(() => users.id),
     decidedAt: timestamp('decided_at', { withTimezone: true }),
@@ -310,7 +310,7 @@ export type EmailStatus = (typeof EMAIL_STATUSES)[number];
  * **An outbox, not a log written after the fact.**
  *
  * The row is inserted in the same transaction as the thing that caused it, so
- * an account can never exist without its invite queued — the failure mode being
+ * an account can never exist without its invite queued. The failure mode being
  * an account created, the email provider timing out, and nobody ever finding
  * out the person was never told (§7.6 applies the same reasoning to the bot's
  * stand-down message).

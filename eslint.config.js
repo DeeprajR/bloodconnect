@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint';
  * floating promise inside a transaction, an `any` that erases a branded id.
  *
  * The import boundary itself is dependency-cruiser's job (`pnpm boundaries`),
- * not a lint rule — it needs to reason about package entry points, which is a
+ * not a lint rule. It needs to reason about package entry points, which is a
  * graph question rather than a file one.
  */
 /** Everything linted without type information: it belongs to no tsconfig. */

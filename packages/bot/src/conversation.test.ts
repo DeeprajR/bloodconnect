@@ -35,7 +35,7 @@ const TOWN_ID = 'TEST_CONV_TOWN';
  * through to the onboarding handler for any unrecognised message, and with the
  * conversation row deleted on success it concluded they had never begun.
  *
- * So these tests assert the *transcript*, not the internals — the thing a person
+ * So these tests assert the *transcript*, not the internals. The thing a person
  * reads, in the order they read it.
  */
 describe.skipIf(!testUrl)('the conversation', () => {
@@ -142,7 +142,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
     updateSeq = 0;
     // The clock is shared, and the reminder tests move it. Without this, a test
     // that runs after them starts hours into the future and its own draft is
-    // already "abandoned" — an order dependency that passes alone and fails in
+    // already "abandoned". An order dependency that passes alone and fails in
     // the suite.
     clock.set(START);
     await client`TRUNCATE bot.event_log, bot.message_outbox, bot.bot_jobs,
@@ -203,7 +203,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
 
     await say('+919876543210');
     const [phoneRow] = await db.select().from(bot.donorPhones);
-    // Nothing is committed yet — the number is on the draft, not the profile.
+    // Nothing is committed yet. The number is on the draft, not the profile.
     expect(phoneRow).toBeUndefined();
   });
 
@@ -264,7 +264,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
     await tap('sex:female');
 
     // §5: eight buttons plus "I don't know". Guessing is worse than not
-    // knowing — staff type the donor at their first donation.
+    // knowing. Staff type the donor at their first donation.
     expect(lastChoices().map((c) => c.data)).toContain('group:unknown');
   });
 
@@ -310,7 +310,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
     channel.clear();
     const male = await askedOf('sex:male', 'preg-m');
 
-    // §5: sex decides whether the pregnancy question applies — it is not asked
+    // §5: sex decides whether the pregnancy question applies. It is not asked
     // of everybody with an awkward opt-out.
     expect(female.some((q) => q.includes('pregnant'))).toBe(true);
     expect(male.some((q) => q.includes('pregnant'))).toBe(false);
@@ -389,7 +389,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
 
   it('ends by saying when they will hear from us', async () => {
     const said = await register();
-    // A donor should leave signup knowing what happens next — "registered" on
+    // A donor should leave signup knowing what happens next: "registered" on
     // its own is how somebody concludes nothing happened (§5).
     expect(said[0]).toContain('You are registered');
     expect(said.join('\n')).toContain('message you when someone near you needs');
@@ -461,7 +461,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
 
     const second = await say('Anitha');
     expect(second[0]).toContain('what do you weigh');
-    // Still not back at the summary — that is the whole point.
+    // Still not back at the summary. That is the whole point.
     expect(second.join('\n')).not.toContain('Please check these details');
 
     const last = await tap('weight:60_70');
@@ -567,7 +567,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
   });
 
   /* ==================================================================== */
-  /* "Not now" — the ending §8 calls dormant                               */
+  /* "Not now". The ending §8 calls dormant                               */
   /* ==================================================================== */
 
   describe('declining the acknowledgement', () => {
@@ -594,7 +594,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
        * the same rule that governs everybody else.
        */
       expect(donor?.consentCurrentAt).toBeNull();
-      // And no consent row, because they did not consent — the table that is
+      // And no consent row, because they did not consent. The table that is
       // the evidence of consent must not contain a record of a refusal.
       expect(await db.select().from(bot.donorConsents)).toHaveLength(0);
     });
@@ -632,7 +632,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
         unitsNeeded: 1,
         neededBy: addDays(clock.today(), 2),
         hospitalSnapshot: { hospitalName: 'Test centre', hospitalAddress: 'Somewhere' },
-        // Filled, but not yet closed — the window this exists for.
+        // Filled, but not yet closed. The window this exists for.
         status: 'fulfilled',
       });
       const journeyId = newId();
@@ -732,7 +732,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
      * Time passes, rather than a column being doctored.
      *
      * `conversation_state` has a BEFORE UPDATE trigger that stamps
-     * `updated_at`, so backdating the row would be overwritten — and that
+     * `updated_at`, so backdating the row would be overwritten, and that
      * trigger is what makes "untouched for six hours" mean what it says.
      * Moving the clock is both honest and the only thing that works.
      */
@@ -760,8 +760,8 @@ describe.skipIf(!testUrl)('the conversation', () => {
     /**
      * The bug this comment outlives.
      *
-     * The reminder used to compare `updated_at` — written by a database
-     * trigger on the server's clock — against a cutoff derived from the
+     * The reminder used to compare `updated_at`, written by a database
+     * trigger on the server's clock, against a cutoff derived from the
      * injected one. It passed at half past three and failed at five. Running
      * the same assertion at two different fake times is what pins the fix.
      */
@@ -869,7 +869,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
       await tap('donated:never');
       const said = await tap('sum:confirm');
 
-      // "The link is never lost" (§5) — across the whole interview.
+      // "The link is never lost" (§5). Across the whole interview.
       expect(said.join('\n')).toContain('back to why you came');
       expect(said.join('\n')).toContain('Test centre');
 
@@ -886,7 +886,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
        * AB+, not the O− they registered as.
        *
        * O− is the universal red-cell donor and matches every request, which
-       * makes it useless for testing the split — AB+ red cells can go only to
+       * makes it useless for testing the split. AB+ red cells can go only to
        * AB+, so exactly one of these two is theirs to answer.
        */
       await client`UPDATE bot.donors SET blood_group = 'AB+'`;
@@ -908,11 +908,13 @@ describe.skipIf(!testUrl)('the conversation', () => {
       await register();
       await openRequest('O-', 'need-blocked');
 
-      // A donor whose group has never been typed by staff is not matchable —
+      // A donor whose group has never been typed by staff is not matchable:
       // §7.7 recruits nobody on a self-declared group.
       const said = await say('board');
       expect(said[0]).toContain('not been confirmed');
-      expect(said[0]).toContain('walk in');
+      // The way out, not just the refusal: a donor told only that they cannot
+      // be matched has been given nothing to do (§8).
+      expect(said[0]).toContain('Walk in any time');
     });
 
     it('offers no tap when the donor cannot give, and one when they can', async () => {

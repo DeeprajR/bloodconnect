@@ -38,7 +38,7 @@ import {
  * Server actions (§9.1).
  *
  * The rule that matters: a server action parses its input with Zod and calls
- * exactly one use case. No business logic lives in `app/` (§3) — everything
+ * exactly one use case. No business logic lives in `app/` (§3), everything
  * below is boundary work.
  */
 
@@ -110,7 +110,7 @@ const passwordSchema = z.object({
  * A form field as a string.
  *
  * `FormData.get` returns `string | File | null`, and a File stringifies to
- * `[object Object]` — which would sail through validation as a perfectly good
+ * `[object Object]`, which would sail through validation as a perfectly good
  * 15-character password. Anything that is not a string is treated as absent.
  */
 function formValue(form: FormData, name: string): string {
@@ -123,7 +123,7 @@ export type FormState = { readonly error: string | null; readonly done?: boolean
 /**
  * Setting the password from an invite signs them in (§3).
  *
- * The redirect is the ending §8 names for this flow — never back to a sign-in
+ * The redirect is the ending §8 names for this flow, never back to a sign-in
  * form to retype what they just chose.
  */
 export async function activateAction(

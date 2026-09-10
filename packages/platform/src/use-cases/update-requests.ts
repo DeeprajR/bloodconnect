@@ -11,7 +11,7 @@
  * happened. `approveUpdateRequest` writes the field itself, in the same
  * transaction as the decision.
  *
- * Email is not one of these fields — it has the stronger self-confirmation flow
+ * Email is not one of these fields. It has the stronger self-confirmation flow
  * in `account.ts`, and a second, weaker path to the same change is the path an
  * attacker would use.
  */
@@ -111,8 +111,8 @@ export async function requestAccountUpdate(
       if (taken) return err(updateRequestRejected('reg_taken'));
     }
 
-    // Checked first so the ordinary case — the person forgot they already
-    // asked — is a message rather than an aborted transaction.
+    // Checked first so the ordinary case, the person forgot they already
+    // asked, is a message rather than an aborted transaction.
     const [existing] = await tx
       .select({ id: accountUpdateRequests.id })
       .from(accountUpdateRequests)

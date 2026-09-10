@@ -1,4 +1,4 @@
-# ADR 0002 — Decisions taken while building Phase 1
+# ADR 0002: Decisions taken while building Phase 1
 
 Date: 2026-09-08 · Status: accepted
 
@@ -13,8 +13,8 @@ are the choices that shape every screen after it.
 **Decision.** Supabase is a deploy-time choice, not a development one. Docker Compose stays the
 development and CI stack until the system is complete.
 
-**Why.** Everything the architecture depends on — `FOR UPDATE SKIP LOCKED`, partial unique
-indexes, column-level grants, three roles — is plain PostgreSQL, and all of it works on Supabase.
+**Why.** Everything the architecture depends on, `FOR UPDATE SKIP LOCKED`, partial unique
+indexes, column-level grants, three roles, is plain PostgreSQL, and all of it works on Supabase.
 Nothing about building against local Postgres forecloses it. What *would* foreclose choices is
 adopting Supabase's PostgREST, RLS and Auth layers, because §13's three authorization layers,
 §3's use-case transaction boundary and §2.2's admin-provisioned accounts are all written against
@@ -28,14 +28,14 @@ pooler. Neither affects development.
 
 ---
 
-## 2. Next 16's `proxy`, not `middleware` — and no matcher
+## 2. Next 16's `proxy`, not `middleware`: and no matcher
 
 **Decision.** Layer 1 of §13 is `apps/web/src/proxy.ts`. There is no route matcher: every request
 reaches it, and `decideAccess` decides.
 
 **Why.** Next 16 deprecates the `middleware` convention in favour of `proxy`, which always runs on
 the Node.js runtime. That is what lets layer 1 resolve the session against the database rather
-than merely noticing a cookie exists — a `blood_centre` account is stopped before a page renders,
+than merely noticing a cookie exists. A `blood_centre` account is stopped before a page renders,
 which is what §13 asks for and what an edge-runtime middleware could not do.
 
 Proxy allows no route-segment config, so the matcher had to go. That turned out to be an
@@ -53,7 +53,7 @@ claim in the cookie, not removing the layer.
 
 **Decision.** `decideAccess` returns `unauthenticated` or `forbidden`, never one refusal. An
 anonymous visitor is redirected to sign in; a signed-in user on the wrong surface gets a 403 page
-that renders **no data at all** — not the path, not the role, not what would have been shown.
+that renders **no data at all**, not the path, not the role, not what would have been shown.
 
 **Why.** §14 names the mistake precisely: a test that asserts the redirect rather than the body
 passes while a payload rides along underneath. A 403 page with nothing on it is what makes that
@@ -72,8 +72,8 @@ role name, no dashboard content and no email address.
 that one file.
 
 **Why.** Three independent layers are only worth having if they cannot disagree about the rule.
-What must differ between them is *when* they run — before rendering, at render, and inside the
-transaction — not *what they decide*. A job, a script or a future HTTP caller passes through
+What must differ between them is *when* they run, before rendering, at render, and inside the
+transaction, not *what they decide*. A job, a script or a future HTTP caller passes through
 neither of the first two, which is why the third exists at all.
 
 **Consequence.** A new route needs a rule, or it is unreachable. That is the failure direction
@@ -120,7 +120,7 @@ produced hash begins with `$argon2id$`.
 hardcode the magic number `2`. Asserting the real output is stronger than either: it checks what
 the library actually produced rather than what a constant claims.
 
-Memory and time cost *are* named (19 MiB, t=2 — the OWASP floor), and `needsRehash` upgrades a
+Memory and time cost *are* named (19 MiB, t=2. The OWASP floor), and `needsRehash` upgrades a
 stored hash on the next successful sign-in, which is the only moment the plaintext exists.
 
 ---
@@ -133,7 +133,7 @@ stored hash on the next successful sign-in, which is the only moment the plainte
 | Token | From | To | Why |
 |---|---|---|---|
 | `--ux4g-bg-neutral` | `neutral-50` `#FAFAFA` | `neutral-0` `#FFFFFF` | Asked for: white background, black text. Text stays `--ux4g-text-neutral-primary` (`#171717`), 17.7:1 on white, so no text override is added |
-| `--ux4g-control-border-default` | `neutral-200` `#E5E5E5` | `neutral-500` `#737373` | Design.md §9 measures the stock value at **1.21:1** and calls it a release blocker: under WCAG 1.4.11 an input's boundary is a required 3:1 target. The contract states the fix — repoint at a darker step of the same ramp — and this is that. 4.54:1 on white |
+| `--ux4g-control-border-default` | `neutral-200` `#E5E5E5` | `neutral-500` `#737373` | Design.md §9 measures the stock value at **1.21:1** and calls it a release blocker: under WCAG 1.4.11 an input's boundary is a required 3:1 target. The contract states the fix, repoint at a darker step of the same ramp, and this is that. 4.54:1 on white |
 
 Both names were read out of the installed `styles/ux4g.css`, not inferred; the contract forbids
 inventing a token name.
@@ -153,5 +153,5 @@ known gap in the table rather than in the code.
 ## 9. Deferred to phase 5, deliberately
 
 Invites, OTP reset, account update requests, the admin panel, seals and `email_deliveries` are all
-phase 5. The routes that would dead-end without them — `/reset` in particular — exist and say what
+phase 5. The routes that would dead-end without them, `/reset` in particular, exist and say what
 they are, because a link to nowhere is exactly the ending §8 exists to prevent.

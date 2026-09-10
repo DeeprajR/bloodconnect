@@ -7,7 +7,7 @@ import { newId, type IdGenerator, type Uuid } from '@blood-connect/ids';
  * an audit row and an outbox row referencing the same new id is far easier to
  * assert against when the id is `known` rather than whatever UUIDv7 came out.
  *
- * The generated ids are still real UUIDv7s — a fake that produced `id-1` would
+ * The generated ids are still real UUIDv7s. A fake that produced `id-1` would
  * pass tests that the database would then reject.
  */
 export function createRecordingIds(): IdGenerator & { readonly issued: readonly string[] } {

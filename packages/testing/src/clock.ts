@@ -1,7 +1,7 @@
 import { APP_TIMEZONE, dayOf, parseCalendarDay, type CalendarDay, type Clock, type Instant } from '@blood-connect/domain';
 
 export type FakeClock = Clock & {
-  /** Move time forward. Negative values are rejected — time does not go back. */
+  /** Move time forward. Negative values are rejected. Time does not go back. */
   readonly advanceMs: (millis: number) => void;
   readonly advanceDays: (days: number) => void;
   /** Jump to 09:00 local on a given day, which is where most fixtures want to be. */
@@ -15,8 +15,8 @@ const MILLIS_PER_DAY = 86_400_000;
  * A clock a test owns.
  *
  * Every use case takes `clock` in its context rather than calling `new Date()`,
- * so the boundary cases the spec cares about — exactly 18 years old, exactly at
- * the interval, the day a unit expires — are asserted by moving this, not by
+ * so the boundary cases the spec cares about, exactly 18 years old, exactly at
+ * the interval, the day a unit expires, are asserted by moving this, not by
  * hoping the suite runs on a convenient date.
  */
 export function createFakeClock(start: Instant | string = '2026-01-01T09:00:00.000Z'): FakeClock {

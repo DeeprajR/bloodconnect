@@ -1,7 +1,7 @@
 /**
  * Object storage (§3, §4, §10).
  *
- * Private buckets, streamed through authenticated routes — never a public URL.
+ * Private buckets, streamed through authenticated routes, never a public URL.
  * A seal is a doctor's signature block; a URL that works without a session is a
  * signature anyone can lift.
  */
@@ -41,7 +41,7 @@ export type PngCheck =
  * Verifies the bytes really are a PNG, and that nothing is hidden after them.
  *
  * §3 asks for the upload to be re-encoded server-side, which is the thorough
- * answer to a polyglot file — one that is a valid PNG *and* a valid script,
+ * answer to a polyglot file, one that is a valid PNG *and* a valid script,
  * depending on who parses it. Re-encoding needs a native image library, so
  * this does the affordable part of the same job: it checks the signature, walks
  * the chunk structure, reads the real dimensions, and rejects any trailing byte

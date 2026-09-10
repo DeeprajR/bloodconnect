@@ -103,7 +103,7 @@ export function TagLookupForm({ defaultValue }: { defaultValue: string }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Case 1 — the return                                                         */
+/* Case 1. The return                                                         */
 /* -------------------------------------------------------------------------- */
 
 const BAND_LABELS: Readonly<Record<StorageBand, string>> = {
@@ -117,7 +117,7 @@ const BAND_LABELS: Readonly<Record<StorageBand, string>> = {
  * Recording a return (§4).
  *
  * The band is asked **first**, and the outcomes below it change with the answer
- * — because "that, not convenience, decides what happens next". An interface
+ *, because "that, not convenience, decides what happens next". An interface
  * that offered Restock and then refused it would teach somebody to guess a
  * shorter time next time.
  */
@@ -238,7 +238,7 @@ export function ReturnBagForm({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Case 2 — release                                                            */
+/* Case 2: release                                                            */
 /* -------------------------------------------------------------------------- */
 
 export function ReleaseTagForm({ tagUid }: { tagUid: string }) {
@@ -249,7 +249,7 @@ export function ReleaseTagForm({ tagUid }: { tagUid: string }) {
       <div className="ux4g-alert ux4g-alert-success" role="status">
         <div className="ux4g-alert-content">
           <p className="ux4g-alert-message">
-            Released. Register the new bag through the intake form — it gets its own
+            Released. Register the new bag through the intake form. It gets its own
             collection date and its own expiry.
           </p>
         </div>
@@ -272,7 +272,7 @@ export function ReleaseTagForm({ tagUid }: { tagUid: string }) {
       <div className="ux4g-form-group">
         <label className="ux4g-label-l-strong" htmlFor="retire">
           <input type="checkbox" id="retire" name="retire" className="ux4g-checkbox" /> Retire
-          this tag — it reads unreliably
+          this tag. It reads unreliably
         </label>
         <p className="ux4g-label-m-default">
           {/* §4: a retired tag can never be assigned again. */}
@@ -286,7 +286,7 @@ export function ReleaseTagForm({ tagUid }: { tagUid: string }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Case 3 — raise, and the three endings                                       */
+/* Case 3: raise, and the three endings                                       */
 /* -------------------------------------------------------------------------- */
 
 export function RaiseDiscrepancyForm({ tagUid }: { tagUid: string }) {
@@ -333,7 +333,7 @@ const FINDINGS = [
     value: 'bag_missing',
     label: 'The conflicting bag is not there',
     outcome:
-      'It left without being scanned out. It will be marked lost — a reportable event — and the tag freed.',
+      'It left without being scanned out. It will be marked lost, a reportable event, and the tag freed.',
   },
   {
     value: 'mis_scan',

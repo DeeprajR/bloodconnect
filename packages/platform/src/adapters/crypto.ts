@@ -23,10 +23,10 @@ const ARGON2_OPTIONS = {
   // `algorithm` is deliberately not set: the library's default is already
   // Argon2id, and its `Algorithm` enum is an ambient const enum that cannot be
   // read under `verbatimModuleSyntax`. Naming it would mean hardcoding the
-  // magic number 2, which is worse than relying on the default — so a test
+  // magic number 2, which is worse than relying on the default, so a test
   // asserts the produced hash actually starts with `$argon2id$` instead, which
   // verifies the real output rather than trusting a constant.
-  memoryCost: 19_456, // 19 MiB — the OWASP minimum for Argon2id
+  memoryCost: 19_456, // 19 MiB, the OWASP minimum for Argon2id
   timeCost: 2,
   parallelism: 1,
 } as const;
@@ -63,7 +63,7 @@ export const argon2Hasher: PasswordHasher = {
  *
  * Only the SHA-256 fingerprint is stored (§13). SHA-256 rather than Argon2id is
  * correct here and not a shortcut: the token is already 256 bits of uniform
- * randomness, so there is no low-entropy secret to slow an attacker down over —
+ * randomness, so there is no low-entropy secret to slow an attacker down over,
  * and this runs on every single request, where 100ms would be intolerable.
  */
 export const nodeTokens: TokenGenerator = {
@@ -88,8 +88,8 @@ export const nodeTokens: TokenGenerator = {
 };
 
 /**
- * Constant-time comparison for the CSRF token. Not strictly required — the
- * same-origin check is the control — but a comparison that leaks position is
+ * Constant-time comparison for the CSRF token. Not strictly required, the
+ * same-origin check is the control, but a comparison that leaks position is
  * free to avoid.
  */
 export function safeEqual(a: string, b: string): boolean {

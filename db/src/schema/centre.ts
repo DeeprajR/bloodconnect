@@ -270,7 +270,7 @@ export const tagAssignments = hospitalSchema.table(
 /**
  * How long a unit was outside controlled storage (§4).
  *
- * A band, not a number, because nobody at a counter knows it to the minute —
+ * A band, not a number, because nobody at a counter knows it to the minute,
  * and `unknown` is a real answer that has to be recordable, because it is the
  * one that defaults to quarantine.
  */
@@ -282,7 +282,7 @@ export const RETURN_OUTCOMES = ['restock', 'quarantine', 'discard'] as const;
 /**
  * A unit coming back into the centre's custody (§4).
  *
- * **Never writes `expires_at`** — the expiry is a property of the donation, not
+ * **Never writes `expires_at`**. The expiry is a property of the donation, not
  * of the bag's travels, and a return that recalculated it would make a unit
  * fresher for having been carried to a ward and back. §5.5 asks for that to be
  * asserted by a test rather than left to review, and it is.
@@ -329,7 +329,7 @@ export const QUARANTINE_RESOLUTIONS = ['available', 'discarded'] as const;
  *
  * A quarantined bag is out of issue and out of the stock floor, ages visibly,
  * and must be resolved by a named person to one of exactly two ends. Nothing
- * sits here indefinitely — the ageing escalation and the automatic discard at
+ * sits here indefinitely. The ageing escalation and the automatic discard at
  * expiry are what make that true rather than aspirational.
  */
 export const bagQuarantines = hospitalSchema.table(
@@ -393,7 +393,7 @@ export const bagDiscards = hospitalSchema.table(
 );
 
 /* -------------------------------------------------------------------------- */
-/* Case 3 — the discrepancy (§4, §7.5)                                         */
+/* Case 3. The discrepancy (§4, §7.5)                                         */
 /* -------------------------------------------------------------------------- */
 
 export const DISCREPANCY_STATUSES = ['open', 'resolved'] as const;
@@ -404,7 +404,7 @@ export type DiscrepancyFinding = (typeof DISCREPANCY_FINDINGS)[number];
  * A tag presented as new whose bag the register believes is on the shelf.
  *
  * One of: the register is stale, two bags carry the same tag, or the tag is
- * cloned — and every one of those can put the wrong unit into a patient. So it
+ * cloned, and every one of those can put the wrong unit into a patient. So it
  * stops and makes a person go and look.
  *
  * **Never auto-resolves and never expires** (§4). No job touches this table, and
@@ -443,7 +443,7 @@ export const tagDiscrepancies = hospitalSchema.table(
       sql`finding IS NULL OR finding IN ('duplicate_tag', 'bag_missing', 'mis_scan')`,
     ),
     /**
-     * Resolved means a person, a finding and a note — all three.
+     * Resolved means a person, a finding and a note, all three.
      *
      * §4 gives three findings and three fixed actions, "each requiring the
      * resolver's identity and a note". A row closed without them records that
@@ -487,7 +487,7 @@ export const centreDecisions = hospitalSchema.table(
      * Answered before anybody said who it was for (§4, ADR 0010).
      *
      * Only an emergency may be, and the fact is recorded here rather than
-     * inferred later from whether the request has a patient now — by then it
+     * inferred later from whether the request has a patient now, by then it
      * will have one, and the exception would be invisible. An issued unit
      * pointing at nobody is a debt, and this is the record that it was taken on.
      */
@@ -547,7 +547,7 @@ export const decisionBags = hospitalSchema.table(
  *
  * Created **only** by this migration set. The column list, the ownership and
  * the legal transitions all live in `packages/contract`, and the column-level
- * grants in the migration are the database's own copy of the same rule — §11.2
+ * grants in the migration are the database's own copy of the same rule: §11.2
  * names a one-sided change to this table as the most likely way the system
  * breaks in production, so it is defended three times over.
  */
@@ -599,7 +599,7 @@ export const donorDemand = hospitalSchema.table(
      *
      * §5.6 writes this as unique on `blood_group` alone. Scoped by centre here,
      * because `centre_id` exists on this table from day one precisely so a
-     * second centre is more rows rather than a migration — and a global index
+     * second centre is more rows rather than a migration, and a global index
      * would make the second centre unable to recruit for a group the first one
      * is already short of. Identical behaviour for the single centre v1 runs.
      */
@@ -620,7 +620,7 @@ export const donorDemand = hospitalSchema.table(
      * Only whole blood and packed red cells recruit donors (§4).
      *
      * The rule is in `packages/domain` and the screen disables the checkbox
-     * from it — and it is here as well, because a demand for platelets is a
+     * from it, and it is here as well, because a demand for platelets is a
      * message sent to real people asking for something they cannot give.
      */
     check('donor_demand_product_check', sql`product IN ('whole_blood', 'prbc')`),
@@ -641,7 +641,7 @@ export const donorDemand = hospitalSchema.table(
  * The roster (§5.6). The bot creates a row; the counter records what happened.
  *
  * `donor_id` is the bot's **internal** donor id, not a platform user id (§2.11)
- * — which is what lets the same person be reached on Telegram today and
+ *, which is what lets the same person be reached on Telegram today and
  * WhatsApp tomorrow without the centre's roster changing shape. There is
  * deliberately no foreign key: the donor table lives in the `bot` schema, which
  * this application cannot see at all.
@@ -678,7 +678,7 @@ export const donorDemandConfirmations = hospitalSchema.table(
      * from every wave, the centre is the authority on a group, and `app_web`
      * holds no grant on the bot's schema at all. So a donor who registered
      * could never be recruited, and there was no path out of that except
-     * trusting a self-declaration — which is exactly what the column exists to
+     * trusting a self-declaration, which is exactly what the column exists to
      * prevent. An additive column, so a minor contract bump (§11.8).
      */
     donatedBloodGroup: text('donated_blood_group'),
@@ -718,7 +718,7 @@ export const donorDemandConfirmations = hospitalSchema.table(
  * `donor_demand_confirmations` at all: the bot creates the roster, the centre
  * marks what happened at the counter, and that split is a grant rather than a
  * convention. The first version of `recordWalkIn` inserted a confirmation and
- * was refused by the database the moment it ran as `app_web` — correctly, and
+ * was refused by the database the moment it ran as `app_web`. Correctly, and
  * that refusal is the reason this table exists.
  *
  * It is the centre's own record, in the centre's own half. The bot may read it,
@@ -736,7 +736,7 @@ export const walkInDonations = hospitalSchema.table(
 
     donorName: text('donor_name').notNull(),
     donorPhone: text('donor_phone').notNull(),
-    /** The group the unit **typed as** — the only group anybody here measured. */
+    /** The group the unit **typed as**. The only group anybody here measured. */
     bloodGroup: text('blood_group').notNull(),
     bagIdentifier: text('bag_identifier').notNull(),
     donatedOn: date('donated_on').notNull(),

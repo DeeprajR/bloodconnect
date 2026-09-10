@@ -8,12 +8,12 @@
  * judged, when the truth is usually "not today".
  *
  * Every screen takes its labels from here, and a regression test pins the
- * strings — because this is exactly the kind of thing that drifts one hurried
+ * strings, because this is exactly the kind of thing that drifts one hurried
  * commit at a time, and nobody notices until a clinician does.
  */
 
 export const WORDING = {
-  /* Module 1 — the request */
+  /* Module 1. The request */
   bloodCentre: 'Blood centre',
   bloodRequest: 'Blood request',
   indication: 'Indication for transfusion',
@@ -43,7 +43,7 @@ export const WORDING = {
   admittedAt: 'Admitted at',
   dischargedAt: 'Discharged at',
 
-  /* Module 2 — the centre */
+  /* Module 2. The centre */
   unitNumber: 'Unit number',
   collectedOn: 'Collection date',
   expiresOn: 'Expiry date',
@@ -55,7 +55,7 @@ export const WORDING = {
   quarantine: 'Quarantine',
   walkIn: 'Walk-in donation',
 
-  /* Module 3 — donors. Here so the whole vocabulary is in one place. */
+  /* Module 3. Donors. Here so the whole vocabulary is in one place. */
   deferral: 'Deferral',
   interDonationInterval: 'Inter-donation interval',
   donorQuestionnaire: 'Donor health questionnaire',
@@ -69,7 +69,7 @@ export type WordingKey = keyof typeof WORDING;
  * Terms that must never appear in an interface, and what to say instead.
  *
  * Asserted against the vocabulary above by a test. It cannot police every
- * string in the codebase — that would be a linter, and a noisy one — but it
+ * string in the codebase, that would be a linter, and a noisy one, but it
  * does stop the wrong word entering through the one door every screen uses.
  */
 export const FORBIDDEN_TERMS: Readonly<Record<string, string>> = {

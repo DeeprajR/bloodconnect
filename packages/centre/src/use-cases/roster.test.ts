@@ -276,7 +276,7 @@ describe.skipIf(!testUrl)('the counter roster (§4, §8.3)', () => {
      * The reason this table exists at all.
      *
      * A walk-in used to be inserted as a confirmation row, which passed every
-     * test — the suite connects as `migrator` — and was refused by the database
+     * test, the suite connects as `migrator`, and was refused by the database
      * the moment it ran as `app_web`. The centre holds no INSERT there (§5.1).
      */
     it('does not touch the roster the bot owns', async () => {

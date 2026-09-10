@@ -12,7 +12,7 @@
  *     places for it right now, and every tick they are not told is a tick
  *     somebody might set out for the hospital.
  *  2. New demand, so recruitment can start.
- *  3. Expiries — after the import, so a demand that arrives already past its
+ *  3. Expiries, after the import, so a demand that arrives already past its
  *     day is closed before anybody is asked about it.
  *  4. Walk-ins, before the waves: a unit already collected at the counter is a
  *     unit nobody should be invited to give.
@@ -21,8 +21,8 @@
  *  7. Completions, which stand down whoever is left.
  *  8. Progress written back to the centre.
  *  9. Anybody still holding a card for a request that has filled, told it is
- *     covered — after the promotions, since a freed place may still be theirs.
- * 10. One nudge for an abandoned signup — the least urgent thing here, so it
+ *     covered, after the promotions, since a freed place may still be theirs.
+ * 10. One nudge for an abandoned signup. The least urgent thing here, so it
  *     never delays a stand-down.
  * 11. The outbox drain, last, so everything queued this tick goes out in it.
  */
@@ -84,7 +84,7 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
   /**
    * **After the import, and before the waves.**
    *
-   * A demand can arrive already past the day the blood was needed — raised
+   * A demand can arrive already past the day the blood was needed. Raised
    * late, or left unimported while the bot was down. Expiring before the import
    * would miss it and then wave it, asking real people to give blood for a
    * request that had already passed; expiring after the wave would ask them and
@@ -144,7 +144,7 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
 
   /* --- 9. filled before they answered ------------------------------------ */
   /**
-   * After the promotions, because a freed place may still be theirs — telling
+   * After the promotions, because a freed place may still be theirs. Telling
    * somebody it is covered and then promoting them would be two contradictory
    * messages in one tick.
    */

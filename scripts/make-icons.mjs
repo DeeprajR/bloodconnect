@@ -72,7 +72,7 @@ function png(width, height, rgb) {
 /**
  * A drop: a circle, with a cone rising from it to a point.
  *
- * `inset` leaves room for the safe area a maskable icon needs — a launcher may
+ * `inset` leaves room for the safe area a maskable icon needs. A launcher may
  * crop up to 20% from every edge, and a mark drawn to the bezel loses its tip.
  */
 function drop(size, inset) {

@@ -16,7 +16,7 @@ const ROLE_LABELS: Readonly<Record<UserRole, string>> = {
  * Deliberately thin. The spec's non-functional rules ask for one filled primary
  * action per screen and a single column of content (§10), and a heavy chrome
  * competes with both. What belongs in a header here is who you are signed in as
- * — because the same screens behave differently by role, and a doctor who
+ *, because the same screens behave differently by role, and a doctor who
  * thinks they are looking at the centre's queue will misread it.
  */
 export function AppShell({
@@ -68,7 +68,7 @@ export function AppShell({
         <p className="ux4g-label-s-default">
           Not a medical device. This system does not make clinical decisions; the
           pre-donation assessment and the pre-transfusion compatibility test always happen
-          on site. Running on synthetic data — no real patient or donor record.
+          on site. Running on synthetic data, no real patient or donor record.
         </p>
       </footer>
     </div>

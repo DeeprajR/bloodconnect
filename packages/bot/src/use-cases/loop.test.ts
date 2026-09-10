@@ -82,7 +82,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   afterAll(async () => {
     // Shared reference data: another suite asserts the seed loaded exactly one
     // district, so this one takes its own row with it. The donors referencing
-    // it go first — the foreign key is the point, not an obstacle.
+    // it go first. The foreign key is the point, not an obstacle.
     await client`TRUNCATE bot.event_log, bot.message_outbox, bot.donor_requests,
                           bot.bot_requests, bot.conversation_state,
                           bot.donor_screening_answers, bot.donor_consents,
@@ -127,8 +127,8 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   ): Promise<{ donorId: string; channelUserId: string }> {
     donorSeq += 1;
     const donorId = newId();
-    // UUIDv7 shares a prefix within a millisecond, so the whole id is used —
-    // a short slice collides on the unique (channel, channel_user_id) index.
+    // UUIDv7 shares a prefix within a millisecond, so the whole id is used.
+    // A short slice collides on the unique (channel, channel_user_id) index.
     const channelUserId = `tg-${donorId}`;
 
     await db.insert(bot.donors).values({
@@ -201,7 +201,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   }
 
   /* ==================================================================== */
-  /* §7.6 — the stand-down. Written first, deliberately.                   */
+  /* §7.6. The stand-down. Written first, deliberately.                   */
   /* ==================================================================== */
 
   describe('the stand-down (§7.6)', () => {
@@ -226,7 +226,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       if (!result.ok) return;
 
       expect(result.value.closed).toBe(true);
-      // Every one of the five live states stands down — not only the confirmed.
+      // Every one of the five live states stands down, not only the confirmed.
       expect(result.value.standDowns).toBe(3);
       expect(result.value.journeysEnded).toBe(3);
 
@@ -347,7 +347,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   });
 
   /* ==================================================================== */
-  /* §7.3 — the last unit                                                  */
+  /* §7.3. The last unit                                                  */
   /* ==================================================================== */
 
   describe('claiming the last unit (§7.3)', () => {
@@ -462,7 +462,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   });
 
   /* ==================================================================== */
-  /* Walk-ins — units collected outside the bot entirely (contract 1.2.0)   */
+  /* Walk-ins. Units collected outside the bot entirely (contract 1.2.0)   */
   /* ==================================================================== */
 
   describe('walk-ins (§4, contract 1.2.0)', () => {
@@ -560,7 +560,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   });
 
   /* ==================================================================== */
-  /* §7.4 — replays                                                        */
+  /* §7.4. Replays                                                        */
   /* ==================================================================== */
 
   describe('replayed callbacks (§7.4)', () => {
@@ -594,8 +594,8 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
         await answerScreeningQuestion(context(), journeyId, i, questionAt(i)?.proceedOn ?? 'yes');
       }
 
-      // The index is compared against the row, not against session memory —
-      // which is why this survives a restart as well as a redelivery.
+      // The index is compared against the row, not against session memory.
+      // Which is why this survives a restart as well as a redelivery.
       const replay = await answerScreeningQuestion(context(), journeyId, 2, 'yes');
       expect(replay.ok).toBe(false);
       if (!replay.ok) expect(replay.error.kind).toBe('AlreadyMoved');
@@ -669,7 +669,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
   });
 
   /* ==================================================================== */
-  /* §7.7 — the predicate that exists twice                                */
+  /* §7.7. The predicate that exists twice                                */
   /* ==================================================================== */
 
   describe('wave selection, and the predicate that exists twice (§7.7, §11.3)', () => {
@@ -849,7 +849,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
         .where(eq(bot.donors.id, donor.donorId));
 
       expect(row?.lastDonatedOn).toBe(clock.today());
-      // 90 days for a male donor, from the configured interval — never a
+      // 90 days for a male donor, from the configured interval, never a
       // constant in the use case.
       expect(row?.nextEligibleOn).toBe(
         addDays(clock.today(), CONFIG_DEFAULTS.donor.intervalDays.male),
@@ -858,7 +858,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       await drainOutbox(context());
       const thanks = channel
         .to(donor.channelUserId)
-        .find((m) => m.text.startsWith('Thank you — the centre has recorded'));
+        .find((m) => m.text.startsWith('Thank you. The centre has recorded'));
       expect(thanks).toBeDefined();
       // The date a person reads, not an ISO string: "7 Dec", not "2026-12-07".
       expect(thanks?.text).toContain(readableDay(row?.nextEligibleOn ?? ''));
@@ -874,7 +874,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       await sendWave(context(), imported.botRequestId);
 
       // Unverified donors are not selected into a wave (§7.7), so the journey
-      // is opened directly — which is the situation this column exists for.
+      // is opened directly, which is the situation this column exists for.
       await db.insert(bot.donorRequests).values({
         id: newId(),
         botRequestId: imported.botRequestId,
@@ -922,7 +922,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
         .select()
         .from(bot.donors)
         .where(eq(bot.donors.id, donor.donorId));
-      // An outcome recorded without a typed group is still a donation — the
+      // An outcome recorded without a typed group is still a donation. The
       // interval rolls forward, and nothing is claimed about the group.
       expect(row?.lastDonatedOn).toBe(clock.today());
       expect(row?.bloodGroup).toBe('O+');
@@ -956,7 +956,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       await makeDonor();
       await sendWave(context(), imported.botRequestId);
 
-      // The centre sets the status and stops — it cannot reach the donors (§8.3).
+      // The centre sets the status and stops. It cannot reach the donors (§8.3).
       await client`UPDATE hospital.donor_demand SET status = 'cancelled'
                     WHERE id = ${demandId}`;
 

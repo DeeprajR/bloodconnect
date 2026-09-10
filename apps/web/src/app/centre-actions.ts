@@ -33,7 +33,7 @@ import { assertSameOrigin, currentActor } from '@/lib/session';
  * Module 2's server actions (§9.1).
  *
  * Each parses input and calls exactly one use case. The counter is never in the
- * form — it comes from the session inside the use case (§2.5) — and no action
+ * form, it comes from the session inside the use case (§2.5), and no action
  * here decides anything: which bags are claimed, whether a demand is raised and
  * what the answer is called are all settled inside the transaction.
  */
@@ -74,7 +74,7 @@ export async function registerBagAction(
   revalidatePath('/centre/stock');
   revalidatePath('/centre');
 
-  // A mismatch is flagged, not blocked (§4) — so the operator lands on the
+  // A mismatch is flagged, not blocked (§4), so the operator lands on the
   // register with the bag in it and a message telling them to check the label
   // against the unit in their hand.
   redirect(
@@ -91,7 +91,7 @@ export async function registerBagAction(
 /**
  * The one action §7.2 exists for.
  *
- * It passes an intent — fill it, or refuse it — and nothing else. How many
+ * It passes an intent, fill it, or refuse it, and nothing else. How many
  * units are issued is whatever the shelf holds at the instant the transaction
  * runs, which is the only number that can be true.
  */
@@ -219,7 +219,7 @@ export async function lookUpTagAction(_previous: FormState, formData: FormData):
   redirect(`/centre/tags?tag=${encodeURIComponent(tag)}`);
 }
 
-/** Case 1. The outcome is constrained by the band — see `allowedOutcomes`. */
+/** Case 1. The outcome is constrained by the band. See `allowedOutcomes`. */
 export async function returnBagAction(
   bagId: string,
   _previous: FormState,
@@ -263,7 +263,7 @@ export async function releaseTagAction(
   return { error: null, done: true };
 }
 
-/** Case 3. No resolution here — it raises the alarm and stops (§7.5). */
+/** Case 3: no resolution here. It raises the alarm and stops (§7.5). */
 export async function raiseDiscrepancyAction(
   tagUid: string,
   _previous: FormState,
@@ -360,7 +360,7 @@ export async function discardBagAction(
  *
  * The typed group is asked for separately from the group on the roster row,
  * because a donor who guessed wrong is exactly the case verification exists for
- * — and it is what lets the bot mark them verified at all (contract 1.1.0).
+ *, and it is what lets the bot mark them verified at all (contract 1.1.0).
  */
 export async function markRosterAction(
   confirmationId: string,
@@ -415,7 +415,7 @@ export async function recordWalkInAction(
  * The bystander is at the desk with the ID; this is where the patient gets a
  * name.
  *
- * Every field the record can hold, but only four it demands — name, IP number,
+ * Every field the record can hold, but only four it demands. Name, IP number,
  * the patient's own group, and either a date of birth or an age. The rest is
  * taken while they are standing there and can be asked.
  */

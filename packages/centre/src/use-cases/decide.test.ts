@@ -132,7 +132,7 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
   afterAll(async () => {
     // The reference hierarchy is shared across every suite, and one of them
     // asserts that the seed loaded exactly one district. A test that leaves its
-    // own district behind breaks that check — so it takes its rows with it.
+    // own district behind breaks that check, so it takes its rows with it.
     await client`UPDATE hospital.centre_settings SET district_id = NULL, city_id = NULL`;
     await client`DELETE FROM reference.location_nodes WHERE id LIKE 'TEST%'`;
     await client.end({ timeout: 5 });
@@ -163,7 +163,7 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
       product,
       units,
       submittedAt: clock.now(),
-      // The snapshot cannot exist without the patient — `blood_requests_patient_check`.
+      // The snapshot cannot exist without the patient: `blood_requests_patient_check`.
       patientSnapshot: withPatient
         ? { name: 'Test Patient', ipNo: 'IP-1', ward: '3B', bloodGroup }
         : null,
@@ -293,7 +293,7 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
     await stock(5);
     const requestId = await submittedRequest(2);
 
-    // A decision row exists, but the request has not been moved — exactly the
+    // A decision row exists, but the request has not been moved. Exactly the
     // window a concurrent decider is inside. So this call passes the opening
     // read and fails on the constraint, which is the path that has to produce a
     // `Result` rather than a 500. The concurrent test above cannot guarantee it
@@ -327,7 +327,7 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
     ]);
 
     // The claim in step 1 takes locks but writes nothing, and the constraint is
-    // tested before a single bag is marked reserved — so the loser's rollback
+    // tested before a single bag is marked reserved, so the loser's rollback
     // strands nothing on the shelf. Exactly three bags are held, not six.
     const reserved = await db.select().from(bloodBags).where(eq(bloodBags.status, 'reserved'));
     expect(reserved).toHaveLength(3);
@@ -486,7 +486,7 @@ describe.skipIf(!testUrl)('deciding a request (§7.2)', () => {
         const result = await decideRequest(context(), { requestUuid: id, action: 'issue', note: null });
 
         /**
-         * A unit leaving the fridge has to be traceable to a named person —
+         * A unit leaving the fridge has to be traceable to a named person:
          * §4's traceability and the crossmatch sample both rest on it. This is
          * where that becomes a refusal rather than a convention.
          */

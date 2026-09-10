@@ -3,7 +3,7 @@
  *
  * §2.11 is unambiguous: the channel is swappable, and "no Telegram type appears
  * above the adapter". So this file defines conversation in terms the domain
- * already has — a person to reach, a message, some choices — and the adapter
+ * already has, a person to reach, a message, some choices, and the adapter
  * turns that into whatever the platform wants.
  *
  * Two consequences that are the point of doing it this way:
@@ -27,7 +27,7 @@ export type ChannelAddress = {
 
 /**
  * A tappable choice. `data` is what comes back on the callback, and it carries
- * everything needed to identify the action — because a callback can arrive after
+ * everything needed to identify the action, because a callback can arrive after
  * a restart, from a card posted days ago.
  */
 export type Choice = {
@@ -41,7 +41,7 @@ export type OutgoingMessage = {
   /**
    * Ask the platform for the person's own phone number (§5, step 1).
    *
-   * The donor taps once and the number arrives **verified by the platform** —
+   * The donor taps once and the number arrives **verified by the platform**,
    * which is the difference between a number the counter can ring and a string
    * somebody typed. An adapter whose platform cannot do this simply ignores the
    * flag, and the flow falls back to asking them to type it; that fallback is
@@ -59,8 +59,8 @@ export type SendResult =
   | { readonly ok: true; readonly messageRef: string }
   /**
    * `permanent` distinguishes "try again in a minute" from "this person has
-   * blocked the bot". The outbox retries the first and abandons the second —
-   * retrying a block forever is how a queue fills up with messages that can
+   * blocked the bot". The outbox retries the first and abandons the second.
+   * Retrying a block forever is how a queue fills up with messages that can
    * never be delivered.
    */
   | { readonly ok: false; readonly permanent: boolean; readonly reason: string };
@@ -100,7 +100,7 @@ export type ChannelPort = {
    * URL and no webhook, which is what makes this runnable from a laptop (§10).
    */
   readonly receive: (signal?: AbortSignal) => Promise<readonly IncomingUpdate[]>;
-  /** Verifies the platform is actually reachable — a health check, not a ping. */
+  /** Verifies the platform is actually reachable. A health check, not a ping. */
   readonly check: () => Promise<{ ok: boolean; detail: string }>;
 };
 
@@ -113,7 +113,7 @@ export type ChannelPort = {
  * single adapter: sending a message queued for one platform through another
  * delivers it to a stranger, or to nobody.
  *
- * `default` is the channel new conversations arrive on — the one being polled.
+ * `default` is the channel new conversations arrive on. The one being polled.
  */
 export type ChannelRegistry = {
   readonly default: ChannelPort;

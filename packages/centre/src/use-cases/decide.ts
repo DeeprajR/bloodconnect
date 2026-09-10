@@ -1,5 +1,5 @@
 /**
- * Deciding a request — the whole decision is one transaction (§7.2).
+ * Deciding a request. The whole decision is one transaction (§7.2).
  *
  * Five things happen here, and they must be the same five or none:
  *
@@ -13,7 +13,7 @@
  *   5. Move the request to its decided status.
  *
  * **The claim comes first and writes nothing.** It takes row locks only, so the
- * constraint in (3) is tested before a single bag is marked reserved — and the
+ * constraint in (3) is tested before a single bag is marked reserved, and the
  * loser of a race rolls back having reserved nothing, rather than stranding
  * units as `reserved` for a decision that never existed.
  *
@@ -26,7 +26,7 @@
  * §7.2 writes the demand last, after the decision. It is raised before it here
  * because `centre_decisions` is append-only by grant, so the row has to be
  * complete when it is inserted. The atomicity the section is actually about is
- * unchanged — see the comment on step 2.
+ * unchanged. See the comment on step 2.
  *
  * `SKIP LOCKED` is why two staff deciding two *different* requests for the same
  * group never contend: each takes the rows the other has not locked, rather
@@ -67,7 +67,7 @@ export type DecisionInput = {
   readonly requestUuid: string;
   /**
    * `issue` fills the request from the shelf and takes whatever is there.
-   * `decline` answers it without issuing anything — a duplicate request, or one
+   * `decline` answers it without issuing anything. A duplicate request, or one
    * the centre is refusing on its merits.
    */
   readonly action: DecisionAction;
@@ -192,7 +192,7 @@ export async function decideRequest(
    * was made against an unidentified patient.
    *
    * Checked before the transaction opens, because there is nothing to roll back
-   * — and a refusal that costs a lock is a refusal that slows the counter down
+   *, and a refusal that costs a lock is a refusal that slows the counter down
    * for no reason.
    */
   if (request.awaitingPatient && !mayDecideWithoutPatient(request.urgency as Urgency)) {
@@ -224,7 +224,7 @@ export async function decideRequest(
        * rewriting the row.
        *
        * So the decision row has to be complete when it is inserted, `demand_id`
-       * included — which means the demand exists first. Same transaction, so
+       * included, which means the demand exists first. Same transaction, so
        * the guarantee §7.2 is actually about is untouched: a shortfall cannot
        * exist without its demand row, and the loser of a decision race rolls
        * back the demand along with everything else.
@@ -293,8 +293,8 @@ export async function decideRequest(
             : 'declined',
       );
       if (!moved) {
-        // The request left `submitted` between the read above and this update —
-        // a cancellation, almost always. Nothing here may stand.
+        // The request left `submitted` between the read above and this update.
+        // A cancellation, almost always. Nothing here may stand.
         throw new DecisionRaceLost();
       }
 

@@ -76,7 +76,7 @@ export default async function DoctorPage({
             {doctor.hasSeal ? (
               <>
                 {/*
-                  Served through an authenticated route, never a public URL — a
+                  Served through an authenticated route, never a public URL. A
                   signature anyone can fetch is a signature anyone can reuse.
                 */}
                 <img
@@ -180,7 +180,7 @@ export default async function DoctorPage({
                 {patients.map((patient) => (
                   <tr key={`${patient.patientId}-${patient.ipNo}`}>
                     <td>{patient.name}</td>
-                    <td className="app-figure">{patient.uhid ?? '—'}</td>
+                    <td className="app-figure">{patient.uhid ?? '-'}</td>
                     <td className="app-figure">{patient.ipNo}</td>
                     <td>{patient.ward}</td>
                     <td className="app-figure">{patient.bloodGroup}</td>
@@ -188,7 +188,7 @@ export default async function DoctorPage({
                       {patient.admissionStatus === 'admitted' ? 'Live' : 'Discharged'}
                     </td>
                     <td className="app-figure">{patient.requestCount}</td>
-                    <td>{patient.diagnosis ?? '—'}</td>
+                    <td>{patient.diagnosis ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>

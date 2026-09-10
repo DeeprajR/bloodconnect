@@ -4,7 +4,7 @@
  * **The centre is the authority on who gave blood.** The bot knows who said
  * yes; only the counter knows who turned up. So the interval is rolled forward
  * from `donor_demand_confirmations.status`, written by the centre, and never
- * from the bot's own view of the journey — getting a donor's interval right
+ * from the bot's own view of the journey. Getting a donor's interval right
  * matters more than tidy state (§4).
  *
  * `acknowledged_at` is the bot's marker that it has processed a row: the poll
@@ -139,7 +139,7 @@ async function applyOne(
     if (row.status === 'completed' && donor) {
       /**
        * The interval rolls forward from the donation day, using the domain's
-       * rule and the configured figures (§12) — never a constant here. A
+       * rule and the configured figures (§12), never a constant here. A
        * shortened interval to make something work is the one change in this
        * system that could physically harm someone.
        */
@@ -155,7 +155,7 @@ async function applyOne(
        * group is now **verified** rather than self-declared (contract 1.1.0).
        *
        * This is the only way `blood_group_verified_at` is ever set, and §7.7
-       * recruits nobody without it — so before the contract carried this
+       * recruits nobody without it, so before the contract carried this
        * column, a donor who registered through the bot could never be selected
        * into a wave. The centre is the authority on what a unit is; the bot
        * simply records what it was told.

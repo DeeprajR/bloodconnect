@@ -6,7 +6,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
-    /* §11.4 — the strictness the plan asks for by name */
+    /* §11.4. The strictness the plan asks for by name */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,

@@ -70,7 +70,7 @@ export type BagSeed = {
  * Spread collection dates so expiries differ.
  *
  * The decision transaction claims oldest-expiry-first, and a shelf where every
- * bag expires on the same day demonstrates nothing about that — it would pass
+ * bag expires on the same day demonstrates nothing about that. It would pass
  * whether the ORDER BY were there or not.
  */
 export function buildStockSeed(now: Date = new Date()): BagSeed[] {

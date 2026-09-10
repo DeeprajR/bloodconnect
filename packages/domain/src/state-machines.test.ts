@@ -19,7 +19,7 @@ import {
 
 /**
  * Every machine gets the same three structural checks, because the failure mode
- * §8 exists to prevent is a flow with an entrance and no exit — and that is
+ * §8 exists to prevent is a flow with an entrance and no exit, and that is
  * visible in the table itself before any code uses it.
  */
 function assertWellFormed<S extends string>(
@@ -59,7 +59,7 @@ function assertWellFormed<S extends string>(
 describe('blood request', () => {
   assertWellFormed('blood request', BLOOD_REQUEST_STATUSES, bloodRequestTransitions);
 
-  it('never deletes an abandoned draft — it only moves forward (§8)', () => {
+  it('never deletes an abandoned draft. It only moves forward (§8)', () => {
     expect(bloodRequestTransitions.draft).toEqual(['submitted']);
   });
 
@@ -83,8 +83,8 @@ describe('blood request', () => {
   it('lets a decided request still be cancelled, and a declined one not (§3)', () => {
     expect(canTransition(bloodRequestTransitions, 'approved', 'cancelled')).toBe(true);
     expect(canTransition(bloodRequestTransitions, 'partially_approved', 'cancelled')).toBe(true);
-    // Nothing is held for a declined request, so there is nothing to release —
-    // the ward raises a new one rather than reopening this.
+    // Nothing is held for a declined request, so there is nothing to release.
+    // The ward raises a new one rather than reopening this.
     expect(canTransition(bloodRequestTransitions, 'declined', 'cancelled')).toBe(false);
     // And a draft is left to age, never cancelled (§8).
     expect(canTransition(bloodRequestTransitions, 'draft', 'cancelled')).toBe(false);
@@ -163,7 +163,7 @@ describe('donor journey', () => {
     expect(canTransition(donorJourneyTransitions, 'SCREENING', 'REQUEST_FILLED')).toBe(true);
   });
 
-  it('never leaves a waitlisted donor hanging — promoted or stood down (§5)', () => {
+  it('never leaves a waitlisted donor hanging. Promoted or stood down (§5)', () => {
     expect(donorJourneyTransitions.REQUEST_FILLED).toEqual(['CONFIRMED', 'CANCELLED']);
   });
 

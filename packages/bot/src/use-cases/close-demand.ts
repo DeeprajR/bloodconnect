@@ -6,8 +6,8 @@
  * this is not, until the day somebody travels to a hospital for a request that
  * ended yesterday.
  *
- * A demand closes exactly one way of four — completed, cancelled, expired, or
- * fulfilled then completed — and whichever it is, the closure must stop
+ * A demand closes exactly one way of four, completed, cancelled, expired, or
+ * fulfilled then completed, and whichever it is, the closure must stop
  * recruitment **and** fan out the stand-downs in the same pass.
  *
  * ```
@@ -21,7 +21,7 @@
  *
  * The messages are **not** sent in this transaction. A chat API timeout after
  * the commit would lose them silently, and the demand would show closed with
- * nobody told — precisely the failure the outbox exists to prevent.
+ * nobody told. Precisely the failure the outbox exists to prevent.
  */
 
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -52,7 +52,7 @@ export type CloseError =
  *
  * Idempotent: the conditional UPDATE matches only an open or fulfilled request,
  * so a second call closes nothing and queues nothing. Calling it twice is
- * expected — the ticker and a centre cancellation can arrive together.
+ * expected. The ticker and a centre cancellation can arrive together.
  */
 export async function closeDemand(
   ctx: BotContext,
@@ -145,7 +145,7 @@ export async function closeDemand(
         reason,
         journeysEnded: ended.length,
         standDownsQueued: queued,
-        // The count, and the donor ids — never a name or a number (§11.9).
+        // The count, and the donor ids, never a name or a number (§11.9).
         donorIds: waiting.map((donor) => donor.donorId),
       },
     });
@@ -153,7 +153,7 @@ export async function closeDemand(
     /* --- 4. tell the centre, on the one column the bot may move ---------- */
     // `open -> expired` and `fulfilled -> completed` are the bot's edges in
     // `packages/contract`. A cancellation came *from* the centre, so the bot
-    // does not write that status back — it is already there.
+    // does not write that status back. It is already there.
     if (reason !== 'cancelled') {
       await tx
         .update(donorDemand)
@@ -173,7 +173,7 @@ export async function closeDemand(
 /**
  * Demands the centre has withdrawn, which the bot has not closed yet.
  *
- * The centre sets `cancelled` and stops (§8.3) — it cannot send a stand-down,
+ * The centre sets `cancelled` and stops (§8.3). It cannot send a stand-down,
  * because the donors are the bot's and it knows nothing about the channel. This
  * poll is the other half of that handover, and it is why a cancellation on the
  * centre's screen reaches a donor at all.
@@ -199,7 +199,7 @@ export async function findCancelledDemands(
  * Requests whose day has passed (§8).
  *
  * A demand that quietly stays open past the day the blood was needed is a flow
- * with no ending, which §8 exists to prevent — and the donors holding places for
+ * with no ending, which §8 exists to prevent, and the donors holding places for
  * it are never told.
  */
 export async function findExpiredDemands(
@@ -259,7 +259,7 @@ export async function tellUnansweredItIsCovered(
     .where(
       and(
         eq(donorRequests.status, 'NOTIFIED'),
-        // Filled, but not yet closed — the window this exists for.
+        // Filled, but not yet closed. The window this exists for.
         eq(botRequests.status, 'fulfilled'),
       ),
     )

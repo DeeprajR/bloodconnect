@@ -3,7 +3,7 @@
  *
  * A **separate migration set**, applied by the bot's own release (§5.9). The two
  * shared contract tables live in `hospital` and are created only by
- * `db/migrations` — a CI check greps this set for `donor_demand` and fails the
+ * `db/migrations`. A CI check greps this set for `donor_demand` and fails the
  * build if it appears (§2.1). The bot reaches them through granted columns, not
  * through its own DDL.
  *
@@ -21,7 +21,7 @@
  *  4. **`message_outbox` is the stand-down guarantee** (§7.6). A demand closed
  *     without its stand-down messages sent is the failure this system must not
  *     have, so the messages are committed as rows with the closure and drained
- *     separately — never sent inside the closing transaction, where a chat API
+ *     separately, never sent inside the closing transaction, where a chat API
  *     timeout after the commit would lose them silently.
  */
 
@@ -62,7 +62,7 @@ export const donors = botSchema.table(
     /**
      * A self-declared group is not a verified one. The wave query requires this
      * to be set, because recruiting on an unverified group sends the wrong
-     * person to the counter — the pre-transfusion test would catch it, but the
+     * person to the counter. The pre-transfusion test would catch it, but the
      * donor made the trip for nothing.
      */
     bloodGroupVerifiedAt: timestamp('blood_group_verified_at', { withTimezone: true }),
@@ -81,7 +81,7 @@ export const donors = botSchema.table(
     localityId: text('locality_id').references(() => locationNodes.id),
     /**
      * What the donor actually typed, kept beside the resolved id. Unmatched free
-     * text never silently creates a place (§5.7) — it goes to the review queue,
+     * text never silently creates a place (§5.7). It goes to the review queue,
      * and this is what the reviewer reads.
      */
     districtText: text('district_text'),
@@ -197,7 +197,7 @@ export const donorConsents = botSchema.table(
  *
  * "Have you ever had jaundice" belongs to the person. "Did you eat today"
  * belongs to one visit, lives on the journey row, and must never reach the
- * profile — a temporary answer stored here would defer somebody permanently.
+ * profile. A temporary answer stored here would defer somebody permanently.
  */
 export const donorScreeningAnswers = botSchema.table(
   'donor_screening_answers',
@@ -306,7 +306,7 @@ export const DONOR_JOURNEY_STATUSES = [
 ] as const;
 
 /**
- * One row per donor per request — the journey (§5.7).
+ * One row per donor per request. The journey (§5.7).
  *
  * `screening_index` and `screening_answers` live here rather than in session
  * memory, which is what makes a duplicate tap on question three recognisable as
@@ -404,7 +404,7 @@ export const OUTBOX_STATUSES = ['pending', 'sent', 'failed', 'abandoned'] as con
  *
  * The spec names "a demand closed without its stand-down messages sent" as the
  * failure this system must not have. So closing a demand does not call a chat
- * API — it inserts rows here, in the same transaction as the closure. A worker
+ * API. It inserts rows here, in the same transaction as the closure. A worker
  * drains them with retries, and `dedupe_key` makes redelivery harmless.
  *
  * The §11.9 alert is a query against this table: pending stand-downs older than

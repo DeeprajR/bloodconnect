@@ -5,7 +5,7 @@
  * longest since donating. This has to be SQL: filtering a donor pool in Node
  * does not scale, and the ordering would be SQL anyway.
  *
- * **The predicate necessarily exists twice** — here as SQL for the wave, and in
+ * **The predicate necessarily exists twice**. Here as SQL for the wave, and in
  * `isEligible` below for one donor arriving on a deep link. §11.3 makes the
  * agreement test mandatory, and `waves.test.ts` seeds donors on every boundary
  * (exactly 18, exactly 65, exactly at the weight threshold, one day either side
@@ -96,7 +96,7 @@ export type WaveDonor = {
  * The SQL half (§7.7).
  *
  * Ordered by proximity down the four levels, then longest-since-donation with
- * nulls first — somebody who has never donated is at the front, which is both
+ * nulls first, somebody who has never donated is at the front, which is both
  * fair and how a pool grows.
  *
  * `NOT EXISTS` against `donor_requests` is what stops a donor being asked twice
@@ -140,7 +140,7 @@ export async function selectWave(
          * years`, which is the same boundary as `age <= max`: somebody born
          * exactly 66 years ago today is 66 and excluded, and somebody born a
          * day later is 65 and included. Writing it as `>= ... + 1 day` is the
-         * obvious form and is wrong — `date - interval` is a timestamp, and
+         * obvious form and is wrong: `date - interval` is a timestamp, and
          * adding an integer to one is not valid SQL at all.
          */
         sql`${donors.dob} <= (${today}::date - make_interval(years => ${minAge}::int))`,
@@ -183,7 +183,7 @@ export type WaveResult = {
  * Selects a wave, opens a journey row per donor, and queues the card.
  *
  * `next_wave_at` is set at the end, so the ticker escalates by polling a column
- * rather than by holding a timer — a restart resumes rather than silently
+ * rather than by holding a timer. A restart resumes rather than silently
  * stopping (§5.7). When there is nobody left to ask, it is cleared instead of
  * being pushed forward forever.
  */
@@ -248,7 +248,7 @@ export async function sendWave(
 
     if (donorsToAsk.length === 0) {
       // Nobody left to ask. The request stays open until it is filled, closed
-      // by the centre, or expires — a demand that quietly stopped recruiting is
+      // by the centre, or expires. A demand that quietly stopped recruiting is
       // still a demand somebody is waiting on.
       return { waveNo, notified: 0, nextWaveAt: claimed[0]?.nextWaveAt ?? null };
     }
@@ -300,7 +300,7 @@ export async function sendWave(
   });
 }
 
-/** Requests due a wave. The ticker's poll — a column, not a timer (§5.7). */
+/** Requests due a wave. The ticker's poll. A column, not a timer (§5.7). */
 export async function findRequestsDueAWave(
   ctx: BotContext,
   limit = 10,

@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Not available · Blood Connect' };
 /**
  * 403.
  *
- * This page renders **no data at all** — not the requested path, not the
+ * This page renders **no data at all**, not the requested path, not the
  * account, not the role, not what would have been shown. §14 names the mistake
  * to avoid: a test that asserts the redirect rather than the body, passing while
  * a JSON payload rides along underneath. There is nothing here to ride along,

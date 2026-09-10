@@ -1,10 +1,10 @@
-# ADR 0006 — The bot loop, and the clock that was in two places
+# ADR 0006: The bot loop, and the clock that was in two places
 
 Date: 2026-09-08 · Status: accepted
 
 Phase 4 of the build plan. **Milestone A: the loop in §1 closes.** A shortfall
 recruits real donors, a donor is screened and confirmed, the counter marks them
-donated, and the donor is thanked with a next-eligible date — with every donor
+donated, and the donor is thanked with a next-eligible date, with every donor
 still holding a place stood down when the request ends.
 
 Verified end to end against real Postgres, across both database roles:
@@ -29,7 +29,7 @@ the happy path. That order was kept: `loop.test.ts` opens with six stand-down
 tests, written before a single donor could confirm.
 
 **The messages are never sent inside the closing transaction.** A chat API
-timeout after the commit would lose them silently — the demand shows closed, the
+timeout after the commit would lose them silently. The demand shows closed, the
 donors are still expecting to give blood, and nothing anywhere records that they
 were never told. So the closure inserts rows into `message_outbox` in the same
 transaction, and a separate drain sends them with retries.
@@ -44,7 +44,7 @@ Three properties that fall out, each with a test:
   from 429, and retrying an undeliverable message buries the ones that could go
   out.
 
-The §11.9 alert is a query — `countStuckStandDowns` — because a demand that
+The §11.9 alert is a query, `countStuckStandDowns`, because a demand that
 failed to stand its donors down looks exactly like one that succeeded.
 
 ---
@@ -55,7 +55,7 @@ Both of these passed every unit test and failed the first time the loop ran.
 
 **`enqueue` let the database stamp `next_attempt_at` and `created_at`, while the
 drain read the injected clock.** Under a frozen clock nothing is ever due, so the
-queue silently stopped — and the §11.9 alert, comparing a database-stamped
+queue silently stopped, and the §11.9 alert, comparing a database-stamped
 `created_at` against the injected clock, reported zero stuck messages while
 messages were stuck. The fix is that the caller passes `now` and the rows are
 stamped from it. §3 injects time precisely so the two cannot drift apart; taking
@@ -63,7 +63,7 @@ a default from `now()` quietly undoes that.
 
 **`findRequestsDueAWave` interpolated a JavaScript `Date` into a raw `sql`
 template**, which the driver cannot bind. Every use case passed because every
-test called them directly — nothing ran the poll the *process* runs. Fixed with
+test called them directly, nothing ran the poll the *process* runs. Fixed with
 Drizzle's typed `lte()`, and `ticker.test.ts` now exists for exactly that gap: a
 suite that never exercises the caller proves the callee and nothing else.
 
@@ -76,7 +76,7 @@ clock.**
 
 ## 3. The deep-link id was derived from a timestamp
 
-`makePublicId` read the **first** six characters of a UUIDv7 — which are a
+`makePublicId` read the **first** six characters of a UUIDv7, which are a
 millisecond timestamp. Two demands imported in the same second produced the same
 `BC-` code, and the unique index refused the second import.
 
@@ -86,7 +86,7 @@ out of somebody's mouth, and two requests sharing one would send donors to the
 wrong demand.
 
 Fixed by deriving from the **trailing** characters, which are the random ones,
-and `public-id.test.ts` mints a thousand ids as fast as possible — the thing a
+and `public-id.test.ts` mints a thousand ids as fast as possible. The thing a
 batch import does, and the thing a test generating one id at a time never does.
 
 Import is also now per-demand try/catch: one demand that cannot be imported must
@@ -107,7 +107,7 @@ for it right now, and every tick they are not told is a tick somebody might set
 out for the hospital.
 
 **Expiries after the import, before the waves.** This was wrong first: a demand
-can arrive already past the day the blood was needed — raised late, or left
+can arrive already past the day the blood was needed. Raised late, or left
 unimported while the bot was down. Expiring before the import missed it and then
 waved it, asking real people to give blood for a request that had already
 passed.
@@ -133,15 +133,15 @@ pass.
 ### The predicate that exists twice
 
 §7.7's wave query is SQL and `isEligible` is TypeScript, and §11.3 makes the
-agreement test mandatory. `loop.test.ts` seeds a donor on every boundary —
+agreement test mandatory. `loop.test.ts` seeds a donor on every boundary,
 exactly the minimum age, one day short, exactly the maximum age, one day past,
 exactly at the weight threshold, one kilo under, eligible today, tomorrow,
-yesterday, plus every exclusion — runs both readings and asserts the sets are
+yesterday, plus every exclusion, runs both readings and asserts the sets are
 identical.
 
 The age bounds took two attempts. `date - interval + 1` is not valid SQL at all
 (`date - interval` is a timestamp, and adding an integer to one is an error), and
-the birthdays have to be exact years rather than `n * 365` days — a boundary test
+the birthdays have to be exact years rather than `n * 365` days. A boundary test
 that is six days out tests nothing.
 
 ---
@@ -152,7 +152,7 @@ that is six days out tests nothing.
 connecting as each role:
 
 - `app_bot` cannot read `hospital.patients` or `hospital.blood_bags`.
-- `app_web` cannot read `bot.donors` or `bot.donor_phones` — the centre sees a
+- `app_web` cannot read `bot.donors` or `bot.donor_phones`. The centre sees a
   donor's name on the roster row it was given, and nowhere else.
 - `app_bot` holds no UPDATE or DELETE on `bot.event_log`.
 
@@ -161,7 +161,7 @@ joined `bot.donors` to `hospital.blood_bags` and was refused outright. Neither
 role can see both, which is the point.
 
 The event log is asserted to contain **no name, no phone number and no screening
-answer** — donor ids and question keys only. The log outlives the incident it
+answer**. Donor ids and question keys only. The log outlives the incident it
 documents, and a name in it is a name with a long tail.
 
 ---
@@ -174,20 +174,20 @@ edits, admin cards. P9 has the demand board and volunteer cards.
 
 ## 8. The first live connection, and what it found
 
-A real token went in and the adapter connected on the first attempt —
+A real token went in and the adapter connected on the first attempt:
 `getMe` returning `@cmck_blood_donor_bot`. Two things came out of that ten
 seconds, and both were real:
 
 **`CHANNEL` had been set to the bot's @username.** That variable names the
 *platform* and is stored in `donor_channels.channel`; the username belongs in
 `TELEGRAM_BOT_USERNAME` and appears only in deep links. The process accepted it
-silently, because anything that was not `memory` fell through to Telegram — so a
+silently, because anything that was not `memory` fell through to Telegram, so a
 value that configured nothing looked like it configured something. It now
 refuses to start on an unrecognised channel (§13).
 
 **The outbox drain ignored the channel on the row.** It sent every message
 through the one adapter the process was polling, so a message queued for one
-platform would go out on another — to a stranger, or to nobody. §2.11 stores a
+platform would go out on another, to a stranger, or to nobody. §2.11 stores a
 channel per donor *and* per queued message precisely because both kinds of row
 can be in the queue at once, so delivery is a lookup: `ChannelRegistry`, and a
 row for a platform this process is not running is left **pending** rather than
@@ -205,7 +205,7 @@ been delivered to a person, because that needs somebody to message the bot.
 
 And a donor registering through Telegram is **not selectable into a wave**:
 `blood_group_verified_at` is null until the centre confirms the group, and
-§7.7 requires it — recruiting on a self-declared group sends the wrong person to
+§7.7 requires it. Recruiting on a self-declared group sends the wrong person to
 the counter. There is no screen that sets it yet; that belongs with the counter
 work in P6. Until then it is a database row, and the gap is named rather than
 papered over.
@@ -218,7 +218,7 @@ papered over.
 The loop was correct and the conversation was bad. Four things, all reported
 from a real phone.
 
-**It was slow.** Replies go through the outbox so that ordering holds — "you are
+**It was slow.** Replies go through the outbox so that ordering holds: "you are
 confirmed" must never arrive after "you are no longer needed". But the *ticker*
 was the only thing draining it, so every tap waited up to a fifteen-second
 interval before anything came back. The queue was right; the drain was in the
@@ -248,17 +248,17 @@ leaving an error with no prompt.
 
 | Who | What they get |
 |---|---|
-| Never seen | The welcome and the first question — no command needed |
+| Never seen | The welcome and the first question: no command needed |
 | Part-way through | The next question, or the same one again if the answer will not do |
 | Registered | Their own situation: what is open near them that **their** blood could answer, and why it is quiet if it is |
 
 That last row is new work and worth its own note. `standingFor` lists open
-requests filtered by `compatibleRecipientGroupsFor` — the direction that runs
+requests filtered by `compatibleRecipientGroupsFor`. The direction that runs
 *opposite* to recruitment. A wave for group X selects donors who can give **to**
 X; this asks which requests **this donor** can answer. An AB+ donor is shown an
 AB+ request and never an O− one, because travelling to a hospital that cannot
 use your blood is the specific harm of getting that backwards. Tested both ways.
 
 It shows no patient detail, creates no journey row, and counts as no
-notification — it is a list somebody chose to look at, not a request made of
+notification. It is a list somebody chose to look at, not a request made of
 them.

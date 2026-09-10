@@ -113,7 +113,7 @@ export default async function UpdateRequestsPage({
                     {isOwn ? (
                       /*
                         §3: nobody decides their own. Hidden here as well as
-                        refused in the use case — an administrator offered a
+                        refused in the use case. An administrator offered a
                         button that always fails has been told nothing about
                         why, and the rule is worth stating rather than
                         discovering.

@@ -35,7 +35,7 @@ export async function readSessionToken(): Promise<string | undefined> {
  * The current principal, resolved from the cookie on the server.
  *
  * Identity is always read from here and never accepted from the client (§2.5,
- * §13) — no form field, no header and no query parameter can say who the
+ * §13), no form field, no header and no query parameter can say who the
  * doctor is.
  */
 export async function currentActor(): Promise<Actor> {
@@ -80,7 +80,7 @@ export async function requestMetadata(): Promise<{
   const headerList = await headers();
   // Behind a proxy the socket address is the proxy's, so the forwarded chain is
   // read first. Its leftmost entry is client-supplied and therefore only ever
-  // used as a throttle key — never as an identity or an access decision.
+  // used as a throttle key, never as an identity or an access decision.
   const forwarded = headerList.get('x-forwarded-for');
   const ip = forwarded?.split(',')[0]?.trim() ?? headerList.get('x-real-ip') ?? null;
 

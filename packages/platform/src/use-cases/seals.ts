@@ -2,7 +2,7 @@
  * The doctor's seal (§3, §8.1).
  *
  * A seal is a signature block that appears on a blood request. It is stored in
- * a private bucket and served only through an authenticated route — never by a
+ * a private bucket and served only through an authenticated route, never by a
  * public URL, because a signature anyone can fetch is a signature anyone can
  * reuse.
  */
@@ -33,7 +33,7 @@ export type SealUpload = {
 export type UploadSealError = NotAuthorized | AccountNotFound | SealRejected;
 
 /**
- * Validates, stores, and records — in that order.
+ * Validates, stores, and records, in that order.
  *
  * The object goes to storage before the row is written, so a committed
  * `object_refs` row always points at something that exists. The reverse order
@@ -63,7 +63,7 @@ export async function uploadSeal(
   if (!account) return err(accountNotFound());
 
   const objectId = ctx.ids.next<'ObjectRefId'>();
-  // Keyed by the generated id, never by anything the uploader supplies — a
+  // Keyed by the generated id, never by anything the uploader supplies. A
   // filename is attacker-controlled and a key is a path.
   const key = `seals/${userId}/${objectId}.png`;
 
@@ -130,7 +130,7 @@ export async function removeSeal(
   return ctx.db.transaction(async (tx) => {
     // Only the reference is dropped. The object and its row survive so that a
     // request already signed with it still renders, and so a mistaken removal
-    // is recoverable — the bucket is not where deletions should be irreversible.
+    // is recoverable. The bucket is not where deletions should be irreversible.
     await tx.delete(userSeals).where(eq(userSeals.userId, userId));
 
     const audit = createAuditWriter(tx, ctx.actor, ctx.correlationId, now);
@@ -148,7 +148,7 @@ export type SealBytes = {
 /**
  * Reads a seal for an authenticated viewer.
  *
- * The authorization is the caller's to make before calling — the route that
+ * The authorization is the caller's to make before calling. The route that
  * serves this is role-guarded, and this returns nothing rather than throwing
  * when the object has gone, so a missing file renders a placeholder.
  */

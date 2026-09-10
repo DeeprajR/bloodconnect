@@ -2,7 +2,7 @@
  * Sign in (§3, §8.1, §13).
  *
  * One transaction. Throttle, verify, issue the session, roll the counters and
- * write the audit row together — so a session that exists is always a session
+ * write the audit row together, so a session that exists is always a session
  * that was audited, and a failure never leaves a half-recorded attempt.
  *
  * Three rules the spec states and this file implements literally:
@@ -74,7 +74,7 @@ export const SESSION_TTL_HOURS = 12;
  * account matches.
  *
  * Without it, "no such account" returns in a millisecond and "wrong password"
- * takes the ~100ms Argon2id deliberately costs — and that difference is the
+ * takes the ~100ms Argon2id deliberately costs, and that difference is the
  * enumeration oracle the identical *message* was there to prevent. Generated at
  * module load so the parameters always match the live hasher's.
  */
@@ -122,7 +122,7 @@ export async function signIn(
     /* 2. Find the account. ------------------------------------------------- */
     const account = await findAccountByEmail(tx, accountKey);
 
-    // Not found, never activated, or deactivated — all one outcome, and all
+    // Not found, never activated, or deactivated, all one outcome, and all
     // reached through the same amount of work.
     // Wrong application for this role: an administrator at the staff sign-in,
     // or a doctor at the admin one. Refused exactly like a wrong password, so

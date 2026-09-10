@@ -2,14 +2,14 @@
  * How fast a request needs answering (§3, ADR 0010).
  *
  * The doctor does not type a date. They pick one of four levels at a bedside,
- * and everything downstream derives from it — the needed-by the donor bot and
+ * and everything downstream derives from it. The needed-by the donor bot and
  * the expiry sweep run on, and the order the centre queue sits in.
  *
  * **Three of the four land on today**, and that is the fact worth understanding
  * before reading anything below: the difference between an emergency and an
  * urgent request is how fast somebody walks, not what day it is. A calendar date
- * cannot express it. So urgency carries a second number — the time within which
- * an answer is expected — and that is the clock the top three actually run on.
+ * cannot express it. So urgency carries a second number, the time within which
+ * an answer is expected, and that is the clock the top three actually run on.
  * The expiry sweep would not notice an unanswered emergency until midnight.
  *
  * Per §12 this reads no configuration; both figures arrive as parameters.
@@ -30,13 +30,13 @@ export const isUrgency = (value: unknown): value is Urgency =>
  *
  * Written as the time it means, not as a severity word: "Emergency" alone is a
  * judgement, and two clinicians will not draw the line in the same place.
- * "Now — patient is bleeding" and "Today" are answerable without one.
+ * "Now. Patient is bleeding" and "Today" are answerable without one.
  */
 export const URGENCY_LABELS: Readonly<Record<Urgency, string>> = {
-  emergency: 'Emergency — now',
-  very_urgent: 'Very urgent — within hours',
-  urgent: 'Urgent — today',
-  routine: 'Routine — this week',
+  emergency: 'Emergency, now',
+  very_urgent: 'Very urgent, within hours',
+  urgent: 'Urgent, today',
+  routine: 'Routine, this week',
 };
 
 /** The short form, for a queue row where the column header carries the rest. */
@@ -90,7 +90,7 @@ export function responseMinutesFor(
  * Has this request been waiting longer than its urgency allows?
  *
  * The queue's alarm. `false` for anything with no minute clock, and for a
- * request that has already been answered — the caller passes only open ones.
+ * request that has already been answered. The caller passes only open ones.
  */
 export function isPastResponseTarget(
   urgency: Urgency,
@@ -132,7 +132,7 @@ export function waitingLabel(minutes: number): string {
  *
  * **Emergency only** (ADR 0010). Blood leaving a fridge has to be traceable to a
  * named person, which is what §4's traceability and the crossmatch sample both
- * assume — but waiting for a bystander to arrive before releasing units in a
+ * assume, but waiting for a bystander to arrive before releasing units in a
  * real emergency is the worse failure. Every other urgency needs the patient
  * first, and the exception is recorded on the decision either way.
  */

@@ -18,7 +18,7 @@ import { tryFindUp } from './paths.js';
  * Load the workspace root `.env` before anything reads a variable from it.
  *
  * These scripts run as plain Node, not through a framework, so nothing loads
- * `.env` for them — and the file lives at the workspace root rather than in
+ * `.env` for them, and the file lives at the workspace root rather than in
  * `db/`, because the same connection strings serve the applications, the worker
  * and the seed runner. Two copies of a connection string are two things to keep
  * in step.

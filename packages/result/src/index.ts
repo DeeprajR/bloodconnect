@@ -46,7 +46,7 @@ export function all<T, E>(results: readonly Result<T, E>[]): Result<T[], E> {
 }
 
 /**
- * Unwrap where the caller has already proven success — a test, or a branch the
+ * Unwrap where the caller has already proven success. A test, or a branch the
  * type system cannot see. Throws, deliberately: reaching it is a bug.
  */
 export function unwrap<T, E>(r: Result<T, E>): T {
@@ -76,7 +76,7 @@ export const appError = <K extends string>(kind: K, message: string): AppError<K
 
 /**
  * Exhaustiveness guard for error switches. Adding a variant to a union breaks
- * the build at every place that handles it — which is the point of the unions.
+ * the build at every place that handles it, which is the point of the unions.
  */
 export function assertNever(value: never, context = 'unhandled case'): never {
   throw new Error(`${context}: ${JSON.stringify(value)}`);

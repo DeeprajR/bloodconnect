@@ -25,7 +25,7 @@ export const metadata: Metadata = { title: 'Request queue · Blood Connect' };
  * The queue (§4).
  *
  * Ordered by the day the blood is needed, so the oldest need is at the top and
- * an overdue request cannot be buried under newer ones — and every row carries
+ * an overdue request cannot be buried under newer ones, and every row carries
  * the stock on hand for its group, because the whole question a counter is
  * answering is "can I fill this".
  *
@@ -76,7 +76,7 @@ export default async function QueuePage({
           */}
           Most urgent first, then longest waiting. The stock column is red cells
           and whole blood held for that group, which is not the same as units of
-          the exact component asked for — open a request to see that.
+          the exact component asked for. Open a request to see that.
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export default async function QueuePage({
                     request, not this one. There is a person standing there who
                     can read it again.
                   */}
-                  No request with that ID. Ask them to read it again — every
+                  No request with that ID. Ask them to read it again, every
                   digit matters.
                 </p>
               </div>
@@ -116,7 +116,7 @@ export default async function QueuePage({
             <div className="ux4g-alert ux4g-alert-info" role="status">
               <div className="ux4g-alert-content">
                 <p className="ux4g-alert-message app-figure">
-                  {found.requestId} — {found.units} × {productLabel(found.product)}{' '}
+                  {found.requestId}: {found.units} × {productLabel(found.product)}{' '}
                   {bloodGroupLabel(found.bloodGroup)}
                 </p>
                 <Link
@@ -192,7 +192,7 @@ export default async function QueuePage({
                           {request.requestId}
                         </Link>
                       </td>
-                      <td>{urgency ? URGENCY_SHORT[urgency] : '—'}</td>
+                      <td>{urgency ? URGENCY_SHORT[urgency] : '-'}</td>
                       <td className="app-figure">
                         {waitingLabel(minutesWaiting(request.submittedAt, now))}
                         {late ? (
@@ -203,7 +203,7 @@ export default async function QueuePage({
                         {request.awaitingPatient ? (
                           <span className="ux4g-label-m-default">no patient yet</span>
                         ) : (
-                          (request.patient.name ?? '—')
+                          (request.patient.name ?? '-')
                         )}
                       </td>
                       <td>

@@ -6,8 +6,8 @@
  * what it typed as. §4 puts it plainly: getting a donor's interval right matters
  * more than tidy state.
  *
- * The centre writes exactly five columns here — `status`, `donated_at`,
- * `bag_identifier`, `donated_blood_group` and `marked_by` — and the grants make
+ * The centre writes exactly five columns here, `status`, `donated_at`,
+ * `bag_identifier`, `donated_blood_group` and `marked_by`, and the grants make
  * that true rather than merely intended. It cannot invent a roster row, because
  * somebody who never confirmed in the bot is a **walk-in**, which is its own
  * record rather than a fabricated confirmation.
@@ -57,7 +57,7 @@ export type RosterRow = {
  * The confirmed-donor roster for one demand (§4).
  *
  * Name and verified phone number, which is what the counter needs to recognise
- * somebody at the desk — and the only place a donor's contact details cross into
+ * somebody at the desk, and the only place a donor's contact details cross into
  * the centre's half of the database. They arrive here because the donor agreed
  * to give for a specific patient, which is exactly what the consent text says.
  */
@@ -85,7 +85,7 @@ export async function listRoster(
 
   return rows.map(({ acknowledgedAt, ...row }) => ({
     ...row,
-    // "The bot has told them" — the counter should not chase somebody the
+    // "The bot has told them". The counter should not chase somebody the
     // system has already thanked.
     acknowledged: acknowledgedAt !== null,
   }));
@@ -141,7 +141,7 @@ export async function markRosterOutcome(
      * A conditional UPDATE guarded on `confirmed` (§7.4).
      *
      * A donor is marked once. Two counter staff working the same roster, or one
-     * tapping twice, must not roll an interval forward twice — and the bot's
+     * tapping twice, must not roll an interval forward twice, and the bot's
      * `acknowledged_at` marker is only safe because this is.
      */
     const moved = await tx
@@ -302,7 +302,7 @@ export async function listWalkIns(
 /**
  * The unit numbers a counter can pick from when marking a donation.
  *
- * Bags registered today and still available — which is what a unit collected
+ * Bags registered today and still available, which is what a unit collected
  * from a donor at this desk looks like a few minutes later. A free-text field
  * would let a typo link a donor to somebody else's unit.
  */

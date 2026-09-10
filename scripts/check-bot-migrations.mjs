@@ -44,7 +44,7 @@ const files = await readdir(folder).catch(() => []);
 const sqlFiles = files.filter((name) => name.endsWith('.sql'));
 
 if (sqlFiles.length === 0) {
-  console.log('no bot migrations yet — nothing to check');
+  console.log('no bot migrations yet, nothing to check');
 }
 
 for (const name of sqlFiles) {
@@ -56,7 +56,7 @@ for (const name of sqlFiles) {
     if (body.includes(term)) {
       failures += 1;
       console.error(
-        `  BAD ${name} mentions "${term}" — the shared contract and the hospital schema ` +
+        `  BAD ${name} mentions "${term}". The shared contract and the hospital schema ` +
           'belong to db/migrations, applied by the web release (§2.1).',
       );
     }

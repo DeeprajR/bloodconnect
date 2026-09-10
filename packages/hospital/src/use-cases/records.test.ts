@@ -271,7 +271,7 @@ describe.skipIf(!testUrl)('the compatibility testing sample (§3, §15)', () => 
 
     const [row] = await listSamples(context(), submittedId);
     expect(row?.sampleIdentifier).toBe('CM-00042');
-    // Who drew the tube comes from the session, never the form (§2.5) — it is
+    // Who drew the tube comes from the session, never the form (§2.5). It is
     // part of the chain of custody.
     expect(row?.collectedBy).toBe('Dr Sample');
   });
@@ -285,7 +285,7 @@ describe.skipIf(!testUrl)('the compatibility testing sample (§3, §15)', () => 
 
     // A second request, a different patient, the same label. Two tubes carrying
     // one identifier is exactly the mix-up the compatibility test exists to
-    // prevent — so the uniqueness is global, not per request.
+    // prevent, so the uniqueness is global, not per request.
     const otherId = newId();
     await db.insert(bloodRequests).values({
       id: otherId,
@@ -328,7 +328,7 @@ describe.skipIf(!testUrl)('the compatibility testing sample (§3, §15)', () => 
       note: 'Repeat, first tube haemolysed',
     });
 
-    // §3 says "one or more" — a repeat draw is ordinary, and hiding the first
+    // §3 says "one or more". A repeat draw is ordinary, and hiding the first
     // one would lose the reason there was a second.
     expect(await listSamples(context(), submittedId)).toHaveLength(2);
   });

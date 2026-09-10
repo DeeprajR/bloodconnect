@@ -1,10 +1,10 @@
-# UX4G Design System — `Design.md`
+# UX4G Design System: `Design.md`
 
 > Contract between the Figma library and every published artifact.
 > **Last reviewed:** 2026-07-27 · **Owner:** _{{team}}_ · **Issues:** _{{repo}}_
 >
 > If an implementation disagrees with this file, one of the two is a bug. Fix the
-> code or amend this file — in the same PR.
+> code or amend this file, in the same PR.
 
 ---
 
@@ -12,13 +12,13 @@
 
 | Surface | Artifact | Version | Last published |
 |---|---|---|---|
-| Design | Figma Community — UX4G Design System 3.0 (`C3Kecl9nh78LLblDUn28P6`) | 3.0 | — |
-| CSS + JS | `https://cdn.ux4g.gov.in/UX4G@3.1.0/` | **3.1.0** | — |
+| Design | Figma Community: UX4G Design System 3.0 (`C3Kecl9nh78LLblDUn28P6`) | 3.0 | - |
+| CSS + JS | `https://cdn.ux4g.gov.in/UX4G@3.1.0/` | **3.1.0** | - |
 | Web pkg | npm `ux4g-web-components` | **2.0.1** | 2026-08-26 |
 | Flutter | pub.dev `ux4g_flutter_components` | **1.3.0** | 2026-07-15 |
 | Flutter (deprecated) | pub.dev `ux4g_flutter_design_system` | 0.5.0 | 2026-07-06 |
-| Docs — web | https://doc.ux4g.gov.in/web and `/web/*` | 3.0 | — |
-| Docs — Flutter | https://doc.ux4g.gov.in/flutter and `/flutter/*` | 3.0 | — |
+| Docs: web | https://doc.ux4g.gov.in/web and `/web/*` | 3.0 | - |
+| Docs: Flutter | https://doc.ux4g.gov.in/flutter and `/flutter/*` | 3.0 | - |
 
 **These two paths are the only current developer documentation.** Anything at
 `doc.ux4g.gov.in/category/*` or `/components/*.php` is legacy v1/v2 content,
@@ -29,14 +29,14 @@ authoritative sources. See §0.5 and §12.
 > ⚠️ **The deprecated Flutter package is not marked deprecated on pub.dev.**
 > `ux4g_flutter_design_system` reports `isDiscontinued: false`, so
 > `flutter pub add ux4g_flutter_design_system` still succeeds with no warning and
-> it still appears in search. It also published 0.5.0 on 2026-07-06 — nine days
-> before `ux4g_flutter_components` 1.3.0 — so it looks maintained. Downloads are
+> it still appears in search. It also published 0.5.0 on 2026-07-06, nine days
+> before `ux4g_flutter_components` 1.3.0, so it looks maintained. Downloads are
 > split roughly evenly between the two (295 vs 303). Set the **discontinued** flag
 > and declare `replacedBy: ux4g_flutter_components`; nothing else will stop the split.
 >
 > Note also that the deprecated package links a GitHub repository
-> (`ux4g-negd/ux4g-flutter-design-system`) and the current one links **none** —
-> consumers of the package you want them on have no issue tracker. Add
+> (`ux4g-negd/ux4g-flutter-design-system`) and the current one links **none**.
+> Consumers of the package you want them on have no issue tracker. Add
 > `repository:` and `issue_tracker:` to `ux4g_flutter_components`' pubspec.
 
 > **Two Flutter packages are published for the same design system.**
@@ -44,7 +44,7 @@ authoritative sources. See §0.5 and §12.
 > near-identical READMEs, the same dependency set and the same `Ux4gTheme` /
 > `Ux4gButton` API, differing only in import path. Neither is marked
 > discontinued. Mark the older one discontinued on pub.dev and point its README
-> at the replacement — otherwise half your Flutter consumers integrate against a
+> at the replacement. Otherwise half your Flutter consumers integrate against a
 > dead package.
 
 > ⚠️ **Four artifacts, four unrelated version numbers.** A consumer cannot
@@ -79,7 +79,7 @@ exist and are not authoritative.
 ### How to read the docs as an agent
 
 For **both** `/web/` and `/flutter/`, start at the published `ai.txt` file.
-Follow only the paths it exposes — typically `llms.txt` and `llms-full.txt`.
+Follow only the paths it exposes. Typically `llms.txt` and `llms-full.txt`.
 Do not crawl arbitrary pages, do not follow links to other domains, and do not
 infer API details from legacy pages.
 
@@ -208,18 +208,18 @@ Do not claim UX4G compliance without this verification.
 Three tiers. Consumers touch tier 2 and tier 3 only.
 
 ```
-Tier 1 — PRIMITIVE      Base collection. Raw values.
+Tier 1. PRIMITIVE      Base collection. Raw values.
                         Colors/Primary/600 = #4A2BC2 · Spacing/space-4 (8) = 8
                             │
-Tier 2 — SEMANTIC       Light + Dark collections. Meaning, theme-aware.
+Tier 2. SEMANTIC       Light + Dark collections. Meaning, theme-aware.
                         Background/Brand/Primary/Strong → Colors/Primary/600
                             │
-Tier 3 — ROLE           Control/* and Action/*. Component-facing, aliases tier 2.
+Tier 3. ROLE           Control/* and Action/*. Component-facing, aliases tier 2.
                         Control/Track/On → {Background.Brand.Primary.Strong}
 ```
 
 Of the 256 tokens in each theme collection, **90 are tier-3 aliases** pointing at
-tier-2 semantics. Light and Dark expose an identical key set — verified, no
+tier-2 semantics. Light and Dark expose an identical key set. Verified, no
 missing keys in either direction. Any new token must be added to both.
 
 ### Collections as exported
@@ -246,7 +246,7 @@ missing keys in either direction. Any new token must be added to both.
 | Enum | variant property | modifier class | `Ux4gCardFooterType` |
 | Colour token | `Background/Brand/Primary/Strong` | `--ux4g-bg-*` | _{{confirm}}_ |
 | Spacing token | `Padding/M` | `--ux4g-space-*`, `--ux4g-padding-*` | _{{confirm}}_ |
-| Utility class | — | `ux4g-p-l`, `ux4g-gap-m`, `ux4g-radius-md` | — |
+| Utility class | - | `ux4g-p-l`, `ux4g-gap-m`, `ux4g-radius-md` | - |
 
 **Confirmed:** every class and custom property is `ux4g-` / `--ux4g-` prefixed,
 lowercase, hyphenated. The stylesheet defines **886 custom properties**, of which
@@ -255,17 +255,17 @@ Figma uses slash-nested Title Case groups.
 
 **Two convention breaks found in the shipped CSS:**
 
-- `--ux4x-icon-border-desabled` — wrong prefix (`ux4x`) and a misspelling
+- `--ux4x-icon-border-desabled`. Wrong prefix (`ux4x`) and a misspelling
   (`desabled`). Defined once, referenced once, so it works today, but it sits
   outside the documented `--ux4g-` namespace and cannot be overridden by anyone
   following the docs.
-- 16 properties named `--Spinner-{variant}-Color-{1,2}` — capitalised, unprefixed,
+- 16 properties named `--Spinner-{variant}-Color-{1,2}`. Capitalised, unprefixed,
   and using a different word order from every other token.
 
 Both are cosmetic today and breaking to fix later. Fix them now, while the web
 package is at 2.0.1 and has a small installed base.
 
-### Class composition — always include the base class
+### Class composition: always include the base class
 
 ```html
 <button class="ux4g-btn ux4g-btn-primary ux4g-btn-md">Save</button>
@@ -274,7 +274,7 @@ package is at 2.0.1 and has a small installed base.
 Base class first, then variant, then size. This is what the developer
 documentation at `/web/*` specifies, and it is the correct rule.
 
-The base class looks redundant, because it is — for styling. `.ux4g-btn` is
+The base class looks redundant, because it is, for styling. `.ux4g-btn` is
 simply the first selector in a group shared with every variant:
 
 ```css
@@ -292,7 +292,7 @@ descendant rules target the bare base class and nothing else:**
 ```
 
 A button written without the base class inside a Time Slot silently loses its
-width and centering — no error, just wrong layout in one component. Omitting the
+width and centering, no error, just wrong layout in one component. Omitting the
 base class is safe until it isn't, which is the worst kind of rule.
 
 The package README is inconsistent here: its Icon Button examples include the
@@ -300,14 +300,14 @@ base class, its Button examples don't. Align the README with `/web/*`, or make
 those three Time Slot rules target the variant classes as well. Do one; the
 current state teaches developers a habit that breaks in exactly one place.
 
-> Dart token naming is still unconfirmed — resolve from the foundations file and
+> Dart token naming is still unconfirmed. Resolve from the foundations file and
 > add a CI check asserting the Figma → CSS → Dart transform holds.
 
 ---
 
 ## 3. Primitives (tier 1)
 
-**Spacing** — 15 steps, non-linear. **The number in the name is an index, not the
+**Spacing**: 15 steps, non-linear. **The number in the name is an index, not the
 value.** `space-4` is 8px.
 
 | Token | px | | Token | px | | Token | px |
@@ -318,19 +318,19 @@ value.** `space-4` is 8px.
 | `space-3` | 6 | | `space-8` | 24 | | `space-13` | 64 |
 | `space-4` | 8 | | `space-9` | 32 | | `space-14` | 80 |
 
-**Radius** — `none 0` · `1: 2` · `2: 4` · `3: 8` · `4: 12` · `5: 16` · `6: 24` ·
+**Radius**: `none 0` · `1: 2` · `2: 4` · `3: 8` · `4: 12` · `5: 16` · `6: 24` ·
 `circular: 999`
 
-**Border width** — `None 0` · `Thin 1` · `Thick 2` · `Thicker 3` · `Thickest 4`
+**Border width**: `None 0` · `Thin 1` · `Thick 2` · `Thicker 3` · `Thickest 4`
 
-**Font** — Noto Sans, single family. Weights: Regular, Medium, SemiBold, Bold,
+**Font**. Noto Sans, single family. Weights: Regular, Medium, SemiBold, Bold,
 plus Display SemiBold and Display Bold (optical display cuts, used only by the
 `Display/*` scale).
 
 **Sizes** 11 · 12 · 14 · 16 · 18 · 20 · 24 · 28 · 32 · 36 · 40 · 52 · 60
 **Line heights** 14 · 16 · 18 · 20 · 24 · 28 · 32 · 36 · 44 · 52 · 72 · 80
 
-**Colour ramps** — 15 families. Primary, Secondary, Tertiary and Neutral carry
+**Colour ramps**: 15 families. Primary, Secondary, Tertiary and Neutral carry
 alpha variants (`600A`) alongside solid steps; Neutral additionally carries
 `0-White`, `0A`, `0B`, and Transparent.
 
@@ -378,7 +378,7 @@ structure that maps to `h1`–`h6`; **Title** for the heading of a bounded surfa
 
 ---
 
-## 5. Semantic spacing — read this before using it
+## 5. Semantic spacing: read this before using it
 
 Four axes. **The same t-shirt size means a different value on each axis.** This
 is intentional and it is the most common source of implementation error.
@@ -386,31 +386,31 @@ is intentional and it is the most common source of implementation error.
 | Size | `Inline/` | `Stack/` | `Section/` | `Padding/` |
 |---|---|---|---|---|
 | None | 0 | 0 | 0 | 0 |
-| XXS | 2 | 4 | — | 4 |
+| XXS | 2 | 4 | - | 4 |
 | XS | 4 | 8 | 24 | 8 |
 | S | 8 | 12 | 32 | 12 |
 | M | 12 | 16 | 48 | 16 |
-| L | 16 | 24 | — | 20 |
-| XL | — | — | 64 | 24 |
-| XXL | — | — | 80 | 32 |
+| L | 16 | 24 | - | 20 |
+| XL | - | - | 64 | 24 |
+| XXL | - | - | 80 | 32 |
 
-- `Inline/*` — horizontal gap between siblings on one line.
-- `Stack/*` — vertical gap between stacked blocks.
-- `Section/*` — vertical rhythm between page sections.
-- `Padding/*` — internal padding of a container.
+- `Inline/*`, horizontal gap between siblings on one line.
+- `Stack/*`, vertical gap between stacked blocks.
+- `Section/*`, vertical rhythm between page sections.
+- `Padding/*`, internal padding of a container.
 
 Pick the axis by **role, not by value.** `Inline/L` and `Padding/M` are both
 16px today; they are not interchangeable, and coupling to the number rather than
 the role is what breaks the next time the scale is retuned.
 
-**Semantic radius** — `None 0` · `Small 4` · `Medium 8` · `Large 12` · `Full 999`
-**Semantic border width** — `Default 1` (Thin) · `Strong 2` (Thick)
+**Semantic radius**, `None 0` · `Small 4` · `Medium 8` · `Large 12` · `Full 999`
+**Semantic border width**, `Default 1` (Thin) · `Strong 2` (Thick)
 
 ---
 
 ## 6. Elevation
 
-Five levels, each composed of **two** shadows — a key shadow and an ambient
+Five levels, each composed of **two** shadows. A key shadow and an ambient
 shadow. Both must be applied; a single-shadow approximation is not the token.
 
 | Level | Key (x y blur spread @ alpha) | Ambient |
@@ -422,7 +422,7 @@ shadow. Both must be applied; a single-shadow approximation is not the token.
 | 4 | 0 16 32 0 @ 24% | 0 8 16 0 @ 16% |
 
 Shadow colour is theme-bound: black in Light, white in Dark. Never hard-code
-`rgba(0,0,0,…)` — in Dark mode that renders as an invisible shadow.
+`rgba(0,0,0,…)`, in Dark mode that renders as an invisible shadow.
 
 ---
 
@@ -461,7 +461,7 @@ Warning `#AD4E00`/`#FFC973` · Information `#006D75`/`#91E8E0`.
 
 `Background/Neutral/Soft` and `Subtle` resolve to the **same value** (`#262626`)
 in Dark. Distinguishing surfaces by these two tokens will look correct in Light
-and flat in Dark — use `Elevated` for a true dark-mode layer separation.
+and flat in Dark. Use `Elevated` for a true dark-mode layer separation.
 
 ### Action state matrix
 
@@ -494,7 +494,7 @@ outlined variants share one box model and swap only the border colour.
 > **Mobile** and gets a 4-column grid, while **Tablet** (1024–1439) is in practice
 > landscape tablets and small laptops. This is a defensible layout decision but a
 > misleading label. Either rename the modes to `sm/md/lg/xl` or document the
-> intent prominently — do not leave developers to infer it.
+> intent prominently. Do not leave developers to infer it.
 
 ---
 
@@ -517,7 +517,7 @@ element using `Focus/Outline`.
 | `Text/Neutral/Inverse` on `Background/Brand/Primary/Strong` | 8.33 ✅ | 6.87 ✅ |
 | `Focus/Outline` on `Background/Neutral/Default` | 8.33 ✅ | 6.87 ✅ |
 
-### Known failures — non-text contrast (3:1 required)
+### Known failures: non-text contrast (3:1 required)
 
 | Token | Light | Dark |
 |---|---|---|
@@ -530,7 +530,7 @@ element using `Focus/Outline`.
 Under WCAG 1.4.11 the boundary of an input **is** a required non-text contrast
 target when it is the only thing indicating the control's extent. At 1.21:1 it is
 effectively invisible to low-vision users. `Border/Neutral/Strong` (4.54:1) and
-`Control/Border/Error` (4.38:1) both pass — the fix is to repoint
+`Control/Border/Error` (4.38:1) both pass. The fix is to repoint
 `Control/Border/Default` at a darker step, not to add a new colour.
 
 For a system carrying a government accessibility mandate this should be treated
@@ -539,7 +539,7 @@ where it is purely decorative (dividers between rows in an already-bounded
 table); it is not acceptable as a control boundary.
 
 `Text/Neutral/Disabled` at 25% alpha is exempt under 1.4.3 (inactive controls),
-but disabled state must not be the *only* signal — pair with `aria-disabled` and
+but disabled state must not be the *only* signal. Pair with `aria-disabled` and
 supporting text.
 
 ---
@@ -558,9 +558,9 @@ supporting text.
 ```
 
 Pin the exact version. `data-theme` on `<html>` is the theme switch and is
-required — components have no fallback theme.
+required. Components have no fallback theme.
 
-**npm — one package serves HTML, Angular and React**
+**npm, one package serves HTML, Angular and React**
 
 ```bash
 npm i ux4g-web-components
@@ -573,7 +573,7 @@ npm i ux4g-web-components
 |---|---|
 | Plain HTML | link `styles/ux4g.css`, script `dist/runtime/design-system.js` |
 | React | in `src/main.jsx`: `import 'ux4g-web-components/styles.css'` then `import 'ux4g-web-components/design-system'` |
-| Angular (A, recommended) | add `node_modules/ux4g-web-components/styles/ux4g.css` to `styles[]` and `node_modules/ux4g-web-components/dist/runtime/design-system.js` to `scripts[]` in `angular.json` — no TS import needed |
+| Angular (A, recommended) | add `node_modules/ux4g-web-components/styles/ux4g.css` to `styles[]` and `node_modules/ux4g-web-components/dist/runtime/design-system.js` to `scripts[]` in `angular.json`: no TS import needed |
 | Angular (B) | `@import 'ux4g-web-components/styles.css';` in `src/styles.css` + `import 'ux4g-web-components/design-system';` in `src/main.ts` |
 
 React applies classes directly to JSX (`className`); Angular applies them
@@ -583,7 +583,7 @@ Exports: `./styles.css` · `./design-system` (auto-init side-effect import) ·
 `./runtime` (`initRuntime()` / `destroyRuntime()`) · `./types`
 (`Class_Builder` types). Zero runtime dependencies.
 
-The runtime uses **event delegation** — no per-element binding — and provides
+The runtime uses **event delegation**, no per-element binding, and provides
 behaviours for Dropdown, Modal, Tooltip, Popover, Accordion, Tab, Carousel,
 Drawer, Mega Menu and Alert. Components not on that list are CSS-only.
 
@@ -611,7 +611,7 @@ void main() => runApp(
 );
 ```
 
-`Ux4gTheme` must wrap the app — components read foundations from it and will not
+`Ux4gTheme` must wrap the app. Components read foundations from it and will not
 render correctly outside it. Note the package pulls in `camera`,
 `google_mlkit_face_detection`, `permission_handler` and `file_picker` for the
 Biometric Capture and File Upload components; apps that use neither still inherit
@@ -627,7 +627,7 @@ Material Design Icons file (`VqX1Ca9WKCDX3U20i5okBU`).
 
 ## 11. Versioning
 
-**Current state is broken** — see §0. Proposed policy:
+**Current state is broken**. See §0. Proposed policy:
 
 - **Align all artifacts on one version line at the next major.** Publish npm and
   pub.dev at matching versions from that point, even where a platform has no
@@ -635,7 +635,7 @@ Material Design Icons file (`VqX1Ca9WKCDX3U20i5okBU`).
 - Until alignment, every release **must** update the §0 table and record the
   corresponding Figma release, or consumers have no way to reason about parity.
 - Semver against the public API of each package. Token *removal* or renamed
-  props/classes are breaking. Token *value* changes are minor — **unless** they
+  props/classes are breaking. Token *value* changes are minor: **unless** they
   alter contrast compliance, which is breaking.
 - Figma Community files carry no version history: put the version on the cover
   frame and bump it on every republish.
@@ -644,7 +644,7 @@ Material Design Icons file (`VqX1Ca9WKCDX3U20i5okBU`).
 
 ## 12. Component parity
 
-### There is no separate React or Angular implementation — and that is correct
+### There is no separate React or Angular implementation: and that is correct
 
 UX4G's web layer is **one CSS artifact consumed three ways.** The same
 `ux4g-*` classes are used verbatim in HTML, Angular templates and JSX; the only
@@ -657,16 +657,16 @@ ux4g-web-components  ──▶  styles/ux4g.css  ──▶  HTML  ·  Angular  �
 ```
 
 **Splitting CDN / React / Angular into three columns was a modelling error on my
-part.** They cannot drift from each other — there is nothing to drift. One
+part.** They cannot drift from each other. There is nothing to drift. One
 column, below.
 
 The trade-off worth stating in the doc: consumers get zero framework lock-in and
 one artifact to version, but no type safety on class names, no props API, and no
 compiler error when a class is misspelled. The `Class_Builder` types shipped at
 `ux4g-web-components/types` exist to partially close that gap and should be
-documented and promoted — most consumers will not discover them.
+documented and promoted. Most consumers will not discover them.
 
-### Class composition — three models, no stated rule
+### Class composition: three models, no stated rule
 
 Whether a component needs a base class alongside its variant class is
 **inconsistent**, and nothing in the docs says which applies where:
@@ -674,8 +674,8 @@ Whether a component needs a base class alongside its variant class is
 | Model | Components (verified) | Correct usage |
 |---|---|---|
 | Base **required** | `input`, `card`, `alert`, `icon-btn` | `ux4g-input ux4g-input-md` |
-| Base **optional** — shared selector list | `btn`, `spinner` | either form works |
-| Variant **only** — no base rule exists | `chip`, `badge` | `ux4g-chip-primary` |
+| Base **optional**: shared selector list | `btn`, `spinner` | either form works |
+| Variant **only**: no base rule exists | `chip`, `badge` | `ux4g-chip-primary` |
 
 This is why the Storybook and the package README disagree on Button: the
 Storybook shows `ux4g-btn ux4g-btn-primary ux4g-btn-md`, the README shows
@@ -696,9 +696,9 @@ error.
 predictable choice and the one already used by the majority of components; add
 the missing base rules for `chip` and `badge`, keep `btn`'s shared selector for
 backwards compatibility, and state the rule in the docs. Until that lands,
-always write base + variant — it is correct under all three models.
+always write base + variant. It is correct under all three models.
 
-### Parity — verified
+### Parity: verified
 
 Status: ✅ available · ❌ absent (grep-verified) · ❓ unverified
 
@@ -752,7 +752,7 @@ in `ux4g-web-components@2.0.1`. ❌ entries were confirmed absent by grepping th
 compiled stylesheet, not inferred from the README.
 
 **Flutter column remains a README summary**, not an API dump. Resolve it by
-running `dart doc` or reading the exported barrel file — it is the last
+running `dart doc` or reading the exported barrel file. It is the last
 unverified column and worth an hour.
 
 **Figma ❓ entries** mean "not in the catalogue I have", not "absent". Several
@@ -763,14 +763,14 @@ exist in the file and simply aren't in the advanced-component catalogue.
 
 Current documentation lives **only** at `doc.ux4g.gov.in/web/*` and
 `/flutter/*`. When verifying components, start from the paths exposed by each
-surface's `ai.txt` (`/web/ai.txt`, `/flutter/ai.txt`) — typically `llms.txt`
+surface's `ai.txt` (`/web/ai.txt`, `/flutter/ai.txt`). Typically `llms.txt`
 and `llms-full.txt`. Do not use legacy or mirror domains as evidence that a
 component exists or behaves a certain way.
 
 The root of the same domain still serves the old Bootstrap-derived catalogue
 at `/category/components.php` and `/components/*.php`
-— Offcanvas, Scrollspy, Collapse, Close Button, Button Group, Toasts,
-Placeholders, `data-bs-` attributes — none of which exist in
+, Offcanvas, Scrollspy, Collapse, Close Button, Button Group, Toasts,
+Placeholders, `data-bs-` attributes, none of which exist in
 `ux4g-web-components@2.0.1`.
 
 The problem is not that legacy docs exist. It is that **those pages present
@@ -808,13 +808,13 @@ Partial availability ships 🟡 with the gap named.
   Use tier 2 or tier 3.
 - Never pick a spacing axis by its value. `Inline/L` ≠ `Padding/L`.
 - Never assume `space-N` equals N pixels.
-- Never hard-code shadow colour — it inverts between themes.
+- Never hard-code shadow colour. It inverts between themes.
 - Never apply only the key shadow; elevation is always the pair.
 
 **Figma**
 
 - No detached instances, no copy-paste-and-edit of internals.
-- Font is Noto Sans via UX4G text styles only — never set `fontName`,
+- Font is Noto Sans via UX4G text styles only, never set `fontName`,
   `fontSize`, `lineHeight` or `fontWeight` manually.
 - Icons from the Material Design Icons file only; never as text glyphs.
 - No bespoke atoms where a UX4G component exists. Custom banners → Status Banner
@@ -826,7 +826,7 @@ Partial availability ships 🟡 with the gap named.
 
 - Do not hand-edit generated token files.
 - Do not override component internals via descendant selectors or `!important`.
-- Do not add dependencies to the web core package — it is dependency-free today
+- Do not add dependencies to the web core package. It is dependency-free today
   and that is a feature.
 - Do not ship `@latest` on the CDN in production.
 
@@ -836,22 +836,22 @@ Partial availability ships 🟡 with the gap named.
 
 Ordered by cost of leaving it alone.
 
-1. **Legacy v1/v2 docs still served and self-labelled "v3.0 (Latest)"** (§12) — `/category/*` and `/components/*.php` document ~16 components that don't exist in the shipped package. Redirect them to `/web/*`.
-2. **Deprecated Flutter package not flagged on pub.dev** (§0) — `isDiscontinued: false`, released 0.5.0 three weeks ago, downloads split near-evenly with the replacement. Set the flag and `replacedBy`.
-3. **`ux4g_flutter_components` has no repository or issue tracker** (§0) — the deprecated package has one, the current one doesn't. Consumers have nowhere to file bugs.
-4. **Class composition is inconsistent across components** (§12) — base class required for `input`/`card`/`alert`/`icon-btn`, optional for `btn`/`spinner`, nonexistent for `chip`/`badge`, with no stated rule. A developer generalising from the Button example to Icon Button gets a silently broken control. Note one real edge case: three Time Slot rules key off the literal `.ux4g-btn`, so a button inside `.ux4g-time-slot-weekly-actions` that omits the base class loses its `min-width`.
-5. **Developer docs promise framework APIs that don't exist** — React "components and hooks", Angular "modules and directives"; the package ships CSS classes, and all three framework links resolve to the same Storybook. Fix the copy or build the wrappers.
+1. **Legacy v1/v2 docs still served and self-labelled "v3.0 (Latest)"** (§12): `/category/*` and `/components/*.php` document ~16 components that don't exist in the shipped package. Redirect them to `/web/*`.
+2. **Deprecated Flutter package not flagged on pub.dev** (§0): `isDiscontinued: false`, released 0.5.0 three weeks ago, downloads split near-evenly with the replacement. Set the flag and `replacedBy`.
+3. **`ux4g_flutter_components` has no repository or issue tracker** (§0). The deprecated package has one, the current one doesn't. Consumers have nowhere to file bugs.
+4. **Class composition is inconsistent across components** (§12). Base class required for `input`/`card`/`alert`/`icon-btn`, optional for `btn`/`spinner`, nonexistent for `chip`/`badge`, with no stated rule. A developer generalising from the Button example to Icon Button gets a silently broken control. Note one real edge case: three Time Slot rules key off the literal `.ux4g-btn`, so a button inside `.ux4g-time-slot-weekly-actions` that omits the base class loses its `min-width`.
+5. **Developer docs promise framework APIs that don't exist**. React "components and hooks", Angular "modules and directives"; the package ships CSS classes, and all three framework links resolve to the same Storybook. Fix the copy or build the wrappers.
 6. **`Control/Border/Default` fails non-text contrast** at 1.21:1 light / 1.73:1 dark (§9). Accessibility-mandated system; treat as a blocker.
-7. **8 MB CSS bundle** with base64-embedded fonts (§10) — punitive on constrained connections, which is much of the actual user base.
-8. **Three stray documentation domains reachable from published links** — `docux4g.dl6.in`, `ux4g-design.netlify.app`, and the legacy root path. Redirect or retire.
-9. **Version drift across artifacts** (§0, §11) — CDN 3.1.0, npm 2.0.1, pub 1.3.0, Figma 3.0, no published mapping.
-10. **`Text/Neutral/Tertiary` on `Soft` fails at 4.35:1** in light (§9) — marginal everywhere at 4.54:1 on the default background.
-11. **Two CSS naming-convention breaks** (§2) — `--ux4x-icon-border-desabled` and 16 capitalised `--Spinner-*` properties. Cheap now, breaking later.
-12. **Primitive names embed their values** — `Spacing/space-4 (8)`, `Radius/radius-3 (8)`. Parentheses and spaces are hostile to codegen, and retuning a value forces a rename that reads as breaking when it isn't.
-13. **`Background/Neutral/Soft` and `Subtle` collide in Dark** (both `#262626`) — surface hierarchy flattens (§7).
-14. **Breakpoint names don't match devices** — portrait tablets land in Mobile (§8).
+7. **8 MB CSS bundle** with base64-embedded fonts (§10). Punitive on constrained connections, which is much of the actual user base.
+8. **Three stray documentation domains reachable from published links**: `docux4g.dl6.in`, `ux4g-design.netlify.app`, and the legacy root path. Redirect or retire.
+9. **Version drift across artifacts** (§0, §11). CDN 3.1.0, npm 2.0.1, pub 1.3.0, Figma 3.0, no published mapping.
+10. **`Text/Neutral/Tertiary` on `Soft` fails at 4.35:1** in light (§9). Marginal everywhere at 4.54:1 on the default background.
+11. **Two CSS naming-convention breaks** (§2): `--ux4x-icon-border-desabled` and 16 capitalised `--Spinner-*` properties. Cheap now, breaking later.
+12. **Primitive names embed their values**: `Spacing/space-4 (8)`, `Radius/radius-3 (8)`. Parentheses and spaces are hostile to codegen, and retuning a value forces a rename that reads as breaking when it isn't.
+13. **`Background/Neutral/Soft` and `Subtle` collide in Dark** (both `#262626`). Surface hierarchy flattens (§7).
+14. **Breakpoint names don't match devices**. Portrait tablets land in Mobile (§8).
 15. **Flutter package carries camera/ML-Kit/permissions transitively** for two components (§10).
-16. **Flutter component list still unverified** (§12) — the only remaining ❓ column.
+16. **Flutter component list still unverified** (§12). The only remaining ❓ column.
 17. **Dart token naming unconfirmed** against Figma and CSS (§2).
 
 ---

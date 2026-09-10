@@ -8,7 +8,7 @@ import { landingFor } from '@blood-connect/platform';
 export const metadata: Metadata = { title: 'Blood Connect' };
 
 /**
- * The landing page — public (§9's role matrix, row one).
+ * The landing page. Public (§9's role matrix, row one).
  *
  * Two doors and nothing else: the board anyone may read, and the sign-in for
  * people with an account. A landing page that explains the system at length is

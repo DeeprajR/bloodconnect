@@ -38,7 +38,7 @@ const DISTRICT_ID = 'TEST_CANCEL_DISTRICT';
  * hospital that no longer needs them.
  *
  * Three modules' tables have to move together, so every test below asserts all
- * three — a request showing cancelled while units stay held for it, or while
+ * three. A request showing cancelled while units stay held for it, or while
  * donors are still being recruited, is worse than not cancelling at all.
  */
 describe.skipIf(!testUrl)('cancelling a request (§3, §8)', () => {
@@ -131,7 +131,7 @@ describe.skipIf(!testUrl)('cancelling a request (§3, §8)', () => {
 
   afterAll(async () => {
     // The settings row points at this district, and the foreign key is the
-    // point rather than an obstacle — so it is released before the node goes.
+    // point rather than an obstacle, so it is released before the node goes.
     await client`UPDATE hospital.centre_settings SET district_id = NULL, city_id = NULL`;
     await client`DELETE FROM reference.location_nodes WHERE id LIKE 'TEST%'`;
     await client.end({ timeout: 5 });
@@ -227,7 +227,7 @@ describe.skipIf(!testUrl)('cancelling a request (§3, §8)', () => {
     if (!result.ok) expect(result.error.kind).toBe('NotAuthorized');
   });
 
-  it('is idempotent — a second cancellation changes nothing', async () => {
+  it('is idempotent. A second cancellation changes nothing', async () => {
     const id = await submitted();
 
     const first = await cancelRequest(context(doctor), id, 'Referred elsewhere');
@@ -291,7 +291,7 @@ describe.skipIf(!testUrl)('cancelling a request (§3, §8)', () => {
       .where(eq(donorDemand.bloodRequestId, id));
 
     // The centre sets the status and stops there. The bot's ticker sees
-    // `cancelled` and runs §7.6 — which is what actually reaches the donors.
+    // `cancelled` and runs §7.6, which is what actually reaches the donors.
     expect(demand?.status).toBe('cancelled');
   });
 
@@ -300,7 +300,7 @@ describe.skipIf(!testUrl)('cancelling a request (§3, §8)', () => {
     const id = await submitted(2);
     await decideRequest(context(counter), { requestUuid: id, action: 'issue', note: null });
 
-    // One unit is issued — physically collected. It is not the register's to
+    // One unit is issued. Physically collected. It is not the register's to
     // reclaim; that is a return, decided with the unit in hand (§4).
     const [firstBag] = await db.select().from(bloodBags).where(eq(bloodBags.status, 'reserved'));
     await client`UPDATE hospital.blood_bags
@@ -346,7 +346,7 @@ describe.skipIf(!testUrl)('cancelling a request (§3, §8)', () => {
       status: 'draft',
     });
 
-    // A draft is not cancelled — it is left, and ages visibly on the dashboard
+    // A draft is not cancelled. It is left, and ages visibly on the dashboard
     // (§8). Cancelling one would be an ending for something that never began.
     const result = await cancelRequest(context(doctor), draftId, 'Never mind');
     expect(result.ok).toBe(false);

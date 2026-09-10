@@ -6,7 +6,7 @@ import { useEffect } from 'react';
  * Registers the service worker (§2.8).
  *
  * Only in production. In development the worker would serve a stale shell
- * across rebuilds, which turns every hot reload into a puzzle — and the offline
+ * across rebuilds, which turns every hot reload into a puzzle, and the offline
  * behaviour is not what is being worked on there.
  */
 export function ServiceWorker(): null {

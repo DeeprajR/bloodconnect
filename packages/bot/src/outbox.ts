@@ -8,7 +8,7 @@
  *
  * That indirection is the whole guarantee. Sending inside the closing
  * transaction would mean a chat API timeout *after* the commit loses the
- * messages silently — the demand shows closed, the donors are still expecting
+ * messages silently. The demand shows closed, the donors are still expecting
  * to give blood, and nothing anywhere records that they were never told.
  *
  * `dedupe_key` makes redelivery harmless, so the drain can be at-least-once,
@@ -47,7 +47,7 @@ export type QueuedMessage = {
   readonly message: OutgoingMessage;
   /**
    * One message per reason per recipient. Built from the ids involved, never
-   * from a timestamp — a key with a clock in it deduplicates nothing.
+   * from a timestamp. A key with a clock in it deduplicates nothing.
    */
   readonly dedupeKey: string;
 };
@@ -58,7 +58,7 @@ export type QueuedMessage = {
  * Takes a `BotTransaction` rather than a context for the reason the whole
  * pattern exists: the rows must commit with the state change that caused them.
  * `now` comes from the caller's injected clock for the same reason the drain
- * reads one — see the note on `nextAttemptAt` below.
+ * reads one. See the note on `nextAttemptAt` below.
  */
 export async function enqueue(
   tx: BotTransaction,
@@ -82,7 +82,7 @@ export async function enqueue(
          * From the injected clock, never the database's `now()`.
          *
          * The drain decides what is due using `ctx.clock`, so a row stamped by
-         * the database is a row compared against a different clock — and under
+         * the database is a row compared against a different clock, and under
          * a frozen clock nothing is ever due, which is a queue that silently
          * stops. §3 injects time precisely so the two cannot drift apart.
          */
@@ -125,7 +125,7 @@ const backoffMinutes = (attempts: number): number => Math.min(30, 2 ** attempts)
  *
  * Claims each row with a conditional UPDATE before sending, so two drains
  * running at once do not both send the same message. The send happens **outside**
- * any transaction — holding one open across a network call is how a connection
+ * any transaction. Holding one open across a network call is how a connection
  * pool is exhausted by a slow chat API.
  */
 export async function drainOutbox(
@@ -159,7 +159,7 @@ export async function drainOutbox(
      *
      * A lease rather than a `sending` status, because a status would need a
      * crash-recovery sweep to release rows the process died holding. A lease
-     * releases itself — the worst case is one message sent twice after a crash,
+     * releases itself. The worst case is one message sent twice after a crash,
      * and `dedupe_key` is why that is harmless.
      */
     const claimed = await ctx.db
@@ -184,7 +184,7 @@ export async function drainOutbox(
      * Route by the row's own channel (§2.11).
      *
      * One global adapter would send a message queued for Telegram through
-     * whatever this process happens to be polling — to a stranger, or to
+     * whatever this process happens to be polling, to a stranger, or to
      * nobody. The channel is on the row precisely so this is a lookup.
      */
     const port = ctx.channel.for(row.channel);
@@ -246,7 +246,7 @@ export async function drainOutbox(
  * The §11.9 alert, as a query.
  *
  * "A demand closed without its stand-down messages sent" is not detectable by
- * looking at demands — they all look closed. It is detectable here: a
+ * looking at demands. They all look closed. It is detectable here: a
  * stand-down still pending five minutes after it was written means somebody is
  * still expecting to give blood for a request that has ended.
  */

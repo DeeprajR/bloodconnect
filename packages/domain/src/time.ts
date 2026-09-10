@@ -1,8 +1,8 @@
 /**
  * Calendar days, instants, and the one place a day becomes a moment (§5.2).
  *
- * The centre records a **day** — collected on, expires on, needed by, donated on
- * — and a day is not an instant. Storing "needed by 7 Sep" as a timestamp forces
+ * The centre records a **day**, collected on, expires on, needed by, donated on
+ *, and a day is not an instant. Storing "needed by 7 Sep" as a timestamp forces
  * a timezone guess at every read; storing it as a `date` and converting once,
  * here, means "expires 23:59 local" exists exactly once in the codebase.
  *
@@ -53,7 +53,7 @@ export function parseCalendarDay(value: unknown): CalendarDay | undefined {
 
 const toUtcMillis = (day: CalendarDay): number => {
   const match = DAY_PATTERN.exec(day);
-  /* istanbul ignore next — a CalendarDay cannot be built without matching */
+  /* istanbul ignore next. A CalendarDay cannot be built without matching */
   if (!match) throw new Error(`corrupt CalendarDay: ${day}`);
   const [, y, m, d] = match;
   return Date.UTC(Number(y), Number(m) - 1, Number(d));
@@ -80,7 +80,7 @@ export const subtractDays = (day: CalendarDay, days: number): CalendarDay =>
 export const daysBetween = (from: CalendarDay, to: CalendarDay): number =>
   Math.round((toUtcMillis(to) - toUtcMillis(from)) / MILLIS_PER_DAY);
 
-/** -1, 0 or 1 — sortable, and readable at a call site. */
+/** -1, 0 or 1. Sortable, and readable at a call site. */
 export const compareDays = (a: CalendarDay, b: CalendarDay): -1 | 0 | 1 => {
   const left = toUtcMillis(a);
   const right = toUtcMillis(b);
@@ -100,7 +100,7 @@ export const latest = (a: CalendarDay, b: CalendarDay): CalendarDay =>
   isAfter(a, b) ? a : b;
 
 /**
- * The zone's offset from UTC, in minutes, at a given instant — derived from the
+ * The zone's offset from UTC, in minutes, at a given instant. Derived from the
  * IANA database through Intl rather than hardcoded, so a zone that does observe
  * DST stays correct if the deployment ever moves out of India.
  */
@@ -118,7 +118,7 @@ function offsetMinutesAt(instant: Instant, timeZone: string): number {
 
   const field = (type: Intl.DateTimeFormatPartTypes): number => {
     const found = parts.find((p) => p.type === type);
-    /* istanbul ignore next — every requested field is in the format */
+    /* istanbul ignore next, every requested field is in the format */
     if (!found) throw new Error(`missing ${type} formatting ${timeZone}`);
     return Number(found.value);
   };
@@ -127,7 +127,7 @@ function offsetMinutesAt(instant: Instant, timeZone: string): number {
   const hour = field('hour') % 24;
   // Milliseconds come from the instant itself: Intl reports whole seconds, and
   // subtracting a truncated value from an untruncated one would fold the
-  // remainder into the offset — which is how an end-of-day lands a second late.
+  // remainder into the offset, which is how an end-of-day lands a second late.
   const asIfUtc = Date.UTC(
     field('year'),
     field('month') - 1,
@@ -164,7 +164,7 @@ export const startOfDay = (day: CalendarDay, timeZone: string = APP_TIMEZONE): I
 /**
  * The last instant of the day, in the application timezone.
  *
- * This is "expires at 23:59 local" (§7) — a demand needed by 7 Sep is live until
+ * This is "expires at 23:59 local" (§7). A demand needed by 7 Sep is live until
  * the end of 7 Sep where the hospital is, not until 00:00 UTC on it.
  */
 export const endOfDay = (day: CalendarDay, timeZone: string = APP_TIMEZONE): Instant =>

@@ -10,7 +10,7 @@
 --     contract tables arrive in P3 and grant exactly their own columns (§5.1);
 --     until then the bot can see that `hospital` exists and nothing inside it.
 --
--- Rollback plan: these are grants and triggers only — re-running the previous
+-- Rollback plan: these are grants and triggers only. Re-running the previous
 -- state restores them. No data is touched.
 
 GRANT USAGE ON SCHEMA "hospital" TO app_web;

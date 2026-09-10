@@ -172,7 +172,7 @@ const groupOptions = BLOOD_GROUPS.map((g) => ({ value: g, label: bloodGroupLabel
  * **Shown, never enforced.** Two people genuinely called Anitha Menon arrive at
  * the same hospital, and refusing the second admission at 3am is a far worse
  * failure than recording a duplicate. So this is a panel beside the field with
- * enough to recognise somebody — and the doctor decides.
+ * enough to recognise somebody, and the doctor decides.
  */
 function DuplicateWarning({ matches }: { matches: readonly PossibleDuplicate[] }) {
   if (matches.length === 0) return null;
@@ -199,7 +199,7 @@ function DuplicateWarning({ matches }: { matches: readonly PossibleDuplicate[] }
         </ul>
         <p className="ux4g-label-m-default">
           If one of these is the same person, use their existing record. If not,
-          carry on — this is only a check.
+          carry on. This is only a check.
         </p>
       </div>
     </div>
@@ -208,8 +208,8 @@ function DuplicateWarning({ matches }: { matches: readonly PossibleDuplicate[] }
 
 export function PatientForm() {
   const [state, action] = useActionState(createPatientAction, initial);
-  // The reaction field exists only where there was a previous transfusion —
-  // asking about a reaction to something that never happened is noise.
+  // The reaction field exists only where there was a previous transfusion.
+  // Asking about a reaction to something that never happened is noise.
   const [previous, setPrevious] = useState('unknown');
   const [duplicates, setDuplicates] = useState<PossibleDuplicate[]>([]);
 
@@ -338,7 +338,7 @@ export function AdmissionForm({ patientId }: { patientId: string }) {
  * `DraftForm` and `SubmitForm` lived here.
  *
  * A request is four fields on one screen now (`RaiseRequestForm`), so there is
- * no draft to edit and no review step to confirm — the review was four fields
+ * no draft to edit and no review step to confirm. The review was four fields
  * shown back to somebody who had just typed them (ADR 0010).
  */
 
@@ -350,7 +350,7 @@ export function AdmissionForm({ patientId }: { patientId: string }) {
  * units, and a donor may already have agreed to come in. Opening it first is a
  * moment to be sure.
  *
- * The reason is required by the use case, not only by the form — but asking for
+ * The reason is required by the use case, not only by the form, but asking for
  * it here, before the button, is what makes it a sentence somebody writes rather
  * than a field they fill.
  */

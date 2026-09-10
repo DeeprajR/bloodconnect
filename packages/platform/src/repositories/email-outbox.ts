@@ -7,7 +7,7 @@
  * log line.
  *
  * **Never put a secret in `payload`.** The link and the OTP are rendered into
- * the message body at send time from values passed here — which means the
+ * the message body at send time from values passed here, which means the
  * token *does* pass through this table, and that is a deliberate, bounded
  * trade: an outbox that cannot reconstruct its message cannot retry it. The
  * mitigation is that these rows are short-lived by retention (§12.3) and every
@@ -60,8 +60,8 @@ export type DrainResult = {
 /**
  * Sends what is due.
  *
- * Rows are claimed with `FOR UPDATE SKIP LOCKED` so two workers — or a worker
- * and a developer running the drain by hand — never send the same message
+ * Rows are claimed with `FOR UPDATE SKIP LOCKED` so two workers, or a worker
+ * and a developer running the drain by hand, never send the same message
  * twice. Claiming and sending are deliberately *not* one transaction: holding a
  * row lock across a network call to a mail provider is how a slow provider
  * becomes a database problem.

@@ -27,7 +27,7 @@ import type { UseCaseContext } from '@blood-connect/platform';
 
 export type GroupStock = {
   readonly bloodGroup: BloodGroup;
-  /** Red cells only — see `stockByGroup`. */
+  /** Red cells only. See `stockByGroup`. */
   readonly onShelf: number;
   readonly reserved: number;
   readonly floor: number;
@@ -39,7 +39,7 @@ export type GroupStock = {
 /**
  * Stock per group against the floor (§4).
  *
- * **The floor counts red cells only** — whole blood and packed cells. That is a
+ * **The floor counts red cells only**. Whole blood and packed cells. That is a
  * decision worth stating: a floor met by bags of plasma would read as
  * comfortable while there was nothing on the shelf a walk-in donor could
  * replace, and "recruit for groups below floor" would then raise a demand
@@ -100,7 +100,7 @@ export async function stockByGroup(ctx: UseCaseContext): Promise<GroupStock[]> {
   });
 }
 
-/** Stock on hand for one group and product — what the decision screen shows. */
+/** Stock on hand for one group and product. What the decision screen shows. */
 export async function availableUnits(
   ctx: UseCaseContext,
   bloodGroup: BloodGroup,
@@ -199,7 +199,7 @@ export async function getDecisionForRequest(
   return row;
 }
 
-/** The units issued against a decision, by unit number — the traceability read. */
+/** The units issued against a decision, by unit number. The traceability read. */
 export async function listDecisionBags(
   ctx: UseCaseContext,
   decisionId: string,

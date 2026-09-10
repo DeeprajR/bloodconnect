@@ -4,14 +4,14 @@
 -- is granted by the **web** release: read-only `reference` (migration 0002 of
 -- that set) and exactly the contract columns of `hospital.donor_demand` and
 -- `hospital.donor_demand_confirmations` (migration 0010). That split is the
--- point — neither release can widen the other's boundary.
+-- point, neither release can widen the other's boundary.
 --
 -- `event_log` is append-only by grant, the same treatment `hospital.audit_log`
 -- gets: a log the application can rewrite is not a log (§14).
 --
 -- The `set_updated_at` function is defined here as well as in the web set. Two
 -- CREATE OR REPLACE statements of an identical function are idempotent, and the
--- alternative is a migration set that fails to apply on its own — which defeats
+-- alternative is a migration set that fails to apply on its own, which defeats
 -- the purpose of having two.
 --
 -- Rollback plan: grants and triggers only. No data is touched.

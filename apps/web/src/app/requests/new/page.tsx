@@ -29,7 +29,7 @@ export default async function NewRequestPage({
   /**
    * Only looked up when the doctor arrived from an admitted patient.
    *
-   * The common path loads nothing at all — the form is four sets of buttons,
+   * The common path loads nothing at all. The form is four sets of buttons,
    * and a query on the way to it would be latency spent on the case that does
    * not need it.
    */

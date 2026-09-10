@@ -50,7 +50,7 @@ export async function snoozeDonor(
  * Undoes a pause or an opt-out (§5).
  *
  * Clearing `opted_out_at` also restores consent currency, which is what the wave
- * query actually reads — a donor who came back and was still never contacted
+ * query actually reads. A donor who came back and was still never contacted
  * would have left for good the second time.
  */
 export async function resumeDonor(ctx: BotContext, donorId: string): Promise<void> {
@@ -86,7 +86,7 @@ export type ErasureResult = {
  *
  * **The donation survives; the donor's identity does not.** A blood centre is
  * required to keep a record of every unit it collected and which donation it
- * came from, so the row and its bag identifier stay — with the name and the
+ * came from, so the row and its bag identifier stay, with the name and the
  * phone number removed from it. Deleting the row outright would break the
  * traceability §4 requires and would not be lawful either.
  *
@@ -99,7 +99,7 @@ export type ErasureResult = {
  *  - the values snapshot on each consent, which contained both
  *
  * What stays: `donor_consents` as a dated record that consent was given and to
- * which wording — evidence for the messages already sent — and the donation
+ * which wording, evidence for the messages already sent, and the donation
  * rows themselves.
  *
  * The roster de-identification is the part that needed a grant the bot did not
@@ -135,8 +135,8 @@ export async function deleteDonorData(
     /**
      * The consent row stays; what it was showing does not.
      *
-     * The snapshot is a copy of the summary — name, masked phone, where they
-     * live — and keeping it after erasure would defeat the erasure. The dated
+     * The snapshot is a copy of the summary, name, masked phone, where they
+     * live, and keeping it after erasure would defeat the erasure. The dated
      * fact that consent was given, and to which wording version, is what the
      * record is for and survives on its own.
      */
@@ -221,7 +221,7 @@ export async function draftFromProfile(
 
   /**
    * Only the flagging answers are stored (§2.10), so everything absent is a
-   * clear answer — and the draft has to say so explicitly.
+   * clear answer, and the draft has to say so explicitly.
    *
    * The first version of this filled in the flags alone, and the profile editor
    * then decided the screening step had never been answered and marched the
@@ -256,7 +256,7 @@ export async function draftFromProfile(
   };
 }
 
-/** Anything half-typed, dropped — used when a donor abandons an edit. */
+/** Anything half-typed, dropped. Used when a donor abandons an edit. */
 export async function clearConversation(
   ctx: BotContext,
   address: ChannelAddress,

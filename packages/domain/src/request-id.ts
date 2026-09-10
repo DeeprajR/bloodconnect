@@ -3,19 +3,19 @@
  *
  * It is a **separate column** from the primary key (§5.2): the UUIDv7 is what
  * rows join on, and this is what a doctor reads aloud in a corridor. The number
- * comes from the transactional counter in §7.1 — this file only formats and
+ * comes from the transactional counter in §7.1. This file only formats and
  * parses it, and deliberately offers no way to invent one.
  *
  * **Why this shape.** The doctor reads it to the patient's bystander, who
  * carries it to the blood centre and it is typed at the counter. So it is short
  * enough to say once, the date leads because that is the part a person already
- * knows, and the counter prefills it — leaving five digits to type for a request
+ * knows, and the counter prefills it. Leaving five digits to type for a request
  * raised today.
  *
  * > **It identifies a request. It does not authenticate anybody.** Sequential
  * > within a day and therefore guessable, which is safe at a counter where a
  * > person is physically present and the centre verifies the patient by other
- * > means. Nothing keyed on this ID alone may ever be exposed publicly — no
+ * > means. Nothing keyed on this ID alone may ever be exposed publicly, no
  * > status page, no API lookup, no "track your request" link (ADR 0010 §4).
  */
 
@@ -27,7 +27,7 @@ export type RequestNumber = string & { readonly [requestIdBrand]: 'RequestNumber
 
 const PATTERN = /^(\d{2})(\d{2})(\d{2})-(\d{5})$/;
 
-/** Five digits is 99,999 requests in one day — comfortably past any real load. */
+/** Five digits is 99,999 requests in one day. Comfortably past any real load. */
 export const REQUEST_SEQUENCE_DIGITS = 5;
 export const MAX_REQUEST_SEQUENCE = 10 ** REQUEST_SEQUENCE_DIGITS - 1;
 
@@ -62,7 +62,7 @@ export type ParsedRequestNumber = {
  *
  * Tolerant of the separator and of spacing, because this is transcribed by ear:
  * `090926-00001`, `090926 00001` and `09092600001` are the same request. It is
- * **not** tolerant of a wrong length — a five-digit sequence read as four is a
+ * **not** tolerant of a wrong length. A five-digit sequence read as four is a
  * different request, not a near miss, so it is refused rather than guessed at.
  */
 export function parseRequestNumber(value: unknown): ParsedRequestNumber | undefined {

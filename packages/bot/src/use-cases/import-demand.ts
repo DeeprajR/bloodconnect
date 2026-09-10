@@ -7,7 +7,7 @@
  * idempotent in the way that matters: a row is never fanned out twice, however
  * often the ticker runs or however it is restarted mid-import.
  *
- * The bot writes **only** its own columns on the demand — `bot_public_id`,
+ * The bot writes **only** its own columns on the demand: `bot_public_id`,
  * `imported_at` and the progress counters. It physically cannot set `units`;
  * `app_bot` holds no grant on it (§5.1).
  *
@@ -36,14 +36,14 @@ export type ImportedRequest = {
  *
  * Not the demand's UUID: this goes in a URL a donor may read aloud, and it is
  * the only identifier of a request that leaves the system. Ambiguous characters
- * — O and 0, I and 1 — are excluded because somebody will eventually transcribe
+ *, O and 0, I and 1, are excluded because somebody will eventually transcribe
  * one by hand.
  *
  * **It is built from the *end* of the identifier, not the beginning.** A UUIDv7
  * starts with a millisecond timestamp, so two ids minted in the same second
  * share their leading characters; deriving from those produced a public id that
  * collided on the second import of a run. The trailing characters are the
- * random ones. Found by running the loop, not by a unit test — the first import
+ * random ones. Found by running the loop, not by a unit test. The first import
  * of any run looks perfect.
  */
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -99,8 +99,8 @@ export async function importOpenDemands(
     /**
      * One transaction per demand, and one failure does not stop the batch.
      *
-     * A demand that cannot be imported — a public-id collision, a malformed row
-     * — must not prevent every other open demand being recruited for. The claim
+     * A demand that cannot be imported, a public-id collision, a malformed row
+     *, must not prevent every other open demand being recruited for. The claim
      * and the insert roll back together, so the next pass simply tries again
      * with a fresh identifier.
      */
@@ -112,7 +112,7 @@ export async function importOpenDemands(
          * `bot_public_id IS NULL` (§7.4).
          *
          * Doing it before the insert is what makes two tickers safe: the second
-         * matches no row, writes nothing, and moves on — rather than both
+         * matches no row, writes nothing, and moves on, rather than both
          * creating a request and one failing on the unique index afterwards, by
          * which point donors may already have been messaged.
          */

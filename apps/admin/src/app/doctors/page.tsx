@@ -81,7 +81,7 @@ export default async function DoctorsPage() {
                       <Link href={`/doctors/${doctor.id}`}>{doctor.fullName}</Link>
                     </td>
                     <td>{doctor.email}</td>
-                    <td className="app-figure">{doctor.provisionalReg ?? '—'}</td>
+                    <td className="app-figure">{doctor.provisionalReg ?? '-'}</td>
                     <td>
                       {STATUS_LABELS[doctor.status]}
                       {/*
@@ -92,7 +92,7 @@ export default async function DoctorsPage() {
                         <span className="ux4g-label-m-default"> · {waiting}d</span>
                       ) : null}
                     </td>
-                    <td>{doctor.hasSeal ? 'Yes' : '—'}</td>
+                    <td>{doctor.hasSeal ? 'Yes' : '-'}</td>
                     <td className="app-figure">{dayFormat.format(doctor.createdAt)}</td>
                   </tr>
                 );

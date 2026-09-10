@@ -228,7 +228,7 @@ export function BagForm({
         <div className="ux4g-alert ux4g-alert-info" role="status">
           <div className="ux4g-alert-content">
             <p className="ux4g-alert-message">
-              {WORDING.expiresOn}: <span className="app-figure">{derived}</span> —{' '}
+              {WORDING.expiresOn}: <span className="app-figure">{derived}</span>:{' '}
               {shelfLife} days for {productLabel(product as never)}.
             </p>
           </div>
@@ -239,7 +239,7 @@ export function BagForm({
         id="labelExpiry"
         label="Expiry printed on the bag"
         type="date"
-        hint="Only if the bag carries one. The printed label wins, and a disagreement is flagged for you to check — not silently accepted."
+        hint="Only if the bag carries one. The printed label wins, and a disagreement is flagged for you to check, not silently accepted."
       />
       <Field
         id="tagUid"

@@ -3,7 +3,7 @@
  *
  * The administration application owns exactly this: a doctor's name,
  * registration number, seal and address. It creates the account and it never
- * knows a password, because at the moment it creates one none exists — the
+ * knows a password, because at the moment it creates one none exists. The
  * person sets theirs from a link sent to their inbox.
  *
  * Every use case here opens one transaction, asserts its own permission, and
@@ -71,7 +71,7 @@ export type CreateDoctorError = NotAuthorized | EmailTaken;
  * Creates the account and queues its invite in one transaction.
  *
  * The two must commit together. An account created whose invite was never
- * queued is an account nobody can sign in to and nobody was told about — and it
+ * queued is an account nobody can sign in to and nobody was told about, and it
  * looks exactly like an invite the doctor ignored, which is the failure §8
  * asks every flow to make impossible.
  */
@@ -174,7 +174,7 @@ export async function resendInvite(
     if (!account) return err(accountNotFound());
 
     // Re-sending to an account that is already using the system would issue a
-    // password-setting link to someone who has a password — an account
+    // password-setting link to someone who has a password. An account
     // takeover primitive handed to whoever can read that inbox.
     if (account.status !== 'pending_activation') return err(linkNotUsable());
 
@@ -241,7 +241,7 @@ export async function updateDoctor(
  * An administrator setting a doctor's address directly.
  *
  * Both addresses are told, because this is the one change that can quietly move
- * an account to someone else's inbox — and the person losing it must hear about
+ * an account to someone else's inbox, and the person losing it must hear about
  * it at the address they still read.
  */
 export async function setDoctorEmail(
@@ -301,7 +301,7 @@ export async function setAccountStatus(
 > {
   if (!actorHas(ctx.actor, 'doctors:manage')) return err(notAuthorized('doctors:manage'));
 
-  // Nobody deactivates their own account (§13). Not a courtesy — it is what
+  // Nobody deactivates their own account (§13). Not a courtesy. It is what
   // stops an administrator locking themselves out of the only way back in.
   if (ctx.actor.kind === 'user' && ctx.actor.userId === userId) {
     return err(notAuthorized('doctors:manage'));
@@ -326,7 +326,7 @@ export async function setAccountStatus(
     }
 
     // An account that never activated has no password, and the CHECK
-    // constraint ties that to `pending_activation` — so reactivating one puts
+    // constraint ties that to `pending_activation`, so reactivating one puts
     // it back where it was rather than into an impossible state.
     const nextStatus =
       status === 'active' && account.passwordHash === null ? 'pending_activation' : status;

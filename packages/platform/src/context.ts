@@ -4,7 +4,7 @@
  * Every use case takes `{ db, clock, ids, ports, actor, correlationId }`. Time,
  * randomness and identity are injected rather than reached for, which is what
  * makes interval, expiry and session-expiry logic testable without freezing a
- * global — and what stops a use case quietly depending on ambient state.
+ * global, and what stops a use case quietly depending on ambient state.
  *
  * The use case is also the transaction boundary: no repository opens its own
  * transaction and no route handler opens one, so "what happens atomically" is
@@ -39,8 +39,8 @@ export type TokenGenerator = {
    * A six-digit reset code, from the same random source as a token.
    *
    * Short because a human retypes it from an email, which is exactly why it is
-   * paired with a ten-minute expiry, a small attempt limit and a throttle —
-   * a million possibilities is not much on its own (§3).
+   * paired with a ten-minute expiry, a small attempt limit and a throttle.
+   * A million possibilities is not much on its own (§3).
    */
   readonly issueOtp: () => string;
 };

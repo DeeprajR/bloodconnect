@@ -6,7 +6,7 @@
  * partial change: the loader refuses it, logs which key, and serves the last
  * good configuration.
  *
- * That refusal direction matters. These are clinical thresholds — a minimum
+ * That refusal direction matters. These are clinical thresholds. A minimum
  * donor weight or an inter-donation interval. Falling back to a known-good set
  * is safe; applying half of an edit is not.
  */
@@ -25,8 +25,8 @@ import { db, type Database } from '../db.js';
  * Keys that live in `app_config` but are not clinical configuration.
  *
  * `contract.version` is the value both processes assert against at boot (§6).
- * It shares the table because it is the same kind of thing — a row an operator
- * can read — but it is not part of `AppConfig`, and passing it to the resolver
+ * It shares the table because it is the same kind of thing, a row an operator
+ * can read, but it is not part of `AppConfig`, and passing it to the resolver
  * would report it as an unknown key and drop every real override with it.
  */
 const RESERVED_PREFIXES = ['contract.'] as const;
@@ -45,7 +45,7 @@ export async function loadConfig(source: Database = db): Promise<AppConfig> {
   if (!resolved.ok) {
     for (const problem of resolved.problems) {
       process.stderr.write(
-        `app_config: ignoring ${problem.kind} for "${problem.key}" — serving defaults\n`,
+        `app_config: ignoring ${problem.kind} for "${problem.key}". Serving defaults\n`,
       );
     }
     return CONFIG_DEFAULTS;

@@ -2,7 +2,7 @@
  * Applies `db/migrations-bot` as the migrator role (§5.9).
  *
  * The bot release's own migration set. It creates the `bot` schema and nothing
- * else — the two shared contract tables belong to `db/migrations`, and
+ * else. The two shared contract tables belong to `db/migrations`, and
  * `pnpm check:bot-migrations` fails the build if this set ever mentions them.
  *
  * Its own `__drizzle_migrations` table, in the `bot` schema, so the two sets

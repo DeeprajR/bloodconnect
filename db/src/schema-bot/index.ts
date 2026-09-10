@@ -2,7 +2,7 @@
  * The schema the **bot release** owns: `bot`, and nothing else (§5.9).
  *
  * Exported separately from `@blood-connect/db` so the web app cannot reach a
- * donor table by accident — §5.1's privacy boundary is a missing grant in the
+ * donor table by accident: §5.1's privacy boundary is a missing grant in the
  * database and a missing import here, and both are deliberate.
  *
  * The two shared contract tables are **not** re-exported from this entry point.

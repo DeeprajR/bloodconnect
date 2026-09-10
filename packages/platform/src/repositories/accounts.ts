@@ -2,7 +2,7 @@
  * Reads and writes over `users` and `sessions`.
  *
  * Repositories map rows to types and nothing else: no rule lives here, and none
- * of them opens a transaction — the use case owns that (§3).
+ * of them opens a transaction. The use case owns that (§3).
  */
 
 import { and, eq, gt, isNull, ne } from 'drizzle-orm';

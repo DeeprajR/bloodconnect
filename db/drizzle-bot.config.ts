@@ -12,7 +12,7 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
  * own release.
  *
  * `schemaFilter` is `['bot']` and nothing else. That is what keeps the two
- * shared contract tables out of this set — they are created only by
+ * shared contract tables out of this set. They are created only by
  * `db/migrations`, and `scripts/check-bot-migrations.mjs` fails the build if
  * `donor_demand` ever appears here (§2.1).
  */

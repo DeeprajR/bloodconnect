@@ -6,7 +6,7 @@ import { SignOutButton } from './sign-out-button';
 /**
  * The administration frame.
  *
- * Visibly a different application from the staff one — different name in the
+ * Visibly a different application from the staff one. Different name in the
  * header, different cookie, different port. Somebody who has both accounts
  * should never be in doubt about which system they are typing into.
  */

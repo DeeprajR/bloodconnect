@@ -84,7 +84,7 @@ export async function updateCentreSettings(
  * Changes one product's shelf life.
  *
  * Audited by product and value, because this figure decides when a unit stops
- * being issuable — and "who shortened the platelet shelf life, and when" is a
+ * being issuable, and "who shortened the platelet shelf life, and when" is a
  * question somebody will eventually have to answer.
  *
  * It applies to bags registered from here on. Existing bags keep the expiry

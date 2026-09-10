@@ -3,13 +3,13 @@ import { WORDING } from '@blood-connect/domain';
 /**
  * Typing the ID the bystander read out (ADR 0010).
  *
- * A plain GET form — no action, no client JavaScript, no state. The result is a
+ * A plain GET form, no action, no client JavaScript, no state. The result is a
  * URL, so the counter can keep the request open on a second monitor while they
  * work through it, and a reload does not re-submit anything.
  *
  * **The date is prefilled and the sequence is not.** Almost every ID brought to
  * this counter was raised today, so five digits is the whole interaction. The
- * date stays editable because "almost" is not "always" — somebody comes back the
+ * date stays editable because "almost" is not "always", somebody comes back the
  * next morning with yesterday's slip, and a field they cannot change would send
  * them away.
  */

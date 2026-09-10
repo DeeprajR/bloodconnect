@@ -5,7 +5,7 @@
  * minimum weight and the inter-donation interval are clinical configuration and
  * change by a database row, not a deploy (§12).
  *
- * This is one half of the predicate that necessarily exists twice — here as
+ * This is one half of the predicate that necessarily exists twice. Here as
  * TypeScript to check a single donor arriving on a deep link, and as SQL to
  * select a wave of twenty (§7.7). Both take their thresholds from the same
  * config object, and an agreement test asserts they never disagree.
@@ -27,7 +27,7 @@ export const sexLabel = (sex: Sex): string => SEX_LABELS[sex];
  * Weight is asked as a coarse band, with an optional exact figure (§5).
  *
  * `weight_kg` is derived from the band's **lower bound** when no exact figure is
- * given, so the threshold comparison is never skipped for being null — a donor
+ * given, so the threshold comparison is never skipped for being null. A donor
  * in the 45–50 band counts as 45, which is the conservative reading.
  */
 export const WEIGHT_BANDS = ['under_45', '45_50', '50_60', '60_70', '70_plus'] as const;
@@ -100,7 +100,7 @@ export function intervalDaysFor(sex: Sex, intervals: DonationIntervals): number 
 
 /**
  * The day a donor becomes eligible again. Stored on the donor row and recomputed
- * on every change (§5.7) — a wave query cannot compute an interval per row
+ * on every change (§5.7). A wave query cannot compute an interval per row
  * across a large pool, so this value is denormalised and indexed.
  *
  * A donor who has never donated is eligible immediately, which is `undefined`

@@ -51,12 +51,12 @@ export function checkContractVersion(found: string): ContractVersionCheck {
     expected: CONTRACT_VERSION,
     found,
     reason:
-      'major contract version mismatch — the centre and the bot must ship together for this change',
+      'major contract version mismatch. The centre and the bot must ship together for this change',
   };
 }
 
 /* -------------------------------------------------------------------------- */
-/* donor_demand — centre to bot                                                */
+/* donor_demand. Centre to bot                                                */
 /* -------------------------------------------------------------------------- */
 
 export const DEMAND_TRIGGERS = ['request_shortfall', 'stock_floor'] as const;
@@ -104,7 +104,7 @@ export const donorDemandRowSchema = z.object({
 export type DonorDemandRow = z.infer<typeof donorDemandRowSchema>;
 
 /* -------------------------------------------------------------------------- */
-/* donor_demand_confirmations — bot to centre to bot                           */
+/* donor_demand_confirmations. Bot to centre to bot                           */
 /* -------------------------------------------------------------------------- */
 
 export const CONFIRMATION_STATUSES = [
@@ -145,7 +145,7 @@ export const donorDemandConfirmationRowSchema = z.object({
   /**
    * The group the counter typed off the unit it collected (§4).
    *
-   * Added in 1.1.0. It is what lets the bot mark a donor's group **verified** —
+   * Added in 1.1.0. It is what lets the bot mark a donor's group **verified**:
    * §7.7 recruits nobody whose group is only self-declared, the centre is the
    * authority on what a unit actually is, and it has no other way to say so.
    * Additive, so both sides understand each other across the bump.
@@ -160,7 +160,7 @@ export const donorDemandConfirmationRowSchema = z.object({
 export type DonorDemandConfirmationRow = z.infer<typeof donorDemandConfirmationRowSchema>;
 
 /* -------------------------------------------------------------------------- */
-/* walk_in_donations — centre to bot, one way                                  */
+/* walk_in_donations. Centre to bot, one way                                  */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -169,7 +169,7 @@ export type DonorDemandConfirmationRow = z.infer<typeof donorDemandConfirmationR
  * Added in 1.2.0, and the third table only because the second one refused to be
  * it: the centre holds **no INSERT** on `donor_demand_confirmations`, so a
  * walk-in recorded as a confirmation row was rejected by the database the first
- * time it ran as `app_web`. That is the split working, not a mistake in it — a
+ * time it ran as `app_web`. That is the split working, not a mistake in it. A
  * centre that could invent confirmations could inflate counters the bot owns.
  *
  * So the centre writes this, and the bot only reads it. The bot has to see it:
@@ -184,7 +184,7 @@ export const walkInDonationRowSchema = z.object({
   /* --- written by the centre, all of it --- */
   donorName: z.string().min(1),
   donorPhone: z.string().min(1),
-  /** The group the unit **typed as** — the only group anybody here measured. */
+  /** The group the unit **typed as**. The only group anybody here measured. */
   bloodGroup: z.enum(BLOOD_GROUPS),
   bagIdentifier: z.string().min(1),
   donatedOn: calendarDay,
@@ -211,7 +211,7 @@ export type WalkInDonationColumn = (typeof WALK_IN_DONATION_COLUMNS)[number];
 /**
  * The bot writes none of it.
  *
- * Mirrors `GRANT SELECT ON hospital.walk_in_donations TO app_bot` — a read and
+ * Mirrors `GRANT SELECT ON hospital.walk_in_donations TO app_bot`. A read and
  * nothing else. The bot has no business recording who gave blood.
  */
 export const canBotWriteWalkIn = (_column: WalkInDonationColumn): boolean => false;
@@ -361,12 +361,12 @@ export const canCentreWriteConfirmation = (
 /**
  * §7's table as data: which side may move which status where.
  *
- * The union of both sides is exactly the domain's demand state machine — an
+ * The union of both sides is exactly the domain's demand state machine. An
  * invariant the contract tests assert, so an edge cannot be added to one without
  * being accounted for in the other.
  */
 export const demandTransitions: Readonly<Record<Writer, Transitions<DemandStatus>>> = {
-  // The centre withdraws a demand — including because the doctor cancelled the
+  // The centre withdraws a demand, including because the doctor cancelled the
   // underlying request. It never declares one fulfilled or complete: only the
   // bot knows whether donors turned up.
   centre: {

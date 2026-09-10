@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Sign in · Blood Connect' };
 
 /**
  * Accounts are provisioned by an administrator; there is no sign-up page
- * (§2.2). A first sign-in happens on the emailed invite link, which is P5 —
+ * (§2.2). A first sign-in happens on the emailed invite link, which is P5,
  * until then the seed script is the only way an account comes into being, and
  * that is the spec's own sanctioned path.
  */

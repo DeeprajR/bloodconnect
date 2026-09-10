@@ -2,7 +2,7 @@
  * Proves the boundary check actually fails on a deep import.
  *
  * The build plan asks for the rule *and* "a CI job that proves it fails on a
- * deep import" — because a misconfigured linter that passes everything looks
+ * deep import", because a misconfigured linter that passes everything looks
  * exactly like a codebase with no violations. This writes a file that breaks the
  * rule, runs the check, and fails if the check was happy.
  *
@@ -18,7 +18,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const fixtureDir = path.join(repoRoot, 'packages', 'config', 'src', '__boundary_probe__');
 const fixture = path.join(fixtureDir, 'deep-import.ts');
 
-/** A deep import into another package's src — exactly what §11.2 forbids. */
+/** A deep import into another package's src. Exactly what §11.2 forbids. */
 const VIOLATION = `// Written by scripts/prove-boundary-check.mjs. Deleted immediately.
 import { canDonateRedCellsTo } from '../../../domain/src/blood.js';
 
@@ -28,7 +28,7 @@ export const probe = canDonateRedCellsTo;
 /**
  * Runs the cruiser's own entry script under this Node, rather than through a
  * `.bin` shim: the shims are shell scripts on POSIX and `.cmd` files on Windows,
- * and spawning one without a shell fails silently on Windows — which would make
+ * and spawning one without a shell fails silently on Windows, which would make
  * this check pass for the wrong reason.
  */
 const cruiserEntry = path.join(
@@ -57,13 +57,13 @@ try {
 
   if (result.status === 0) {
     process.stderr.write(
-      'boundary check PASSED on a deliberate deep import — the rule is not working.\n',
+      'boundary check PASSED on a deliberate deep import, the rule is not working.\n',
     );
     process.stderr.write(output);
     failed = true;
   } else if (!output.includes('no-deep-package-imports')) {
     process.stderr.write(
-      'boundary check failed, but not for the deep import — check the rule that fired.\n',
+      'boundary check failed, but not for the deep import, check the rule that fired.\n',
     );
     process.stderr.write(output);
     failed = true;

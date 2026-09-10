@@ -97,7 +97,7 @@ export function CompletedDonations({
             <tr key={row.id}>
               <td>{row.donorName}</td>
               <td className="app-figure">{bloodGroupLabel(row.bloodGroup as never)}</td>
-              <td className="app-figure">{row.bagIdentifier ?? '—'}</td>
+              <td className="app-figure">{row.bagIdentifier ?? '-'}</td>
               <td className="app-figure">{row.day}</td>
               <td>{channelLabel(row.channel)}</td>
             </tr>

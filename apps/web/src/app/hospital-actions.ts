@@ -33,8 +33,8 @@ export type FormState = { readonly error: string | null; readonly done?: boolean
 /**
  * The single centre this deployment serves.
  *
- * Multi-tenant is not a retrofit (§5) — the column is on every request from day
- * one — but there is one hospital, and asking a doctor which one they are in
+ * Multi-tenant is not a retrofit (§5), the column is on every request from day
+ * one, but there is one hospital, and asking a doctor which one they are in
  * would be a fifth field for no information.
  */
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
@@ -105,7 +105,7 @@ export async function createPatientAction(
  *
  * **A warning, never a block.** Two people genuinely called Anitha Menon do
  * arrive at the same hospital, and refusing the second admission at 3am is a
- * far worse failure than recording a duplicate — so this returns candidates and
+ * far worse failure than recording a duplicate, so this returns candidates and
  * the form shows them beside the field.
  *
  * It returns name, hospital ID, group and whether they are on a ward, which is
@@ -172,7 +172,7 @@ export async function startRequestAction(admissionId: string): Promise<void> {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Raising a request — the whole of what a doctor does (ADR 0010)              */
+/* Raising a request. The whole of what a doctor does (ADR 0010)              */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -213,7 +213,7 @@ export async function raiseRequestAction(
    * The collapsed half, read only when there is a name in it.
    *
    * An empty patient name means the section was never opened, which is the
-   * ordinary case — the centre identifies the patient when the bystander
+   * ordinary case. The centre identifies the patient when the bystander
    * arrives with the ID.
    */
   const patientName = value(formData, 'patientName');
@@ -259,7 +259,7 @@ export async function raiseRequestAction(
  * The doctor's one post-submit action (§3, §8).
  *
  * It reaches into `@blood-connect/centre` rather than `hospital`, because
- * cancelling releases reserved bags and withdraws an open demand — three
+ * cancelling releases reserved bags and withdraws an open demand, three
  * modules' tables, one transaction, and only that module may see all of them.
  * The permission it checks is still the doctor's.
  */

@@ -1,7 +1,7 @@
 -- The request slip (§3, ADR 0010).
 --
--- A doctor raises a request with four fields — blood group, product, units,
--- urgency — and gets back an ID to read aloud to the patient's bystander. The
+-- A doctor raises a request with four fields, blood group, product, units,
+-- urgency, and gets back an ID to read aloud to the patient's bystander. The
 -- patient is identified later, at the counter. This migration is what makes
 -- those four fields sufficient.
 --

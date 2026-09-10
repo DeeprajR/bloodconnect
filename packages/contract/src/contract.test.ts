@@ -108,7 +108,7 @@ describe('transitions, scoped by writer (§7)', () => {
 
   it('is exactly the domain machine when both sides are put together', () => {
     // An edge added to one side without being accounted for in the other is
-    // what this catches — in either direction.
+    // what this catches, in either direction.
     for (const from of DEMAND_STATUSES) {
       const union = new Set([...demandTransitions.centre[from], ...demandTransitions.bot[from]]);
       expect([...union].sort(), from).toEqual([...domainDemand[from]].sort());

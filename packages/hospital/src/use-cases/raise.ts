@@ -1,13 +1,13 @@
 /**
- * Raising a request — four fields and an ID (§3, §7.1, ADR 0010).
+ * Raising a request, four fields and an ID (§3, §7.1, ADR 0010).
  *
  * **The whole of what a doctor does**, and it is one call because it is one
  * screen. There is no draft to save and reopen: a four-field form is submitted
  * or it never existed, and the review step it replaced was four fields shown
  * back to somebody who had just typed them.
  *
- * Everything else about the request — the patient, the admission, the clinical
- * context — is optional here and normally arrives later, at the counter, when
+ * Everything else about the request, the patient, the admission, the clinical
+ * context, is optional here and normally arrives later, at the counter, when
  * the bystander turns up with the ID. A doctor who happens to have it can give
  * it in the same submit, which is what the collapsed section on the form is; a
  * doctor at a bedside with a bleeding patient gives four fields and walks.
@@ -64,7 +64,7 @@ export type RequestEssentials = {
  *
  * All optional, all normally filled at the counter. Present here because a
  * doctor who already knows the patient should not have to make the bystander
- * repeat it — but never in the way of the four fields above.
+ * repeat it, but never in the way of the four fields above.
  */
 export type RequestExtras = {
   readonly indication?: string | undefined;
@@ -73,7 +73,7 @@ export type RequestExtras = {
   /**
    * Or a patient described inline, which creates the patient and admits them.
    *
-   * The same shape the centre uses at the counter — one record, one definition
+   * The same shape the centre uses at the counter, one record, one definition
    * of what it must contain, whoever typed it.
    */
   readonly patient?: PatientDetails | undefined;
@@ -83,7 +83,7 @@ export type RaiseInput = RequestEssentials & RequestExtras;
 
 export type RaiseResult = {
   readonly requestUuid: string;
-  /** `DDMMYY-NNNNN` — what the doctor reads aloud to the bystander. */
+  /** `DDMMYY-NNNNN`. What the doctor reads aloud to the bystander. */
   readonly requestId: RequestNumber;
   readonly urgency: Urgency;
   readonly dateRequired: string;
@@ -158,8 +158,8 @@ export async function raiseRequest(
   /**
    * The date, derived rather than typed (ADR 0010).
    *
-   * Everything downstream keeps running on `date_required` — the donor demand,
-   * the bot's needed-by, the expiry sweep — so it is stored, not recomputed on
+   * Everything downstream keeps running on `date_required`, the donor demand,
+   * the bot's needed-by, the expiry sweep, so it is stored, not recomputed on
    * read. What changed is only who decides it.
    */
   const dateRequired = neededByFor(urgency, today, ctx.config.request.urgencyDays);

@@ -2,7 +2,7 @@
 
 A blood request and donor recruitment system for a medical-college hospital: doctors raise
 requests, the blood centre answers them from stock, and a chat bot recruits donors for whatever
-the shelf could not cover — then tells everyone how it ended, including when it ends badly.
+the shelf could not cover, then tells everyone how it ended, including when it ends badly.
 
 **Everything here runs on synthetic data.** No real donor, patient or staff record enters this
 system at any point. That is a property of the build, not a limitation of the demonstration.
@@ -15,7 +15,7 @@ system at any point. That is a property of the build, not a limitation of the de
 
 | Document | What it says |
 |---|---|
-| [blood-connect-spec.md](docs/blood-connect-spec.md) | The system's behaviour — the source of truth |
+| [blood-connect-spec.md](docs/blood-connect-spec.md) | The system's behaviour: the source of truth |
 | [modules-spec.md](docs/modules-spec.md) | The four modules, flow by flow |
 | [input-fields.md](docs/input-fields.md) | Every screen that accepts input, and every field on it |
 | [backend-architecture.md](docs/backend-architecture.md) | How it is built: processes, schema, transactions, ports |
@@ -26,17 +26,17 @@ Section references written as §n point at the specification.
 
 ## Where the build is
 
-**Milestone A reached — the loop in §1 closes.**
+**Milestone A reached. The loop in §1 closes.**
 
 ```
 P0  Foundations                  ✅
 P1  Identity and access, thin    ✅
 P2  The request, thin            ✅
 P3  The centre decision, thin    ✅
-P4  The bot loop, thin           ✅  ▲ Milestone A — the loop closes
+P4  The bot loop, thin           ✅  ▲ Milestone A, the loop closes
 P5  Module 1 depth               ✅
-P6  Centre depth — collisions    ✅
-P7  Bot depth — the interview    ✅
+P6  Centre depth, collisions    ✅
+P7  Bot depth, the interview    ✅
 P7b The request slip             ✅  (ADR 0010)
 P8  Endings sweep                ◐  Milestone B, one row short (ADR 0011)
 P9  Volunteer + public board     ← next
@@ -68,7 +68,7 @@ that issued them, so a cookie from one is inert in the other.
 
 An administrator adds a doctor, who receives an emailed link, sets their own password and is
 signed in. Doctors reset a password with a six-digit code, and change their address by confirming
-it from the new inbox — no administrator approves it. Mail lands in Mailpit at
+it from the new inbox, no administrator approves it. Mail lands in Mailpit at
 http://localhost:8025.
 
 **P2** delivered Module 1: patients, admissions, the draft/review/submit flow, and the
@@ -79,7 +79,7 @@ view is wired up, and every read of it is audited by record.
 
 **P3** delivered Module 2: the register (`blood_bags`, `rfid_tags`, typed intake with the expiry
 derived from collection), the request queue with stock on hand, and the decision transaction of
-§7.2 — `FOR UPDATE SKIP LOCKED` oldest-expiry-first, one decision per request enforced by a unique
+§7.2: `FOR UPDATE SKIP LOCKED` oldest-expiry-first, one decision per request enforced by a unique
 constraint, and a shortfall raising demand in the same transaction. Plus the stock floor, and
 "recruit for groups below floor" that cannot double-raise. ([ADR 0005](docs/adr/0005-the-centre-decision.md))
 
@@ -91,13 +91,13 @@ conditional UPDATE of §7.3 with waitlisting and promotion, and the outbox that 
 stand-down guarantee real. ([ADR 0006](docs/adr/0006-the-bot-loop-and-milestone-a.md))
 
 **Running the bot.** `pnpm bot`. With no `TELEGRAM_BOT_TOKEN` it runs on the in-memory channel and
-the whole loop still works — §10 requires the system to be demonstrable when the chat platform is
+the whole loop still works: §10 requires the system to be demonstrable when the chat platform is
 unreachable, so that is a supported mode rather than a test shortcut. Put a token from @BotFather
 in `.env` to talk to a real account.
 
 **P5** closed Module 1's endings. **Cancelling a submitted request** is the one the
 loop is judged on: it releases any units the centre was holding, withdraws the donor demand, and
-the bot stands down every donor who had agreed to come — one transaction across three modules,
+the bot stands down every donor who had agreed to come, one transaction across three modules,
 because a request showing cancelled while units stay held for it is worse than not cancelling.
 Plus the duplicate-patient warning, draft ageing, and the compatibility testing sample with its
 globally unique identifier. ([ADR 0007](docs/adr/0007-module-1-depth-and-a-query-that-lied.md))
@@ -112,7 +112,7 @@ visibly, discards that require a disposal route, and the counter roster.
 The walk-in was the interesting one: recorded as a confirmation row it passed every test and was
 refused by Postgres the moment it ran as `app_web`, because the centre holds no INSERT on the
 bot's roster. It is now its own table, and the bot reads it and stops recruiting for a unit already
-collected. `pnpm smoke:centre` is what found that — it runs P6's writes as the real application
+collected. `pnpm smoke:centre` is what found that. It runs P6's writes as the real application
 role, which the test suite (connecting as `migrator`) cannot.
 ([ADR 0008](docs/adr/0008-centre-depth-and-a-grant-that-said-no.md))
 
@@ -121,21 +121,21 @@ Ten steps: the platform is asked for the phone so the number arrives **verified*
 and the counter has something it can ring; the date of birth as year, month, day,
 because age asked directly gets rounded; "I don't know" for the blood group, since
 guessing is worse; the four-level location matched against the seeded hierarchy.
-Then the summary — every answer played back, numbered, the phone masked — with a
+Then the summary, every answer played back, numbered, the phone masked, with a
 checklist that fixes three wrong answers in **one** pass and returns once. The
 profile editor is the same screens with a different way in.
 
 Erasure was the finding. §12.1 requires de-identifying the roster; `app_bot` had
 no grant to do it, so deletion reported success and left the donor's name and
 number on every roster row for ever. Migration 0016 grants exactly those two
-columns — the unit number and the date stay, because that is the donation record.
+columns. The unit number and the date stay, because that is the donation record.
 `pnpm smoke:bot` runs the whole thing as `app_bot`, which is what caught it.
 ([ADR 0009](docs/adr/0009-the-interview-and-an-erasure-that-did-not-land.md))
 
 **Next, and a change of shape.** The doctor app becomes a **request slip**: blood group,
 product, units, urgency, and an ID to read aloud to the patient's bystander, who carries it
-to the blood centre. Everything else about the request — the patient, the admission, the
-clinical context, the crossmatch sample — is entered at the counter, because a doctor
+to the blood centre. Everything else about the request, the patient, the admission, the
+clinical context, the crossmatch sample, is entered at the counter, because a doctor
 handling several patients at once is the wrong person to be typing an address.
 ([ADR 0010](docs/adr/0010-the-doctor-app-becomes-a-request-slip.md))
 
@@ -155,33 +155,33 @@ Password `BloodConnect!Demo2026`, printed by the seed. These are synthetic accou
 
 Needs Node 20+, pnpm and Docker.
 
-Run these one at a time. **Do not chain them with `&&`** — Windows PowerShell 5.1, which is
+Run these one at a time. **Do not chain them with `&&`**. Windows PowerShell 5.1, which is
 what `pnpm` opens by default on Windows, does not accept it as a statement separator.
 
 ```
 pnpm install
 cp .env.example .env    # everything already points at the local stack
-pnpm bootstrap          # Docker up, migrations, seed — the three in order
+pnpm bootstrap          # Docker up, migrations, seed. The three in order
 pnpm verify             # typecheck, lint, boundaries, tests
 pnpm dev                # staff :3000, administration :3001
 ```
 
 `pnpm bootstrap` is one command precisely so no chaining is needed. It is not called `setup`,
-because that is one of pnpm's own commands and a script by that name is shadowed by the CLI —
+because that is one of pnpm's own commands and a script by that name is shadowed by the CLI,
 which reconfigures your PATH instead of running the project.
 
 There is one `.env`, at the workspace root, shared by the web app, the worker, the bot and the
-seed runner — `apps/web/next.config.ts` loads it, because Next otherwise reads `.env` only from
+seed runner: `apps/web/next.config.ts` loads it, because Next otherwise reads `.env` only from
 the application directory. Two copies of a connection string are two things to keep in step.
 
 | Service | Where |
 |---|---|
-| Postgres | `localhost:5433` — **not** 5432, so a natively installed server cannot be reached by accident ([ADR 0001](docs/adr/0001-phase-0-decisions.md)) |
+| Postgres | `localhost:5433`: **not** 5432, so a natively installed server cannot be reached by accident ([ADR 0001](docs/adr/0001-phase-0-decisions.md)) |
 | Mailpit inbox | http://localhost:8025 |
 | MinIO console | http://localhost:9001 (`minioadmin` / `minioadmin`) |
 
 Roles come from `db/docker/init.sql`, which Postgres runs on first start. A database that already
-exists will not re-run it — `docker compose down -v` then `pnpm up` to start clean.
+exists will not re-run it: `docker compose down -v` then `pnpm up` to start clean.
 
 ### Commands
 
@@ -195,7 +195,7 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 | `pnpm check:gates` | Every page decides access (§13); every mutating use case records what it did (§14) |
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
 | `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
-| `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would — the wiring a unit test cannot see |
+| `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would: the wiring a unit test cannot see |
 | `pnpm smoke:centre` | Runs the centre's writes as `app_web` and asserts what that role must not be able to do. The suite connects as `migrator`, so it proves nothing about the grants; this does |
 | `pnpm smoke:bot` | The same for `app_bot`: the interview, the profile edit, erasure, and the six things the bot must not be able to reach |
 | `pnpm bot` | The donor bot: long-polls the channel and ticks. `CHANNEL=memory` needs no token |
@@ -208,14 +208,14 @@ exists will not re-run it — `docker compose down -v` then `pnpm up` to start c
 
 ```
 packages/
-  platform/   accounts, sessions, authorization, audit, email, config — shared by both apps
+  platform/   accounts, sessions, authorization, audit, email, config, shared by both apps
   hospital/   Module 1: patients, admissions, requests, and its narrow read API
   centre/     Module 2: the register, the §7.2 decision, demand and the stock floor
   bot/        Module 3: onboarding, waves, screening, the outbox and the stand-down
-  domain/     the clinical rules — pure, no clock, no I/O, imported by web and bot alike
+  domain/     the clinical rules, pure, no clock, no I/O, imported by web and bot alike
   contract/   the two shared tables: schemas, column ownership, writer-scoped transitions
   config/     clinical thresholds as data, with defaults and a 60-second cache
-  result/     Result<T, E> — expected failures are values, not exceptions
+  result/     Result<T, E>, expected failures are values, not exceptions
   ids/        branded UUIDv7 identifiers
   testing/    fake clock, deterministic ids, the real-Postgres harness
 db/
@@ -227,7 +227,7 @@ docs/         the specification set and the decision log
 ```
 
 `apps/web` is the staff application, `apps/admin` is administration, and `apps/bot` is the donor
-bot — three deployables on three database roles. `apps/vision` arrives with the phase that needs
+bot, three deployables on three database roles. `apps/vision` arrives with the phase that needs
 it.
 
 ### The rules the build enforces mechanically
@@ -242,12 +242,12 @@ Because there is no second reader on a commit here, CI is the reviewer:
 - **Migrations only.** `db:push` is refused outside a scratch database, and in CI (§5.9).
 - **The grants are asserted, not reviewed.** Tests connect as `app_web` and `app_bot` and check
   what they *cannot* do.
-- **Every state machine's table is checked for states with no way out** — the failure §8 exists
+- **Every state machine's table is checked for states with no way out**, the failure §8 exists
   to prevent.
 - **Both applications are installable PWAs**, and the service worker caches the shell and
-  **never** data — a cached stock figure is a wrong stock figure, and on a shared ward device a
+  **never** data, a cached stock figure is a wrong stock figure, and on a shared ward device a
   cached page is somebody else's page ([ADR 0004](docs/adr/0004-pwa-and-a-spacing-token-that-does-not-exist.md)).
-- **§9's role matrix is a test**, transcribed row by row, asserted for every role — and the 403
+- **§9's role matrix is a test**, transcribed row by row, asserted for every role, and the 403
   response is checked for carrying *no data*, which is the mistake §14 names.
 
 ## Licence

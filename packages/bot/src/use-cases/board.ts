@@ -1,5 +1,5 @@
 /**
- * The demand board — for the donor who comes looking anyway (§5).
+ * The demand board, for the donor who comes looking anyway (§5).
  *
  * "Not everyone waits to be asked. Some people want to give because they read
  * something, or because a friend needed blood last month, and they open the bot
@@ -7,7 +7,7 @@
  *
  * Three rules §5 sets, and each exists because the alternative loses somebody:
  *
- *  1. **Open to everyone** — registered or not, eligible or not. A visitor
+ *  1. **Open to everyone**. Registered or not, eligible or not. A visitor
  *     asking "what is needed?" gets an answer, not a signup form.
  *  2. **Matches first, for a registered donor**, marked as such, with the rest
  *     below. Tapping a match enters the same accept → screen → confirm flow as a
@@ -17,7 +17,7 @@
  *     leaves.
  *
  * It shows no patient detail: hospital, town, group, units outstanding and the
- * day (§2.10). And it does not ask — being asked is a wave, with a journey row
+ * day (§2.10). And it does not ask. Being asked is a wave, with a journey row
  * behind it. This is a list somebody chose to look at, so it creates nothing.
  */
 
@@ -60,7 +60,7 @@ export type BoardBlock =
 
 export type Board = {
   readonly entries: readonly BoardEntry[];
-  /** Absent for a visitor with no profile — there is nothing to block yet. */
+  /** Absent for a visitor with no profile. There is nothing to block yet. */
   readonly blocked: BoardBlock | null;
 };
 
@@ -213,10 +213,10 @@ function blockFor(
 }
 
 /**
- * One request by its public id — the deep link's target (§5).
+ * One request by its public id. The deep link's target (§5).
  *
  * "A donor arriving on a request link is onboarded first, then lands back on
- * that request — the link is never lost."
+ * that request. The link is never lost."
  */
 export async function requestByPublicId(
   ctx: BotContext,
@@ -247,7 +247,7 @@ export async function requestByPublicId(
  * The journey row for a donor tapping a request they were never pushed.
  *
  * Created on demand so the board's "accept" is the *same* flow as a pushed
- * card's — §5 is explicit that there is one path and not two. It counts as a
+ * card's: §5 is explicit that there is one path and not two. It counts as a
  * notification the moment they see the card, which is what `notified_at` means
  * here, but it is not part of a wave and does not touch the wave counters.
  */
@@ -285,7 +285,7 @@ export async function journeyForBoardTap(
        * Wave zero: this donor was not in a wave at all, they came looking.
        *
        * The column is how §7.7's escalation is counted, and a board tap must
-       * not inflate it — a request that reached nobody would otherwise look
+       * not inflate it. A request that reached nobody would otherwise look
        * like it had already escalated once.
        */
       waveNo: 0,

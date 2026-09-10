@@ -1,4 +1,4 @@
-# ADR 0012 — The update queue holds two fields, not three
+# ADR 0012: The update queue holds two fields, not three
 
 Date: 2026-09-10 · Status: accepted
 
@@ -20,7 +20,7 @@ visible to the person about to lose the account rather than silent.
 
 That flow proves something the queue cannot: that the person actually holds the
 address. An administrator approving an email change proves only that an
-administrator agreed — and an administrator can be mistaken, rushed, or the
+administrator agreed, and an administrator can be mistaken, rushed, or the
 attacker. Adding the queue as a second path to the same change would mean the
 account's identity could move by the weaker of the two, which is the one anybody
 attacking it would choose.
@@ -30,7 +30,7 @@ So the queue covers the two fields nothing can verify by delivery:
 | Field | Why it is reviewed |
 |---|---|
 | `full_name` | Printed on every request the doctor raises, and from there onto the clinical record |
-| `provisional_reg` | The same, and unique across accounts — two doctors cannot hold one number |
+| `provisional_reg` | The same, and unique across accounts: two doctors cannot hold one number |
 
 §3 and the risk register in §12 now say this rather than the three-field version.
 
@@ -49,7 +49,7 @@ would make the queue display a comparison nobody submitted.
 
 The queue exists so that a second person agrees. An administrator approving their
 own request has removed the only check in the flow, so `approveUpdateRequest` and
-`rejectUpdateRequest` both refuse it — rejection included, because otherwise an
+`rejectUpdateRequest` both refuse it. Rejection included, because otherwise an
 administrator could quietly bury a request against themselves.
 
 It is refused in the use case rather than in the database: Postgres sees two
@@ -62,7 +62,7 @@ A button that always fails has told the person nothing about why.
 ## 4. The ⚠︎ is the ageing
 
 §8's warning on this row is *untouched → ages visibly in the admin queue*. The
-failure being guarded against is not rejection, it is silence — a request that
+failure being guarded against is not rejection, it is silence: a request that
 sits for a fortnight because nobody looked.
 
 So the queue is ordered oldest first, and each card says how many days it has
@@ -75,7 +75,7 @@ A partial unique index on `(user_id, field) WHERE status = 'pending'`, not a che
 in the use case. Two tabs open on the profile page both pass a read-first check
 and both reach the insert; the second one has to lose, and the database is the
 only place that can decide that. The use case checks first anyway, so the
-ordinary case — the person forgot they already asked — is a message rather than
+ordinary case, the person forgot they already asked, is a message rather than
 an aborted transaction.
 
 Withdrawn and rejected rows are not pending, so asking again after either one
@@ -90,8 +90,8 @@ snapshot files were copied rather than generated.
 
 The chain is relinked and 0019's snapshot is generated from the schema, so it
 describes the current database rather than the database as it stood at 0015.
-Snapshots 0016 to 0018 remain stale in content — they are historical records that
-nothing diffs against now that a correct head exists.
+Snapshots 0016 to 0018 remain stale in content, but they are historical records
+that nothing diffs against now that a correct head exists.
 
 ## 7. Still open
 

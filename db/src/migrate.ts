@@ -1,7 +1,7 @@
 /**
  * Applies `db/migrations` as the migrator role (§5.9).
  *
- * Forward-only, and the only creator of the `hospital` and `reference` schemas —
+ * Forward-only, and the only creator of the `hospital` and `reference` schemas,
  * including the two shared contract tables, which the bot's migrations must
  * never mention (§2.1).
  */

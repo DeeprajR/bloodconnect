@@ -57,7 +57,7 @@ export default async function DashboardPage() {
               is the centre's to identify, and saying so here is what stops
               somebody opening the optional section out of habit.
             */}
-            Four answers and an ID. Give the ID to the patient&rsquo;s bystander — the
+            Four answers and an ID. Give the ID to the patient&rsquo;s bystander. The
             blood centre takes it from there.
           </p>
         </div>
@@ -98,11 +98,11 @@ export default async function DashboardPage() {
                     <td>
                       {isUrgency(request.urgency ?? '')
                         ? URGENCY_SHORT[request.urgency as Urgency]
-                        : '—'}
+                        : '-'}
                     </td>
                     <td>
                       {request.units} ×{' '}
-                      {request.product ? productLabel(request.product) : '—'}{' '}
+                      {request.product ? productLabel(request.product) : '-'}{' '}
                       {request.bloodGroup ? bloodGroupLabel(request.bloodGroup) : ''}
                     </td>
                     <td>

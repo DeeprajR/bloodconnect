@@ -5,7 +5,7 @@
  * deviation in §19.2: the spec lists the location hierarchy under the bot's
  * data, but Module 1 (patient district and city), Module 2 (centre settings) and
  * Module 4 (district scoping) all need it, and the alternatives are the web app
- * reading a bot table — forbidden by §11.2 — or two copies of a dataset that
+ * reading a bot table, forbidden by §11.2, or two copies of a dataset that
  * must agree for proximity ordering to mean anything.
  */
 
@@ -125,7 +125,7 @@ export const locationNodeRelations = relations(locationNodes, ({ one, many }) =>
 
 /**
  * Kerala localities have several romanised spellings each (§5). Matching without
- * aliases fragments the donor pool — Koyilandy and Quilandy are one place, and a
+ * aliases fragments the donor pool. Koyilandy and Quilandy are one place, and a
  * wave that treats them as two reaches half the people it should.
  */
 export const locationAliases = referenceSchema.table(

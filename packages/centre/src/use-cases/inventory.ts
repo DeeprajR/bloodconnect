@@ -1,10 +1,10 @@
 /**
- * Bag intake — typed entry (§4, §10).
+ * Bag intake. Typed entry (§4, §10).
  *
  * The reader is not here yet and may never arrive, so this is the keyboard
  * path: the operator types the unit number and, optionally, the tag identifier.
  * §10 requires that path regardless of hardware, which is why it is built first
- * rather than as a fallback bolted on afterwards — when a barcode reader does
+ * rather than as a fallback bolted on afterwards. When a barcode reader does
  * arrive it presents as a keyboard and fills the same field.
  *
  * Two rules the form cannot be talked out of:
@@ -77,7 +77,7 @@ export type RegisterBagResult = {
  * The insert comes **first**, and this is the whole point of the function. A
  * bare `SELECT ... FOR UPDATE` locks nothing when the row does not exist yet, so
  * two operators registering the same brand-new tag both saw no row, both
- * inserted, and one crashed on the primary key — which is what happened the
+ * inserted, and one crashed on the primary key, which is what happened the
  * first time this was run against real Postgres.
  *
  * `INSERT ... ON CONFLICT DO NOTHING` creates the row or waits for whoever is
@@ -247,7 +247,7 @@ export async function registerBag(
  * Marks past-date units `expired`.
  *
  * An expired unit is still physically present and still needs a disposal route
- * (§12.1), so this is not the end of the bag — `expired -> discarded` is, and
+ * (§12.1), so this is not the end of the bag: `expired -> discarded` is, and
  * that flow lands in P6. Until then this at least keeps expired stock out of
  * the decision transaction and out of the floor count, which is the part that
  * can put the wrong unit into a patient.

@@ -6,7 +6,7 @@ import postgres from 'postgres';
  * Every test that touches §7 runs against **real Postgres**. `FOR UPDATE SKIP
  * LOCKED`, partial unique indexes and conditional UPDATEs are the mechanisms
  * that make the seven correctness points correct, and none of them exist in an
- * in-memory double — a suite that mocks the database would pass while two staff
+ * in-memory double. A suite that mocks the database would pass while two staff
  * decide the same request twice.
  */
 
@@ -44,7 +44,7 @@ export type TestDatabase = {
 };
 
 export function createTestDatabase(options: { max?: number } = {}): TestDatabase {
-  // postgres.js reports NOTICEs — "schema already exists" and the like — on
+  // postgres.js reports NOTICEs, "schema already exists" and the like, on
   // stderr by default. They are not errors and they bury a real failure.
   const quiet = { onnotice: () => undefined };
 
@@ -79,7 +79,7 @@ export function createTestDatabase(options: { max?: number } = {}): TestDatabase
  * "Two staff decide the same request" is not reproducible by calling a function
  * twice: both calls would share a connection and serialise politely. Each task
  * here gets its own session, so the lock and the unique constraint are the only
- * things deciding the winner — which is the assertion.
+ * things deciding the winner, which is the assertion.
  */
 export async function runConcurrently<T>(
   tasks: readonly ((sql: Sql) => Promise<T>)[],
@@ -97,7 +97,7 @@ export async function runConcurrently<T>(
   }
 }
 
-/** The values from a settled batch that succeeded — usually "exactly one did". */
+/** The values from a settled batch that succeeded, usually "exactly one did". */
 export const fulfilled = <T>(results: readonly PromiseSettledResult<T>[]): T[] =>
   results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
 

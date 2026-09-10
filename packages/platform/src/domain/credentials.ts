@@ -59,7 +59,7 @@ export function isOtpUsable(
   return otp.expiresAt.getTime() > now.getTime();
 }
 
-/** The same shape for a single-use link — an invite, or an address confirmation. */
+/** The same shape for a single-use link. An invite, or an address confirmation. */
 export function isLinkUsable(
   link: {
     readonly expiresAt: Date;
@@ -89,7 +89,7 @@ export const normaliseEmail = (email: string): string => email.trim().toLowerCas
  * A deliberately permissive check.
  *
  * The only proof an address works is that mail sent to it arrives, and every
- * flow here does exactly that. A stricter pattern rejects valid addresses —
+ * flow here does exactly that. A stricter pattern rejects valid addresses,
  * which for a doctor locked out of the account is a much worse failure than
  * accepting one that bounces.
  */

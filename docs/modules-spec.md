@@ -1,12 +1,12 @@
-# Blood Connect — system specification
+# Blood Connect: system specification
 
 What each module is, who uses it, what it does, and the rules it must not break.
 
 This is the specification the system is built to. It describes behaviour and constraints,
-not files or classes, so it can be implemented in any reasonable stack — §11 records the
+not files or classes, so it can be implemented in any reasonable stack: §11 records the
 stack decisions taken and which of them are open.
 
-Field-level detail — every input on every screen, with types, defaults and validation —
+Field-level detail, every input on every screen, with types, defaults and validation,
 lives in [input-fields.md](input-fields.md).
 
 ---
@@ -14,7 +14,7 @@ lives in [input-fields.md](input-fields.md).
 ## 1. The problem and the loop
 
 A hospital needs blood for a patient. Today that means a paper request form, a phone call
-to the blood centre, and — when the shelf is empty — a message forwarded around asking
+to the blood centre, and, when the shelf is empty, a message forwarded around asking
 strangers to show up. Three disconnected steps, no shared state, and no record of what
 happened.
 
@@ -38,7 +38,7 @@ Counter ──── marks Donated / No-show / Cancelled ─┘
 
 Four modules sit on that loop, in two deployable pieces. **Modules 1, 2 and 4 are one web
 application** with three role-gated sections; **Module 3 is a separate long-running
-process**. They never call each other over HTTP — the integration is two shared tables (§7).
+process**. They never call each other over HTTP. The integration is two shared tables (§7).
 
 | # | Module | What it is | Primary users |
 |---|---|---|---|
@@ -47,7 +47,7 @@ process**. They never call each other over HTTP — the integration is two share
 | 3 | Donor bot | Chat bot (Telegram first, WhatsApp planned): finds eligible donors, notifies them, screens them, stops at the unit count | Donors, volunteer admins |
 | 4 | Volunteer dashboard | Small read-mostly web view of live demand per blood group | Volunteer admins |
 
-Module 4 is not a fourth codebase — it is a role-gated section of the same web app as
+Module 4 is not a fourth codebase. It is a role-gated section of the same web app as
 Modules 1 and 2, listed separately because it has its own audience and its own answer to
 "what is this for". It exists because a chat card is a bad place to see the whole picture.
 
@@ -61,13 +61,13 @@ decision below, and none of them should be relaxed without a deliberate review.
 ### 2.1 One database, clear ownership
 
 One PostgreSQL database. The web app owns the hospital schema and creates every table in
-it through migrations. The bot owns its own schema — donors, waves, questionnaire answers,
-its event log — and never creates or writes a hospital table other than the two shared ones
+it through migrations. The bot owns its own schema, donors, waves, questionnaire answers,
+its event log, and never creates or writes a hospital table other than the two shared ones
 in §7. Those two tables are the entire contract between the centre and the bot.
 
 ### 2.2 Roles, and no self-registration
 
-Four staff roles. There is no public sign-up for any of them — an admin provisions every
+Four staff roles. There is no public sign-up for any of them. An admin provisions every
 account, and a seed script bootstraps the first admin. Donors are the exception: they
 self-register, but only inside the chat bot, and they never touch the hospital app.
 
@@ -76,10 +76,10 @@ self-register, but only inside the chat bot, and they never touch the hospital a
 | `doctor` | Patients, admissions, blood requests, samples, own profile |
 | `admin` | Everything a doctor can, plus account administration |
 | `blood_centre` | The centre section only (admins also pass; doctors never do) |
-| `volunteer_admin` | The volunteer dashboard only — demand per group, no patient or clinical data |
+| `volunteer_admin` | The volunteer dashboard only: demand per group, no patient or clinical data |
 | *donor* | Not an account. A chat identity, self-registered, with no web surface at all |
 
-A doctor must not be able to decide on their own request — that is why `blood_centre` is a
+A doctor must not be able to decide on their own request. That is why `blood_centre` is a
 separate role and not a permission bolted onto `doctor`. A volunteer admin is an outsider
 to the hospital: their role grants an aggregate view and nothing else, never a patient
 name, a request, or a donor's phone number.
@@ -102,15 +102,15 @@ page to fall back on.
 - **Password reset** is self-service: enter the registered email, receive a numeric OTP,
   enter it, set a new password. The OTP is short-lived, single-use, rate-limited per
   account and per IP, and stored hashed. Reset always goes to the address already on the
-  account — never to one typed at reset time.
-- **Account detail changes** the user cannot make themselves — email, name, provisional
-  registration number — go through a **request queue**: the user submits the change with a
+  account, never to one typed at reset time.
+- **Account detail changes** the user cannot make themselves, email, name, provisional
+  registration number, go through a **request queue**: the user submits the change with a
   reason from their profile page, an admin sees it, approves or rejects it with a note, and
   the user is told either way. Every decision is audited.
 
 An invite link rather than a mailed password is a deliberate choice: a mailed password
 would sit in the mailbox permanently, and mail is not a confidential channel. The user
-experience is the same — open the email, click, choose a password — and no secret is ever
+experience is the same, open the email, click, choose a password, and no secret is ever
 at rest anywhere.
 
 ### 2.4 Transactional email is infrastructure
@@ -135,8 +135,8 @@ A blood request is editable only while it is a `draft`. Submitting it allocates 
 human-readable Request ID (`BR-YYYY-NNNNNN`) from a transactional per-year counter and
 freezes the record: draft endpoints refuse it from then on.
 
-Anything that appears on a printed or historical record is **snapshotted** at write time —
-patient name, age, blood group, ward, doctor name, registration and seal on the request;
+Anything that appears on a printed or historical record is **snapshotted** at write time.
+Patient name, age, blood group, ward, doctor name, registration and seal on the request;
 hospital name and address on a donor demand. A later edit to the patient or to centre
 settings must never rewrite history.
 
@@ -144,7 +144,7 @@ settings must never rewrite history.
 
 **Every clinical term in this system uses its standard name and correct spelling.** Where a
 hospital's paper form carries a local variant or a misspelling, the standard term is used
-and the paper form is corrected — not copied. A screen that says `Cryopresipitate` teaches
+and the paper form is corrected, not copied. A screen that says `Cryopresipitate` teaches
 the wrong spelling to every house surgeon who reads it, and is quoted back in records that
 outlive the software.
 
@@ -154,23 +154,23 @@ layout; standardise the words.
 
 | Use | Not |
 |---|---|
-| Whole Blood | — |
+| Whole Blood | - |
 | Packed Red Blood Cells (PRBC) | Packed cells, packed RBC, PRC |
-| Platelet Concentrate — Random Donor Platelets (RDP) or Single Donor Platelets (SDP, apheresis) | Platelet |
+| Platelet Concentrate: Random Donor Platelets (RDP) or Single Donor Platelets (SDP, apheresis) | Platelet |
 | Fresh Frozen Plasma (FFP) | Plasma |
 | **Cryoprecipitate** | Cryopresipitate, cryo |
-| ABO group and RhD type — recorded as A+, A−, B+, B−, AB+, AB−, O+, O− | Rh factor, +ve / −ve |
+| ABO group and RhD type: recorded as A+, A−, B+, B−, AB+, AB−, O+, O− | Rh factor, +ve / −ve |
 | Indication for transfusion | Reason for transfusion |
-| Date required | Date needed *(donor-facing copy still says "Needed by" — plain language is right for donors)* |
+| Date required | Date needed *(donor-facing copy still says "Needed by": plain language is right for donors)* |
 | Pre-transfusion compatibility testing sample (crossmatch sample) | Blood sample |
 | Donor health questionnaire | Screening questions |
-| **Deferral** — temporary or permanent | Eliminated, rejected, banned |
+| **Deferral**: temporary or permanent | Eliminated, rejected, banned |
 | Inter-donation interval | Cooldown |
 | Blood centre | Blood bank *(the term used in Indian regulation since the 2020 amendment; "blood bank" remains the colloquial equivalent)* |
 
 Component naming should follow the national blood transfusion service's standard component
 list; where components are labelled to ISBT 128, the label's component description is
-authoritative. Confirm the exact list with the blood centre before the form is built — the
+authoritative. Confirm the exact list with the blood centre before the form is built. The
 set above is the common case, not an exhaustive catalogue.
 
 A regression test pins the label set, as before. The test now enforces the **standard**
@@ -186,7 +186,7 @@ worse than no data.
 
 ### 2.9 Audit
 
-Every mutating action writes an audit event. Best-effort and non-blocking — an audit
+Every mutating action writes an audit event. Best-effort and non-blocking. An audit
 failure must not fail the clinical action. The bot keeps its own append-only event log of
 state transitions.
 
@@ -195,9 +195,9 @@ state transitions.
 | Auth | Sign-in success / failure / rate-limit, sign-out, invite sent and consumed, password reset requested and completed, password changed |
 | Accounts | Account create, role change, activate / deactivate, update request submitted / approved / rejected |
 | Clinical | Patient and admission creation and edit, seal update, draft create / update, submit, cancel, sample association |
-| Centre — bags | Bag intake, issue, return and its outcome, discard, expiry |
-| Centre — tags | Tag assign, release with reason, re-assign, retire — the append-only assignment history *is* this audit trail |
-| Centre — vision | Calibration created / activated, region edited, reconciliation task raised and resolved, device registered / revoked |
+| Centre: bags | Bag intake, issue, return and its outcome, discard, expiry |
+| Centre, tags | Tag assign, release with reason, re-assign, retire, the append-only assignment history *is* this audit trail |
+| Centre: vision | Calibration created / activated, region edited, reconciliation task raised and resolved, device registered / revoked |
 | Donor | Consent given, re-recorded on edit, withdrawn; data deletion |
 
 The centre's tag and return events carry the most weight: they are what lets someone answer
@@ -207,14 +207,14 @@ has forgotten.
 ### 2.10 Privacy
 
 Nothing about the patient leaves the hospital. A donor sees blood group, hospital, units
-and time — no patient name, no attender phone number. Donor contact details flow only to
+and time, no patient name, no attender phone number. Donor contact details flow only to
 the centre that raised the demand, and only for donors who confirmed. A volunteer admin sees
 counts, never people.
 
 ### 2.11 The messaging channel is swappable
 
 Telegram is the launch channel. WhatsApp is the expected successor, and the system must be
-able to make that switch — or run both at once — without touching donor matching, the
+able to make that switch, or run both at once, without touching donor matching, the
 questionnaire, wave logic, or the centre contract.
 
 **Donor identity must not be a platform user id.** A donor gets an internal id, and
@@ -226,7 +226,7 @@ donor_channel    (donor_id, channel, channel_user_id, opted_in_at, unique(channe
 ```
 
 The verified phone number is what links a Telegram donor to the same person arriving on
-WhatsApp. It is a verified attribute, never the primary key — people change numbers.
+WhatsApp. It is a verified attribute, never the primary key. People change numbers.
 
 **Everything platform-specific goes behind one narrow port**, with one adapter per channel:
 
@@ -235,19 +235,19 @@ WhatsApp. It is a verified attribute, never the primary key — people change nu
 | `send_request_card` | A card: blood group, hospital, units, needed-by, plus Accept / Not this time |
 | `update_card` | Replace a card's content in place, so a chat does not fill with duplicates |
 | `ask_question` | One question, a fixed set of answers, an answer callback |
-| `collect_multi_select` | A checklist the user toggles freely, then submits once — needed by the fix-several-answers flow in §5 |
+| `collect_multi_select` | A checklist the user toggles freely, then submits once: needed by the fix-several-answers flow in §5 |
 | `request_phone` | Ask the platform for a verified phone number |
 | `request_location` | Ask the platform for a location fix |
 | `send_notice` | Plain text: confirmation, thank-you, reminder, stand-down |
 | `deep_link(token)` | A shareable link that lands on a specific request |
 
-**Where the two platforms differ** — design for the harder one:
+**Where the two platforms differ**. Design for the harder one:
 
 | | Telegram | WhatsApp Business Platform |
 |---|---|---|
 | Starting a conversation | Free, any time | Only via a **pre-approved message template**; free-form replies only inside the 24-hour window after the donor's last message |
 | Buttons | Inline keyboards, freely | Interactive buttons and lists, with limits on count and label length |
-| Editing a sent message | Yes — cards are edited in place | Effectively no; expect to send a new message and mark the old one stale |
+| Editing a sent message | Yes: cards are edited in place | Effectively no; expect to send a new message and mark the old one stale |
 | Identity | Numeric user id; phone shared on request | The phone number *is* the identity |
 | Cost | Free | Priced per conversation |
 | Onboarding entry | Deep link with a payload | Link with prefilled text, or a QR code |
@@ -257,7 +257,7 @@ needs its **message templates submitted and approved in advance**, so donor-faci
 to be finalised earlier than it otherwise would be; and "edit the card in place" cannot be
 assumed, so treat it as an optimisation the adapter may decline rather than a guarantee the
 flow depends on. Verify current limits against the platform's documentation before
-committing — the policy moves.
+committing. The policy moves.
 
 ### 2.12 Scanned *and* counted: two instruments, one of them authoritative
 
@@ -271,12 +271,12 @@ Stock is known two ways, and the difference between them is load-bearing.
 
 Where they disagree, the register wins and a human is asked to look. That is the whole
 trust model, and every consumer of stock numbers must be built for it. The value of the
-camera is precisely that it sees what nobody scanned — see §4 for the mechanism, the
+camera is precisely that it sees what nobody scanned. See §4 for the mechanism, the
 calibration screen, and the tag-collision workflows.
 
 ---
 
-## 3. Module 1 — Doctor app
+## 3. Module 1: Doctor app
 
 ### Concept
 
@@ -287,9 +287,9 @@ back to the same screen.
 
 ### Target users
 
-- **Doctors / house surgeons** in a medical-college hospital — the daily users. Mobile
+- **Doctors / house surgeons** in a medical-college hospital. The daily users. Mobile
   first, often at the bedside, on hospital wifi.
-- **Hospital admins** — provision and deactivate accounts, change roles, and work the
+- **Hospital admins**. Provision and deactivate accounts, change roles, and work the
   account-update request queue. Occasional desktop users.
 
 ### Functionality
@@ -305,7 +305,7 @@ back to the same screen.
   single-use invite link and sets their own password there. The link is consumed on use;
   the account cannot sign in before that, and an expired link offers a re-send rather than a
   dead end. **Setting the password signs them in and lands them on the dashboard for their
-  role** — never back on a sign-in form to type the password they just chose.
+  role**, never back on a sign-in form to type the password they just chose.
 - **An invite that is never used** leaves the account visibly `pending activation` in the
   admin list, with its age. Invites do not silently rot: an account still unactivated after
   a configured period is surfaced for the admin to re-send or remove.
@@ -322,16 +322,16 @@ back to the same screen.
     form.
   - **Where it ends**: a successful reset signs the user in and lands them on their
     dashboard. An expired or exhausted OTP returns to step one with a plain explanation and
-    a way to request another — not a generic error. A user who abandons the flow mid-OTP is
+    a way to request another, not a generic error. A user who abandons the flow mid-OTP is
     left exactly as they were, with their old password still working.
 
 **Doctor profile and seal**
 - Upload a signature seal (PNG only, ≤1 MB), re-encoded server-side before storage.
 - **Seals go to object storage**, not to local disk. They are served only to the owning
-  doctor or an admin, through an authenticated route — never by public URL.
+  doctor or an admin, through an authenticated route, never by public URL.
 - **Change my password** while signed in (current password required).
-- **Request an account details update.** Fields a user must not silently rewrite — email
-  address, display name, provisional registration number — are read-only on the profile
+- **Request an account details update.** Fields a user must not silently rewrite, email
+  address, display name, provisional registration number, are read-only on the profile
   page with a *Request update* action beside them. The user submits the proposed value and
   a reason; the request lands in the admin queue as `pending`.
   - The user sees the status of their own requests (`pending` / `approved` / `rejected`,
@@ -340,12 +340,12 @@ back to the same screen.
   - On approval the change is applied by the system, not retyped by the admin, so what was
     reviewed is exactly what lands. An approved email change notifies **both** the old and
     the new address, and invalidates any outstanding OTP.
-  - Fields the user owns outright — phone number, department — are simply editable; the
+  - Fields the user owns outright, phone number, department, are simply editable; the
     queue is only for identity fields.
   - **Every request reaches an end state.** Approved applies the change and notifies;
     rejected carries the admin's reason and the user may submit a corrected request;
     withdrawn closes it. A request nobody has touched ages visibly in the admin queue rather
-    than sitting silently — the user asked a person for something, and silence is not an
+    than sitting silently. The user asked a person for something, and silence is not an
     answer.
 
 **Patients**
@@ -353,14 +353,14 @@ back to the same screen.
   what they are given and never edit a patient record; there is one place a patient is
   described, and this is it.
 - Identity and demographics: name, date of birth **or** age with unit (days / months /
-  years — neonates matter, and a DOB is often unknown on admission), sex, blood group, and a
+  years, neonates matter, and a DOB is often unknown on admission), sex, blood group, and a
   hospital patient identifier (UHID/MRN) where one exists.
 - Contact and address: attender name and phone, address, district, city.
 - Clinical context carried with the patient rather than retyped per request: known
   diagnosis, relevant history, previous transfusion and any reaction to one.
 - Search and de-duplicate before creating: a warning on a close name + age + group match,
   so one patient does not end up with three records across three admissions.
-- Edits are permitted and versioned by snapshot rather than blocked — a request already
+- Edits are permitted and versioned by snapshot rather than blocked, a request already
   submitted keeps the values it was submitted with (§2.6).
 
 **Admissions**
@@ -373,8 +373,8 @@ back to the same screen.
   typed again.
 - Form fields: indication for transfusion, date required, requested blood group, product
   (Whole Blood / Packed Red Blood Cells / Platelet Concentrate / Fresh Frozen Plasma /
-  Cryoprecipitate — standard component names, §2.7), units. Doctor identity fields are read-only.
-- Save, reopen, and edit the draft — owner only.
+  Cryoprecipitate. Standard component names, §2.7), units. Doctor identity fields are read-only.
+- Save, reopen, and edit the draft. Owner only.
 - **Review** screen showing every field exactly as it will be submitted.
 - **Submit** → allocates `BR-YYYY-NNNNNN`, records the submit time, makes the record
   immutable.
@@ -390,8 +390,8 @@ centre keeps looking at.
 | **Fulfilled** | The centre | Bags issued, decision recorded, the doctor sees it on the request view |
 | **Partially fulfilled, donors recruited** | The centre, then the bot | The decision stands at `partial`; the shortfall lives on as a demand, and the request shows its progress until the demand closes |
 | **Declined** | The centre | Recorded with a reason and visible to the doctor. A decline is an answer, not a dead end: the doctor can raise a fresh request, which is a new record rather than an edit of the old one |
-| **Cancelled by the doctor** | The doctor | A submitted request can be **cancelled** — the patient improved, died, was referred, or it was raised in error. Cancelling releases any reserved bags, cancels an open donor demand (§5 stand-down), and requires a reason. It is the one post-submit action a doctor has, and without it the centre chases units nobody needs |
-| **Abandoned draft** | Nobody, which is the problem | A draft never submitted is invisible to everyone but its author. Drafts show their age on the dashboard, and one untouched past a threshold is surfaced for the doctor to submit or discard. They are never auto-deleted — an old draft may be the only record that something was intended |
+| **Cancelled by the doctor** | The doctor | A submitted request can be **cancelled**: the patient improved, died, was referred, or it was raised in error. Cancelling releases any reserved bags, cancels an open donor demand (§5 stand-down), and requires a reason. It is the one post-submit action a doctor has, and without it the centre chases units nobody needs |
+| **Abandoned draft** | Nobody, which is the problem | A draft never submitted is invisible to everyone but its author. Drafts show their age on the dashboard, and one untouched past a threshold is surfaced for the doctor to submit or discard. They are never auto-deleted: an old draft may be the only record that something was intended |
 | **Expired need** | The system | `date_required` passes with the request undecided: it stays visible and is flagged overdue on the centre queue rather than quietly ageing out. Nothing about a blood request should expire silently |
 
 **Blood samples**
@@ -404,7 +404,7 @@ centre keeps looking at.
   resume a draft or open a submitted request, and the age of any stale draft.
 
 **Admin panel**
-- Create accounts in every role — `doctor`, `admin`, `blood_centre`, `volunteer_admin` — list
+- Create accounts in every role, `doctor`, `admin`, `blood_centre`, `volunteer_admin`, list
   all accounts, change roles, activate and deactivate.
 - **Creating an account sends the welcome email**: the username and the single-use invite
   link on which the user sets their own password (§2.3). The admin never sees, chooses, or
@@ -415,8 +415,8 @@ centre keeps looking at.
   value and the user's reason; approve (the system applies the change) or reject with a
   note. Approving an email change is the one action that moves an account's identity, so it
   is confirmed explicitly and always notifies both addresses.
-- Authorization is checked at three independent layers — route protection, page guard, and
-  a per-endpoint re-check — so no single mistake grants access.
+- Authorization is checked at three independent layers, route protection, page guard, and
+  a per-endpoint re-check, so no single mistake grants access.
 - Safeguards: cannot change or deactivate your own account; cannot approve your own update
   request; the last active admin cannot be demoted or deactivated; minimum 12-character
   passwords; duplicate email or registration number rejected.
@@ -434,7 +434,7 @@ centre keeps looking at.
 
 ---
 
-## 4. Module 2 — Blood centre dashboard
+## 4. Module 2: Blood centre dashboard
 
 ### Concept
 
@@ -448,27 +448,27 @@ database client. Splitting it into its own deployment later should be mechanical
 
 ### Target users
 
-- **Blood centre technicians / counter staff** — the daily users. Desktop or tablet at the
+- **Blood centre technicians / counter staff**. The daily users. Desktop or tablet at the
   counter, working from a queue and a roster, with a tag reader at hand.
-- **Blood centre in-charge** — sets hospital identity, the stock floor, and calibrates the
+- **Blood centre in-charge**, sets hospital identity, the stock floor, and calibrates the
   cameras.
-- **The tag reader** — attached to a signed-in workstation, or standalone with a device
+- **The tag reader**, attached to a signed-in workstation, or standalone with a device
   token. It identifies one bag at a time, deliberately.
-- **The fridge camera** — a non-browser client with no session, authenticated by a device
+- **The fridge camera**. A non-browser client with no session, authenticated by a device
   token. It writes observations and reads nothing.
 
 ### Functionality
 
-**Inventory — two instruments, two different questions**
+**Inventory, two instruments, two different questions**
 
 The tag reader and the camera are not alternatives. They answer different questions, and
 the system is trustworthy only because it has both.
 
 | | **Tag reader (RF / barcode)** | **Fridge camera** |
 |---|---|---|
-| Answers | **Which** bag — identity, group, product, collection, expiry | **How many** are physically present, per region |
+| Answers | **Which** bag: identity, group, product, collection, expiry | **How many** are physically present, per region |
 | Scope | One bag, deliberately presented | A whole shelf, passively, continuously |
-| Authority | **Authoritative** — it writes the register | **Observational** — it reconciles, never writes |
+| Authority | **Authoritative**, it writes the register | **Observational**, it reconciles, never writes |
 | Fires on | Intake, issue, return, discard | Door-close, and on a schedule |
 | Catches | A bag's identity, expiry and chain of custody | A bag that moved **without anyone scanning it** |
 
@@ -482,7 +482,7 @@ never has to work out a blood group. The register already knows what *should* be
 region, so the model only has to count objects in a calibrated area and compare against an
 expected number.
 
-**Inventory — the register**
+**Inventory. The register**
 - One row per physical bag, created when the bag is **received and scanned**: bag
   identifier, blood group, product, collection date, expiry date, source, and the tag
   currently assigned to it.
@@ -490,12 +490,12 @@ expected number.
   expired`.
 - `reserved` means a bag is held for a specific request between the decision and physical
   collection. It is set when a decision issues bags and cleared when they leave the fridge
-  or the decision is cancelled — a reserved bag counts as unavailable for any other request
+  or the decision is cancelled. A reserved bag counts as unavailable for any other request
   and is excluded from the stock floor.
 - Add a bag by scanning its tag; edit its details; filter by group and status; discard and
   restore.
 - The register is the **source of truth** for every decision. Which bag went to which
-  patient, and when it expires, are facts that must be recorded per bag — a transfusion
+  patient, and when it expires, are facts that must be recorded per bag. A transfusion
   service has to be able to trace a specific unit to a specific recipient, and no camera
   provides that.
 
@@ -511,34 +511,34 @@ tag_assignments    (tag_uid, bag_id, assigned_at, assigned_by, released_at, rele
 ```
 
 Scanning a tag resolves to *the bag currently assigned to it*. `tag_assignments` is the
-history, and it is append-only — it is how you answer "what was on this tag in March?" after
+history, and it is append-only. It is how you answer "what was on this tag in March?" after
 the tag has been reused twice.
 
-**Bag intake — scan, then confirm**
+**Bag intake. Scan, then confirm**
 - Scan the tag. If it is `unassigned`, the intake form opens.
 - Enter or scan group, product, collection date, and source. **The expiry date is derived**:
   `collected_at + shelf life for that product`, from a configurable per-product table,
   prefilled and shown as a countdown. Where the bag arrives with an expiry printed on it,
-  **the printed label wins** — the operator confirms against the bag in their hand, and a
+  **the printed label wins**. The operator confirms against the bag in their hand, and a
   mismatch is flagged rather than silently accepted.
 - The expiry clock runs from **collection**, never from intake or from a re-scan. A bag does
   not become fresher by being handled.
 - On save: the bag is registered, the tag moves to `assigned`, and an assignment row opens.
 
-**When a scanned tag is already assigned — the edge cases**
+**When a scanned tag is already assigned. The edge cases**
 
 A tag that already exists is not one situation, it is three, and they must not share a
-button. The screen resolves the tag, shows everything known about the bag currently on it —
-group, product, collection, expiry, status, and if issued, to which request and when — and
+button. The screen resolves the tag, shows everything known about the bag currently on it,
+group, product, collection, expiry, status, and if issued, to which request and when, and
 then offers **only the actions valid for that status**.
 
 | What the register says | What physically happened | The workflow |
 |---|---|---|
-| Bag is `issued` or `reserved` | **Case 1 — the bag came back.** Surplus, or taken in error | **Return** |
-| Bag is `issued`, `discarded`, `expired` or transfused — gone for good | **Case 2 — the tag was reused** on a different bag | **Un-register, then re-register** |
-| Bag is `available` — the register thinks it is on the shelf right now | **Neither.** Something is wrong | **Blocked** — raise a discrepancy |
+| Bag is `issued` or `reserved` | **Case 1: the bag came back.** Surplus, or taken in error | **Return** |
+| Bag is `issued`, `discarded`, `expired` or transfused, gone for good | **Case 2, the tag was reused** on a different bag | **Un-register, then re-register** |
+| Bag is `available`, the register thinks it is on the shelf right now | **Neither.** Something is wrong | **Blocked**, raise a discrepancy |
 
-**Case 1 — Return.** The unit is a known bag coming back into the centre's custody.
+**Case 1. Return.** The unit is a known bag coming back into the centre's custody.
 
 - Record how long it was outside controlled storage and whether the cold chain was
   documented. That, not convenience, decides what happens next.
@@ -551,28 +551,28 @@ then offers **only the actions valid for that status**.
   quarantined bag that reaches its expiry is discarded automatically with that recorded as
   the reason. Nothing sits in quarantine indefinitely.
 - **The expiry date is never recalculated on return.** It is a property of the donation, not
-  of the bag's travels. Nor does a return re-open the request it was issued against — the
+  of the bag's travels. Nor does a return re-open the request it was issued against. The
   centre decision stands, with the return recorded against it.
 - Restocking a returned unit is a clinical judgement with a hard time limit in every
   transfusion SOP. Do not hard-code a threshold: read it out of the hospital's own SOP into
   configuration, default to **Quarantine** when the out-of-storage time is unknown, and let
   a named person make the call.
 
-**Case 2 — Un-register and re-register.** The tag was harvested off a spent bag and put on a
+**Case 2. Un-register and re-register.** The tag was harvested off a spent bag and put on a
 new one.
 
 - **Un-register (release)** is only offered when the assigned bag is in a terminal state. It
   requires a reason and records who did it. The assignment row closes; the tag becomes
   `unassigned`.
 - **Re-register (assign)** is only possible for an `unassigned` tag, and goes through the
-  full intake form above — new bag record, its own collection date, its own derived expiry.
+  full intake form above. New bag record, its own collection date, its own derived expiry.
   It is a new bag, not an edit of the old one, and the old bag's history stays intact.
 - The two steps are deliberately separate. A single "reassign" button invites someone to
   race past the question of what happened to the previous bag.
 - **Tag retirement**: a tag that is damaged or reads unreliably is `retired` and can never be
   assigned again.
 
-**Case 3 — Blocked.** A tag presented as new, whose bag the register believes is sitting on
+**Case 3. Blocked.** A tag presented as new, whose bag the register believes is sitting on
 the shelf, means one of: the register is stale, two bags carry the same tag, or the tag is
 cloned. Every one of those can put the wrong unit into a patient, so this case does **not**
 offer a resolution button on the intake screen. It raises a discrepancy, names the
@@ -580,49 +580,49 @@ conflicting bag, and requires someone to physically locate that bag before anyth
 proceeds. This is the one place in the module where the right behaviour is to stop and make
 a person go and look.
 
-**But blocked is not the end of the flow** — it hands off to one, and the discrepancy must
+**But blocked is not the end of the flow**. It hands off to one, and the discrepancy must
 be closable or the centre is left with a tag it cannot use and a task it cannot clear. The
 open discrepancy sits on the dashboard with the conflicting bag's details, and resolves
 exactly three ways, each requiring the resolver's identity and a note:
 
 | What they found | Resolution |
 |---|---|
-| **The conflicting bag is on the shelf** — so this second bag is wearing a duplicate or cloned tag | The presented bag is quarantined and cannot be registered on this tag. The tag in hand is **retired**; the bag is re-registered on a fresh tag through normal intake |
-| **The conflicting bag is not there** — it left without being scanned out | The register was wrong. The missing bag is marked `lost` with the note, which is a discard for stock purposes and a reportable event for the centre. The tag is then released and available to re-register |
-| **The conflicting bag is there and this was a mis-scan** — wrong tag presented, or a mistaken intake | Dismiss the discrepancy. Nothing changes |
+| **The conflicting bag is on the shelf**: so this second bag is wearing a duplicate or cloned tag | The presented bag is quarantined and cannot be registered on this tag. The tag in hand is **retired**; the bag is re-registered on a fresh tag through normal intake |
+| **The conflicting bag is not there**: it left without being scanned out | The register was wrong. The missing bag is marked `lost` with the note, which is a discard for stock purposes and a reportable event for the centre. The tag is then released and available to re-register |
+| **The conflicting bag is there and this was a mis-scan**: wrong tag presented, or a mistaken intake | Dismiss the discrepancy. Nothing changes |
 
 A discrepancy of this kind is never auto-resolved by a later scan, never expires, and stays
-visible on the centre overview until a person closes it — it is the one alarm in this module
+visible on the centre overview until a person closes it. It is the one alarm in this module
 worth being loud.
 
-**Inventory — the camera**
+**Inventory. The camera**
 
 A camera inside the storage fridge observes what is physically on the shelves and reports
 **counts per calibrated region**. It replaces the manual stock-take, not the register and
 not the reader.
 
-- **What it produces**: for each capture — a timestamp, a per-region count, a confidence per
+- **What it produces**: for each capture. A timestamp, a per-region count, a confidence per
   count, and a reference to the stored frame.
 - **What it never does**: change the register. Vision *observes*; the reader and the decision
   flow *write*. An automatic decrement on a blurred frame is how a hospital comes to believe
   it has blood it does not have.
 - **Reconciliation**: every capture is compared with what the register says should be in each
-  region. Agreement is silent. A discrepancy opens a reconciliation task on the dashboard —
-  group, expected, observed, the frame, and the recent scan history for that region — which
+  region. Agreement is silent. A discrepancy opens a reconciliation task on the dashboard,
+  group, expected, observed, the frame, and the recent scan history for that region, which
   a staff member resolves by correcting the register or dismissing the observation.
   Unresolved discrepancies surface on the centre overview, because a silent one is worse than
   none.
 - **Capture triggers**: on fridge-door close (the shelf just changed), and on a schedule for
-  drift. Not continuously — there is nothing to see between door events.
+  drift. Not continuously. There is nothing to see between door events.
 
-**Camera onboarding — the region calibration screen**
+**Camera onboarding. The region calibration screen**
 
 Before a camera counts anything, an admin teaches it what it is looking at. This is a
 first-class screen, not a config file.
 
 - **Draw the regions on a live frame.** The screen pulls a current image from the camera and
   the admin draws a rectangle or polygon over each shelf, tray or bin, labelling it with the
-  blood group it holds — and optionally the product and an expected capacity.
+  blood group it holds, and optionally the product and an expected capacity.
 - **Verify before activating.** A test mode runs the model against the live frame and
   overlays its count per region, so the admin sees what the camera will report *before* it
   starts raising tasks. Regions can be adjusted and re-tested until the counts look right.
@@ -630,7 +630,7 @@ first-class screen, not a config file.
   alongside. Every observation records which calibration version produced it, so historical
   counts stay interpretable after the shelving is rearranged.
 - **Drift detection.** A nudged camera silently invalidates every region boundary while
-  continuing to report confident nonsense — the worst failure mode this feature has. Each
+  continuing to report confident nonsense. The worst failure mode this feature has. Each
   capture is compared against the calibration's reference frame; beyond a threshold, the
   device is marked **needs recalibration**, its observations stop being trusted, and the
   dashboard says so.
@@ -643,7 +643,7 @@ chance:
 
 | Problem | What makes it tractable |
 |---|---|
-| Reading a blood group off a bag in an image is unreliable | **Do not read the bag — read its position.** One shelf, tray, or bin per group, labelled and enforced, and calibrated as a region. The group comes from geometry, never from the pixels of the bag. This is by far the highest-leverage decision |
+| Reading a blood group off a bag in an image is unreliable | **Do not read the bag: read its position.** One shelf, tray, or bin per group, labelled and enforced, and calibrated as a region. The group comes from geometry, never from the pixels of the bag. This is by far the highest-leverage decision |
 | Bags stack and occlude each other | Single-layer trays, or one camera per shelf. A count of a heap is a guess |
 | Condensation, frost, low light | A sealed, heated-window enclosure rated for the storage temperature; lighting that switches on only for the capture and does not warm the contents |
 | A metal box blocks radio | Prefer a wired run (power + data) through an existing gland. Validate signal before committing to wireless |
@@ -652,12 +652,12 @@ chance:
 
 A cheap hedge worth taking: the tag label printed at intake can carry a **large,
 high-contrast group marker** oriented toward the camera. It turns counting into detecting a
-known symbol, and gives the camera a way to catch a bag sitting in the wrong region — the
+known symbol, and gives the camera a way to catch a bag sitting in the wrong region. The
 one error that region-based counting is otherwise blind to.
 
 - **Vision agent endpoint**: JSON in, JSON out, authenticated by a device token rather than a
-  session (the camera has no browser). It submits an observation — counts, confidences, frame
-  reference, calibration version — and reads back its configuration. Devices are registered,
+  session (the camera has no browser). It submits an observation, counts, confidences, frame
+  reference, calibration version, and reads back its configuration. Devices are registered,
   individually revocable, and their last-seen time is on the dashboard, because a camera that
   quietly stopped reporting looks exactly like a fridge that stopped changing.
 - **Frames are clinical-area images**: retained briefly (days, not years) on a defined
@@ -669,7 +669,7 @@ one error that region-based counting is otherwise blind to.
 - Deciding a request is one transaction: lock the oldest available bags of that group
   (skip-locked so two staff members never contend for one bag), mark them issued to the
   request, record the decision (`approved` / `partial` / `declined` with units issued and a
-  note), and — if there is a shortfall **and** the product is whole blood or packed red blood cells —
+  note), and, if there is a shortfall **and** the product is whole blood or packed red blood cells,
   raise a donor demand for the difference.
 - Platelets, plasma and cryoprecipitate never recruit donors; they are not what a walk-in
   donor gives.
@@ -682,7 +682,7 @@ one error that region-based counting is otherwise blind to.
 **Demand and roster**
 - Every demand with live progress written back by the bot: donors notified, units confirmed,
   waitlisted, completed.
-- The confirmed-donor roster — name and verified phone — for each demand.
+- The confirmed-donor roster, name and verified phone, for each demand.
 - Mark each donor **Donated**, **No-show**, or **Cancelled**; optionally record the
   identifier of the bag collected from them, which is what links a donor to a unit.
 - Record a **walk-in** donation from someone who never confirmed in the bot. The centre is the
@@ -690,8 +690,8 @@ one error that region-based counting is otherwise blind to.
 - Cancel a demand, which stands down every donor holding a unit for it (§5).
 
 **Settings**
-- Hospital name, address, district, city — snapshotted onto every demand, so this is what
-  donors are told — the stock floor, and the per-product shelf-life table.
+- Hospital name, address, district, city, snapshotted onto every demand, so this is what
+  donors are told, the stock floor, and the per-product shelf-life table.
 
 **Overview**
 - Stock per group against the floor, requests awaiting decision, recruitment in progress,
@@ -708,13 +708,13 @@ the two shared tables (§7).
 
 ---
 
-## 5. Module 3 — Donor bot
+## 5. Module 3: Donor bot
 
 ### Concept
 
 The forwarded plea for donors, replaced by something that knows who is actually eligible. It
 reads demand raised by the centre, works out which donors may give to that patient's group, and
-messages them in waves — stopping the instant the units are met, so no one travels to a
+messages them in waves. Stopping the instant the units are met, so no one travels to a
 hospital that no longer needs them.
 
 It is a separate always-on process: a chat adapter, an optional inbound HTTP API, and a
@@ -723,13 +723,13 @@ it is running on (§2.11).
 
 ### Target users
 
-- **Donors** — the public, on cheap phones, often in Malayalam-speaking Kerala districts.
+- **Donors**. The public, on cheap phones, often in Malayalam-speaking Kerala districts.
   They are volunteers, not staff: every interaction has to be short and unambiguous. Some are
   pushed a request; some come looking on their own, and both paths have to work.
-- **Volunteer admins** — trusted community members, whitelisted manually, who receive each new
+- **Volunteer admins**, trusted community members, whitelisted manually, who receive each new
   request as a card with a live counter and a forwardable message they can share into local
   groups, and who get the fuller picture in Module 4.
-- **The blood centre**, indirectly — it raises demand and reads progress through Module 2, never
+- **The blood centre**, indirectly, it raises demand and reads progress through Module 2, never
   through the chat platform.
 
 ### The three rules
@@ -759,20 +759,20 @@ not in process memory, so a restart or a donor who wanders off mid-signup is nev
 
 | # | Step | How it is asked |
 |---|---|---|
-| 1 | **Phone number** | Ask the platform for the contact. The donor taps to approve and the number arrives **verified**. Manual entry is the fallback (platform refusal, a shared device, a number different from the chat account) and is marked unverified until an OTP confirms it. On WhatsApp the number is already the identity — approve it rather than ask |
+| 1 | **Phone number** | Ask the platform for the contact. The donor taps to approve and the number arrives **verified**. Manual entry is the fallback (platform refusal, a shared device, a number different from the chat account) and is marked unverified until an OTP confirms it. On WhatsApp the number is already the identity: approve it rather than ask |
 | 2 | **Name** | The one free-text field |
-| 3 | **Date of birth** | Button grid — year, then month, then day. Gives age; age is never asked directly, because people round it |
-| 4 | **Sex** | Buttons. Needed for the donation interval and to know whether the pregnancy screening question applies — not for display |
+| 3 | **Date of birth** | Button grid: year, then month, then day. Gives age; age is never asked directly, because people round it |
+| 4 | **Sex** | Buttons. Needed for the donation interval and to know whether the pregnancy screening question applies: not for display |
 | 5 | **Blood group** | Eight buttons, plus "I don't know". Marked unverified until staff type the donor at a donation; unverified donors are never matched |
 | 6 | **Weight** | Coarse bands as buttons (under 45 / 45–50 / 50–60 / 60–70 / 70+ kg), with the exact figure optional. Below the minimum threshold the donor is registered but not matched, and told plainly and kindly why |
-| 7 | **Screening** | The durable questions only — see below |
-| 8 | **Where you live** | District → city → town → locality, in that order — see below |
+| 7 | **Screening** | The durable questions only: see below |
+| 8 | **Where you live** | District → city → town → locality, in that order: see below |
 | 9 | **Last donation date** | Button grid, or "never". Sets the first inter-donation interval |
 | 10 | **Review and acknowledge** | Every answer played back as a summary, each one correctable, then a single confirmation covering both *"these details are correct"* and *"message me when someone near me needs my group"*. Nothing is sent before this |
 
 Entry is either from a shared deep link that lands on a specific request, or by finding the bot
 directly. A donor arriving on a request link is onboarded first, then lands back on that
-request — the link is never lost.
+request. The link is never lost.
 
 **Blood group and sex are not optional.** Group is the entire matching key; sex sets the
 donation interval and decides whether the pregnancy question is asked. Without them a donor
@@ -780,7 +780,7 @@ cannot be matched at all.
 
 **Screening is asked twice, and the two are different questions.**
 
-| | At signup — *durable* | At each request — *temporary* |
+| | At signup, *durable* | At each request, *temporary* |
 |---|---|---|
 | Asks about | Conditions that do not change week to week: chronic illness, permanent deferral conditions, weight below threshold | Fever now, medication now, a tattoo in the last N months, feeling well today, last meal |
 | Effect of a disqualifying answer | Flags the profile for a human to review; the donor is not matched until it is resolved | Removes the donor from **this request only**; the profile is untouched |
@@ -789,7 +789,7 @@ cannot be matched at all.
 Neither is a medical assessment. Both are a gate to stop a wasted trip; the real screening
 happens at the counter. Nothing is ever phrased to the donor as a diagnosis or a verdict.
 
-**Where you live — four levels, and how to fill them without typing**
+**Where you live, four levels, and how to fill them without typing**
 
 The address hierarchy is district → city/taluk → town → locality. It exists so a wave can reach
 the people closest to the hospital first, which is the single biggest lever on whether someone
@@ -798,8 +798,8 @@ actually turns up.
 Two paths, offered in this order:
 
 1. **From their location.** Ask the platform for a location fix; the donor taps to share.
-   Reverse-geocode it, prefill all four levels, and **show them for confirmation** —
-   "Kozhikode › Kozhikode › Feroke › Karuvanthiruthi. Is that right?" — with per-level
+   Reverse-geocode it, prefill all four levels, and **show them for confirmation**:
+   "Kozhikode › Kozhikode › Feroke › Karuvanthiruthi. Is that right?", with per-level
    correction.
 2. **By choosing.** District from a list. Then city, town and locality each as a type-ahead
    filtered by the level above, so the donor types two or three characters and picks. Free text
@@ -808,15 +808,15 @@ Two paths, offered in this order:
 
 This needs a **reference dataset of the hierarchy**, seeded and versioned, with the app matching
 against it rather than storing whatever was typed. Locality names in Kerala have several
-romanised spellings each, and a donor pool keyed on free text cannot be sorted by proximity —
-the same place will appear four ways. Store the matched reference id and the donor's own wording
+romanised spellings each, and a donor pool keyed on free text cannot be sorted by proximity.
+The same place will appear four ways. Store the matched reference id and the donor's own wording
 alongside it.
 
 Two things to plan for: reverse geocoding is **routinely accurate to the town and frequently
 wrong at the locality level** in Indian towns, which is why step 1 confirms rather than accepts;
 and a donor's district can change, so this must be editable later without redoing signup.
 
-**Step 10 — the summary**
+**Step 10. The summary**
 
 The last screen plays back everything the donor has said, in one message, and asks them to
 confirm it all at once:
@@ -837,17 +837,17 @@ Please check these details:
        Never been advised not to donate            ✓
 
   8  Where you live   Kozhikode › Kozhikode › Feroke › Karuvanthiruthi
-  9  Last donated     22 Feb 2026  — you can donate again from 23 May 2026
+  9  Last donated     22 Feb 2026. You can donate again from 23 May 2026
 
-  [ Fix something ]   [ Yes, this is correct — send me requests ]
+  [ Fix something ]   [ Yes, this is correct. Send me requests ]
 ```
 
 - **The durable screening answers appear here, in the donor's own terms**, not as a hidden
   score. Someone who mis-tapped a yes/no three screens ago finds out now rather than by being
-  silently excluded from every request for a year — which is exactly how a donor pool quietly
+  silently excluded from every request for a year, which is exactly how a donor pool quietly
   rots.
 - **One confirmation covers both things**: that the details are correct, and that the donor
-  agrees to be messaged. They are inseparable in practice — consent to be contacted about a
+  agrees to be messaged. They are inseparable in practice. Consent to be contacted about a
   blood group is meaningless if the blood group is wrong.
 - Derived consequences are shown as consequences, not as raw data: an age from the date of
   birth, a next-eligible date from the last donation. A donor should leave signup knowing when
@@ -855,13 +855,13 @@ Please check these details:
 - The phone is masked in the playback. The donor knows their own number; anyone reading over
   their shoulder does not need it.
 
-**Fixing things — all of them, in one pass**
+**Fixing things, all of them, in one pass**
 
 If someone got three answers wrong, they should fix three answers once, not make three round
 trips through the summary. Two ways in, and neither is a restart:
 
-- **Jump straight to one field.** Every row is numbered. Tapping a numbered button — or replying
-  `5` — goes directly to that question, re-asks it with its original input control, and returns
+- **Jump straight to one field.** Every row is numbered. Tapping a numbered button, or replying
+  `5`, goes directly to that question, re-asks it with its original input control, and returns
   to the summary.
 - **Fix several at once.** *Fix something* opens a **checklist of every field**. The donor taps
   each one that is wrong; the ticks accumulate and the list stays open. Then *Fix these (3)*
@@ -882,14 +882,14 @@ trips through the summary. Two ways in, and neither is a restart:
 
 Rules that keep it from becoming a maze:
 
-- **The re-ask is the original question, unchanged** — the same buttons, the same date grid, the
+- **The re-ask is the original question, unchanged**. The same buttons, the same date grid, the
   same location type-ahead. There is no second, lesser edit interface to build or to maintain.
 - **Editing one field never invalidates the others.** The only exception is location: changing
   the district resets the levels beneath it, because a town in the old district is meaningless
-  in the new one — so that edit continues down the chain rather than stopping.
+  in the new one, so that edit continues down the chain rather than stopping.
 - **Screening (7) re-asks the whole short set**, not one question. Which question was wrong is
   exactly what the donor cannot see from the summary, and the set is only three or four taps.
-- **The returned summary marks what changed** — *"updated"* against each edited row — so the
+- **The returned summary marks what changed**, *"updated"* against each edited row, so the
   donor can confirm the fix landed rather than re-reading everything.
 - **Nothing is committed until the final confirmation.** Edits accumulate against the in-progress
   registration; abandoning the flow leaves the donor exactly where they were.
@@ -906,8 +906,8 @@ which they need to know what happens next.
   qualify. That is what they came for.
 - **Came in on their own** → a short close: they are registered, this is when they next become
   eligible, and this is how to see what is needed right now (the demand board). Not a silent end.
-- **Registered but not matchable** — unverified blood group, under the weight threshold, an
-  unresolved durable-screening flag, or still inside their inter-donation interval — → told plainly which it is,
+- **Registered but not matchable**, unverified blood group, under the weight threshold, an
+  unresolved durable-screening flag, or still inside their inter-donation interval, → told plainly which it is,
   what would change it, and that they stay on the list. This is an ending, not a rejection, and
   the wording carries the difference.
 - **Declines the acknowledgement** → the registration is kept but dormant: no messages are sent,
@@ -918,7 +918,7 @@ which they need to know what happens next.
 
 **This same screen is the donor's profile editor.** Donor self-service reopens the identical
 summary with the identical checklist; there is one implementation and two entry points. That is
-also why the acknowledgement is re-recorded whenever details change — the donor is agreeing to the
+also why the acknowledgement is re-recorded whenever details change. The donor is agreeing to the
 summary in front of them, not to a form they filled in months ago.
 
 **Consent, and the right to withdraw it.** That confirmation is what makes every later message
@@ -928,19 +928,19 @@ to *this text*, showing *these values*, at *this time*" is.
 
 A donor must be able to pause messages, opt out, and delete their data from inside the chat, in one
 or two taps, without contacting anyone. The consent copy needs legal review before real donors are
-enrolled — it is health-adjacent personal data (§12).
+enrolled. It is health-adjacent personal data (§12).
 
 **Demand intake**
 - A ticker (every 60s by default) imports open demand rows the centre has raised and creates a request
-  card. Import is idempotent — the demand id is the external key, so a row is never fanned out twice.
+  card. Import is idempotent. The demand id is the external key, so a row is never fanned out twice.
 - A signed HTTP API (HMAC-SHA256 over `timestamp.body`, per-centre secret, the timestamp signed to
   prevent replay) is the alternative path, for an external blood centre that cannot share the database.
   Requests carry a centre id from day one so multi-tenant is not a retrofit.
 
 **Wave distribution**
 - 20 eligible donors per wave, another wave every 30 minutes until the units are met, ordered by
-  **proximity down the location hierarchy** — same locality, then same town, then same city, then
-  same district — and within each tier, longest-since-donation first. The four levels collected at
+  **proximity down the location hierarchy**, same locality, then same town, then same city, then
+  same district, and within each tier, longest-since-donation first. The four levels collected at
   signup exist for exactly this ordering; a wave that only knew the district would wake half a city
   for a hospital two streets away.
 - The next wave time is a column polled by the ticker, not an in-memory timer, so a restart
@@ -949,21 +949,21 @@ enrolled — it is health-adjacent personal data (§12).
   dashboard in §6 for the whole picture.
 - A donor is pushed a request **only** when their verified group is compatible, they are within
   reach, they are past their inter-donation interval, and they have acknowledged step 10 of signup. Push is the default
-  path — the donor should not have to go looking.
+  path. The donor should not have to go looking.
 
-**Browsing demand — for the donor who comes looking anyway**
+**Browsing demand, for the donor who comes looking anyway**
 
 Not everyone waits to be asked. Some people want to give because they read something, or because a
 friend needed blood last month, and they open the bot on their own.
 
-- **Live demand, open to everyone** — registered or not, eligible or not. A simple list of what is
+- **Live demand, open to everyone**. Registered or not, eligible or not. A simple list of what is
   currently needed: blood group, hospital, town, units still outstanding, needed-by. No patient
   details, exactly as elsewhere (§2.10).
 - **My matches first.** For a registered donor the list leads with the requests they actually qualify
   for, marked as such, and shows the rest below. Tapping a match enters the same accept → screen →
   confirm flow as a pushed request; there is one path, not two.
 - **A visitor who taps a request they are not registered for** is onboarded first and then returned
-  to it — the same behaviour as a deep link.
+  to it. The same behaviour as a deep link.
 - **When a donor does not qualify, say why, once, without a lecture**: still in the inter-donation interval
   until a date, wrong group for this request, too far. A donor who understands why they were skipped
   stays; one who feels ignored leaves.
@@ -980,7 +980,7 @@ NOTIFIED ─Accept─▶ ACCEPTED ─▶ SCREENING ─pass─▶ CONFIRMED ─�
                      units already met ─▶ REQUEST_FILLED (waitlist)
 ```
 
-- **Donor health questionnaire**: six yes/no questions — a hard gate to stop a wasted trip, never a
+- **Donor health questionnaire**: six yes/no questions. A hard gate to stop a wasted trip, never a
   medical assessment; the full pre-donation assessment always happens on site. A disqualifying answer
   **temporarily defers** the donor *from this request only*; temporary conditions never touch the
   donor profile. An answer suggesting a **permanent deferral** raises a review flag for a human, and
@@ -998,9 +998,9 @@ and then hears nothing is a donor lost.
 | State they are in | What must reach them, and when |
 |---|---|
 | `NOTIFIED`, request fills without them | One line: it is covered, thank you, nothing to do. The card stops offering Accept |
-| `REQUEST_FILLED` (waitlisted) | Either **promoted** — a slot reopened, here is the hospital and time — or **stood down** when the request closes. A waitlist that never resolves is worse than never offering one |
+| `REQUEST_FILLED` (waitlisted) | Either **promoted**, a slot reopened, here is the hospital and time, or **stood down** when the request closes. A waitlist that never resolves is worse than never offering one |
 | `CONFIRMED`, demand **cancelled** by the centre | Stand down immediately and unmistakably. This is the single most important message the bot sends: someone is otherwise about to travel to a hospital that no longer needs them |
-| `CONFIRMED`, need **expires** unmet | Same stand-down, with thanks. The unit is released and the interval is untouched — they did not donate |
+| `CONFIRMED`, need **expires** unmet | Same stand-down, with thanks. The unit is released and the interval is untouched: they did not donate |
 | `CONFIRMED`, donor does not appear | Marked `NO_SHOW` at the counter. No accusatory message; they stay eligible |
 | `DEFERRED` by screening | Told it applies to this request only, and that they will be asked again next time |
 | `COMPLETED` | Thank-you, inter-donation interval rolled forward, and the date they next become eligible |
@@ -1010,7 +1010,7 @@ and then hears nothing is a donor lost.
   thank-you; when every unit is in, the demand closes. `Cancelled` releases the unit so the waitlist
   can be promoted.
 - Progress counters are written back for the centre dashboard on every change.
-- **A demand closes exactly one way of four** — `completed` (every unit collected), `cancelled` (the
+- **A demand closes exactly one way of four**: `completed` (every unit collected), `cancelled` (the
   centre withdrew it, including because the doctor cancelled the request), `expired` (the date passed
   unmet), or `fulfilled` then `completed`. Whichever it is, the closure fans out the stand-down
   messages above and stops recruitment in the same pass. Closing a demand without telling the people
@@ -1018,18 +1018,18 @@ and then hears nothing is a donor lost.
 
 **Donor self-service**
 - View and edit the profile through **the same summary and the same fix-several checklist used at
-  signup** — district, city, town, locality, phone, blood group (re-flagged unverified on change),
+  signup**. District, city, town, locality, phone, blood group (re-flagged unverified on change),
   weight, last donation date, durable screening answers. Saving re-records the acknowledgement
   against the values shown.
-- **Snooze** for a chosen period, **opt out** entirely, and **delete my data** — each reachable in one
+- **Snooze** for a chosen period, **opt out** entirely, and **delete my data**, each reachable in one
   or two taps from the chat, not by writing to anyone. Each has a stated end: snooze names the date it
   lifts, opt-out says how to come back, deletion confirms what was removed.
 - **Deletion, honestly.** The donor profile, chat identity, contact details, location and screening
   answers are deleted. What cannot be deleted is the record that a specific unit of blood came from a
-  specific person on a specific date — that belongs to the blood centre, not to the bot, and a
+  specific person on a specific date, that belongs to the blood centre, not to the bot, and a
   transfusion service has to be able to trace a transfused unit back to its donation. Those rows are
   **de-identified**, keeping the donation and the bag identifier while dropping the name and number.
-  - Say this in the confirmation, before deleting, in one sentence — not in a policy page.
+  - Say this in the confirmation, before deleting, in one sentence, not in a policy page.
   - A donor who never donated has nothing retained, and should be told so.
   - The retention basis needs the same legal review as the consent copy: it is a lawful-obligation
     exception asserted against a deletion right, and an engineer should not be scoping it (§12).
@@ -1052,7 +1052,7 @@ and then hears nothing is a donor lost.
 
 `donors`, `donor_channels` (§2.11), `donor_consents`, `bot_requests` (the bot's own view of a
 demand), `donor_requests` (the journey rows), `admins`, `admin_cards`, `conversation_state`,
-`event_log`, and the seeded `location_hierarchy` reference — all in its own schema.
+`event_log`, and the seeded `location_hierarchy` reference, all in its own schema.
 
 ### Two concurrency details that decide correctness
 
@@ -1064,12 +1064,12 @@ read-then-write.
 **Replayed taps.** Every chat platform redelivers callbacks. Every transition is a conditional UPDATE
 guarded on the status it expects and reports whether it actually moved; a replay matches nothing and
 is a no-op. Questionnaire progress lives on the journey row rather than in session memory, so a
-duplicate tap is caught by comparing the tapped question index against the answers already recorded —
+duplicate tap is caught by comparing the tapped question index against the answers already recorded,
 and the flow survives a restart.
 
 ---
 
-## 6. Module 4 — Volunteer dashboard
+## 6. Module 4: Volunteer dashboard
 
 ### Concept
 
@@ -1079,21 +1079,21 @@ decide where to point a community's attention. This is that view, and nothing mo
 
 ### Target users
 
-- **Volunteer admins** — community organisers, blood-donor group coordinators, student volunteers. On
+- **Volunteer admins**. Community organisers, blood-donor group coordinators, student volunteers. On
   a phone, often mid-conversation, deciding which group to push today.
 
 ### Functionality
 
 **The primary view is the blood groups.** Eight tiles, one per group, each showing the state of that
 group at a glance: units outstanding right now, donors confirmed against them, and whether the group
-is below the stock floor. The tiles are the navigation — tap one to see the open demands behind it.
+is below the stock floor. The tiles are the navigation. Tap one to see the open demands behind it.
 
 - **Colour-coded by pressure**, not by decoration: met / recruiting / short / critical. The colour
-  must survive being read on a cheap phone in daylight, and must never be the only signal — pair it
+  must survive being read on a cheap phone in daylight, and must never be the only signal. Pair it
   with the number and a label.
 - **Live**, without a refresh button. Polling is fine; the numbers move on the scale of minutes.
-- Behind a tile: each open demand — hospital, town, units outstanding, needed-by, donors notified and
-  confirmed — and the forwardable message for it, with a copy button.
+- Behind a tile: each open demand, hospital, town, units outstanding, needed-by, donors notified and
+  confirmed, and the forwardable message for it, with a copy button.
 - **A share sheet per group**: a ready-made message a volunteer can paste into a community group,
   generated from live numbers so it is never stale.
 - Optionally scoped to the volunteer's district, matching the scoping on their chat whitelist.
@@ -1105,7 +1105,7 @@ identity, a donor's name or phone number. The dashboard is counts and hospitals.
 person's name to be useful, it belongs in Module 2, behind the centre role.
 
 **A public version of the same board**, with the sharing tools and district scoping removed, is the
-web face of the donor-facing demand list in §5 — one page anyone can open or forward, no account
+web face of the donor-facing demand list in §5, one page anyone can open or forward, no account
 needed.
 
 ### Data it owns
@@ -1118,7 +1118,7 @@ None. It reads the shared demand tables (§7) and the bot's progress counters.
 
 Two tables in the hospital schema. The bot never creates them; the web app's migrations do.
 
-### `donor_demand` — centre → bot
+### `donor_demand`: centre → bot
 
 | Written by | Columns | Meaning |
 |---|---|---|
@@ -1130,17 +1130,17 @@ Two tables in the hospital schema. The bot never creates them; the web app's mig
 
 The bot polls for `status = 'open' AND bot_public_id IS NULL`.
 
-### `donor_demand_confirmations` — bot → centre → bot
+### `donor_demand_confirmations`: bot → centre → bot
 
 | Written by | Columns | Meaning |
 |---|---|---|
-| Bot | demand id, donor id, channel, donor name, donor phone, blood group, confirmed at | A donor who passed screening and holds a unit — the roster |
+| Bot | demand id, donor id, channel, donor name, donor phone, blood group, confirmed at | A donor who passed screening and holds a unit: the roster |
 | Both | status | Bot: `confirmed`. Centre: `completed` / `no_show` / `cancelled` |
 | Centre | donated at, bag identifier, marked by | What happened at the counter |
 | Bot | acknowledged at | Set once the donor has been updated and thanked |
 
 `(demand id, donor id)` is unique. The key is the bot's **internal donor id**, not a platform user
-id — that is what lets the same person be reached on one channel today and another tomorrow without
+id. That is what lets the same person be reached on one channel today and another tomorrow without
 the centre's roster changing shape (§2.11). The channel is carried alongside so the counter knows where
 the person was reached.
 
@@ -1151,14 +1151,14 @@ local time that day. API-originated requests keep their exact time.
 
 ---
 
-## 8. Flow index — every flow's way in and ways out
+## 8. Flow index: every flow's way in and ways out
 
 One row per user flow, so nothing is built with an entrance and no exit. The rule this table
 enforces: **every flow ends somewhere named, including when it goes wrong, and whoever was left
 waiting is told.** ⚠︎ marks the endings that are easiest to leave unbuilt, because they fire on paths
 nobody demonstrates.
 
-### Module 1 — doctor and admin
+### Module 1: doctor and admin
 
 | Flow | Way in | Ways out |
 |---|---|---|
@@ -1170,7 +1170,7 @@ nobody demonstrates.
 | Sample association | The submitted request's view | Sample recorded against the request |
 | Seal upload | Profile | Stored, or rejected with the reason (type, size) |
 
-### Module 2 — blood centre
+### Module 2: blood centre
 
 | Flow | Way in | Ways out |
 |---|---|---|
@@ -1185,7 +1185,7 @@ nobody demonstrates.
 | Reconciliation task | A capture disagrees with the register | Register corrected · observation dismissed · stays open and visible until one of the two |
 | Donor roster marking | The demand page | Donated · no-show · cancelled → unit released · walk-in recorded |
 
-### Module 3 — donor bot
+### Module 3: donor bot
 
 | Flow | Way in | Ways out |
 |---|---|---|
@@ -1199,7 +1199,7 @@ nobody demonstrates.
 | Snooze / opt out / delete | Chat menu | Snoozed until a named date · opted out, reversible · ⚠︎ deleted, with donation records de-identified rather than removed, and said plainly first |
 | Browsing demand | Chat command, link, or the public page | Into the accept flow · told why they do not qualify · nothing, which is a valid ending |
 
-### Module 4 — volunteer dashboard
+### Module 4: volunteer dashboard
 
 | Flow | Way in | Ways out |
 |---|---|---|
@@ -1211,18 +1211,18 @@ nobody demonstrates.
 
 | Surface | Anonymous | doctor | admin | blood_centre | volunteer_admin | Device token | Donor (chat) |
 |---|---|---|---|---|---|---|---|
-| Landing, sign-in, offline | yes | yes | yes | yes | yes | — | — |
-| Public demand board | yes | yes | yes | yes | yes | — | yes |
-| Password reset (OTP) | yes | yes | yes | yes | yes | — | — |
-| Dashboard, patients, admissions, requests, samples | no | yes | yes | no | no | — | — |
-| Own profile, change password, request update | no | yes | yes | yes | yes | — | — |
-| Admin panel, update-request queue | no | no | yes | no | no | — | — |
-| Centre inventory / requests / demand / settings | no | no | yes | yes | no | — | — |
-| Volunteer dashboard | no | no | yes | no | yes | — | — |
-| Camera calibration screen | no | no | yes | yes | no | — | — |
-| Camera observation / tag reader endpoint | no | no | no | no | no | yes | — |
-| Donor onboarding, request cards, screening | — | — | — | — | — | — | yes |
-| Volunteer admin chat cards | — | — | — | — | — | — | whitelist only |
+| Landing, sign-in, offline | yes | yes | yes | yes | yes | - | - |
+| Public demand board | yes | yes | yes | yes | yes | - | yes |
+| Password reset (OTP) | yes | yes | yes | yes | yes | - | - |
+| Dashboard, patients, admissions, requests, samples | no | yes | yes | no | no | - | - |
+| Own profile, change password, request update | no | yes | yes | yes | yes | - | - |
+| Admin panel, update-request queue | no | no | yes | no | no | - | - |
+| Centre inventory / requests / demand / settings | no | no | yes | yes | no | - | - |
+| Volunteer dashboard | no | no | yes | no | yes | - | - |
+| Camera calibration screen | no | no | yes | yes | no | - | - |
+| Camera observation / tag reader endpoint | no | no | no | no | no | yes | - |
+| Donor onboarding, request cards, screening | - | - | - | - | - | - | yes |
+| Volunteer admin chat cards | - | - | - | - | - | - | whitelist only |
 
 ---
 
@@ -1235,29 +1235,29 @@ nobody demonstrates.
 - **Deployment shape**: the web app is stateless and horizontally scalable behind managed PostgreSQL.
   The bot is a single always-on process; on a long-polling channel it needs **no public surface** at
   all, reaching the platform by polling and the centre by writing rows, and only one copy may run per
-  bot token. **A webhook-delivered channel changes this** — the bot gains a public HTTPS endpoint with
+  bot token. **A webhook-delivered channel changes this**, the bot gains a public HTTPS endpoint with
   signature verification, and the deployment target must hold a stable public URL.
 - **External dependencies**, each needing an owner and a failure story: a transactional email
   provider (§2.4), a reverse-geocoding provider, a seeded location-hierarchy dataset, object storage
   for seals, the tag readers and their label printer, the in-fridge camera hardware and its model,
-  and — for a WhatsApp channel — a Business account with approved templates.
+  and, for a WhatsApp channel, a Business account with approved templates.
 - **Every one of those can be unavailable**, and the system keeps working when they are. The centre
   must be able to register and issue a bag by typing its identifier when a reader fails; the camera
   going dark degrades to "no observations", never to "zero stock"; a failed reverse geocode falls
   through to the type-ahead; an undelivered invite is re-sendable. None of these is an outage of the
   loop in §1.
-- **Licence**: **Apache License 2.0** — see §12.7 for why, and for the alternative if the goal
+- **Licence**: **Apache License 2.0**. See §12.7 for why, and for the alternative if the goal
   changes.
 - **Medical disclaimer**: not medical advice, not clinically validated, not for real clinical use
   without institutional validation, security review, compliance review and authorization. This is
-  separate from the licence and is not satisfied by it — §12.6 explains why it is a working
+  separate from the licence and is not satisfied by it, §12.6 explains why it is a working
   constraint on the copy and not a footer.
-- **Engineering standards** — module boundaries, the stack, coding rules, testing and CI: §11.
+- **Engineering standards**, module boundaries, the stack, coding rules, testing and CI: §11.
   **Legal and regulatory obligations** and what they demand of the build: §12.
 
 ---
 
-## 11. Engineering standards — how to keep this changeable
+## 11. Engineering standards: how to keep this changeable
 
 The requirement is that a change three years from now is cheap. That is not achieved by choosing good
 libraries; it is achieved by deciding, in advance, **which parts are allowed to know about which
@@ -1279,12 +1279,12 @@ One rule, and every module boundary follows from it:
         knows everything            knows domain              knows nothing
 
   Dependencies point inward, only. The domain does not import a framework,
-  a driver, an HTTP type, or a platform SDK — and can be tested without any.
+  a driver, an HTTP type, or a platform SDK, and can be tested without any.
 ```
 
 - **The domain is pure and boring**: blood-group compatibility, the eligibility predicate, the
   screening gate, the request/demand/donor state machines, expiry arithmetic. No I/O, no clock reads
-  (time is passed in), no randomness. These are the rules that must not change when the stack does —
+  (time is passed in), no randomness. These are the rules that must not change when the stack does,
   and they are the rules a reviewer with a medical background can actually read.
 - **Adapters are replaceable by definition.** One chat platform → another, one camera vendor →
   another, one email provider → another, one ORM → another: each is one directory and one interface.
@@ -1297,7 +1297,7 @@ One rule, and every module boundary follows from it:
 A convention nobody can violate accidentally is worth ten in a style guide.
 
 - Every module has a **public entry point**; everything else is private. Deep imports
-  (`module/internals/thing`) fail the build — enforced with an import-boundary lint rule in CI, not by
+  (`module/internals/thing`) fail the build. Enforced with an import-boundary lint rule in CI, not by
   review.
 - **No module reads another module's tables.** The doctor app does not query centre tables; the centre
   does not query the bot's schema. Cross-module data moves through a published interface or through
@@ -1309,7 +1309,7 @@ A convention nobody can violate accidentally is worth ten in a style guide.
 - **Feature flags for anything phased**: vision shadow mode, a second chat adapter, the public demand
   board. A half-built adapter behind a flag is fine; a long-lived branch is not.
 
-### 11.3 Tech stack — what is fixed, what is not
+### 11.3 Tech stack: what is fixed, what is not
 
 | Layer | Choice | Fixed? |
 |---|---|---|
@@ -1326,11 +1326,11 @@ A convention nobody can violate accidentally is worth ten in a style guide.
 | | Python | TypeScript |
 |---|---|---|
 | For | Mature chat-bot libraries; the same language as the vision service | **One domain package, shared by web and bot.** Blood-group compatibility and the eligibility predicate exist once instead of twice |
-| Against | The eligibility rules end up implemented twice — once for the web app, once for the bot — and every rule change is two changes in two languages | A smaller chat-platform library ecosystem |
+| Against | The eligibility rules end up implemented twice, once for the web app, once for the bot, and every rule change is two changes in two languages | A smaller chat-platform library ecosystem |
 
 **Recommendation: TypeScript for the web app and the bot, Python only for vision inference** (behind
 the HTTP device API in §4, so it is an adapter like any other). The deciding argument is not language
-preference — it is that blood-group compatibility and donor eligibility are *clinical rules that must
+preference. It is that blood-group compatibility and donor eligibility are *clinical rules that must
 never disagree between two implementations*, and the surest way to guarantee that is to have one
 implementation. If the bot is written in Python, the predicate needs a single source of truth
 generated into both languages, and the agreement test becomes mandatory rather than nice to have.
@@ -1346,7 +1346,7 @@ generated into both languages, and the agreement test becomes mandatory rather t
   The donor journey and the bag lifecycle are exactly this shape; an added state should break the
   build in every place that must handle it.
 - **Expected failures are return values, not exceptions** (`Result`-style). Exceptions are for bugs.
-  "Tag already assigned" is not exceptional — it is Tuesday.
+  "Tag already assigned" is not exceptional. It is Tuesday.
 - No floating promises; every async call awaited or explicitly handled.
 - Units and identifiers are branded types, never bare `string`/`number`. A `BagId` must not be
   assignable to a `DemandId`.
@@ -1361,7 +1361,7 @@ generated into both languages, and the agreement test becomes mandatory rather t
   makes interval, expiry and wave-timing logic testable without freezing time globally.
 - **Comment the why, never the what.** The last-unit conditional UPDATE and the replay-safe
   transitions (§5) are the two places where a future maintainer will "simplify" a correctness
-  guarantee — those need a comment saying what breaks.
+  guarantee. Those need a comment saying what breaks.
 - Domain code uses the clinical vocabulary in this document. A reviewer should be able to read
   `donorIsEligible` without a glossary.
 
@@ -1369,13 +1369,13 @@ generated into both languages, and the agreement test becomes mandatory rather t
 
 - **Migrations only.** No auto-create, no schema push against anything but a scratch database.
 - **One owner per table** (§2.1), asserted in a comment on the table and, where the database supports
-  it, by grants — the bot's role should not have write permission on `blood_bags` at all. A convention
+  it, by grants. The bot's role should not have write permission on `blood_bags` at all. A convention
   the database enforces beats a convention people remember.
 - Every table has `created_at` / `updated_at`; every state-carrying table has an append-only history
   somewhere (`tag_assignments`, `event_log`, `audit_log`).
 - **Constraints in the database, not only in code**: uniqueness, check constraints, foreign keys. The
-  unique constraint on a request's decision is what actually prevents a request being decided twice —
-  application logic is the second line, not the first.
+  unique constraint on a request's decision is what actually prevents a request being decided twice.
+  Application logic is the second line, not the first.
 - No destructive migration without a reversible plan and a backup verified by restoring it.
 
 ### 11.6 Testing
@@ -1383,10 +1383,10 @@ generated into both languages, and the agreement test becomes mandatory rather t
 | Layer | What is tested | Speed |
 |---|---|---|
 | **Domain** | Compatibility matrix in full; eligibility across boundary ages, weights and inter-donation intervals; every state-machine transition and every illegal one; expiry arithmetic across month ends | Milliseconds, no I/O |
-| **Concurrency** | The last-unit race, two staff deciding one request, a replayed callback, a double-scanned tag — the bugs that only appear under load and are trivial to test deliberately | Fast, real Postgres |
+| **Concurrency** | The last-unit race, two staff deciding one request, a replayed callback, a double-scanned tag: the bugs that only appear under load and are trivial to test deliberately | Fast, real Postgres |
 | **Contract** | Both sides of §7 against the shared schema, run in both codebases | Fast |
 | **Adapter** | Chat flows against a fake platform; the vision endpoint against recorded observations; email against a capture server | Fast |
-| **Flow** | Every path in §8, including the ways out — especially the stand-down on a cancelled demand | Slower, still in CI |
+| **Flow** | Every path in §8, including the ways out: especially the stand-down on a cancelled demand | Slower, still in CI |
 | **Regression** | Standard clinical wording (§2.7), contrast pairs, control dimensions, service-worker behaviour, PWA install and real-device offline behaviour | Fast |
 
 The rule worth stating plainly: **a bug that reached production gets a test before it gets a fix.**
@@ -1399,8 +1399,8 @@ scanning on every push. These gates exist so that "we will tidy it later" is not
 
 ### 11.8 Change management
 
-- **Decision records** for choices that are expensive to reverse — the channel port, tag/bag
-  separation, vision never writing the register, one decision per request — each deserves a short
+- **Decision records** for choices that are expensive to reverse, the channel port, tag/bag
+  separation, vision never writing the register, one decision per request, each deserves a short
   record of *why*, so a future maintainer argues with the reasoning rather than deleting it.
 - Conventional commits; pull requests small enough to read.
 - The shared contract (§7) is **semantically versioned**, and a breaking change requires both sides
@@ -1422,7 +1422,7 @@ scanning on every push. These gates exist so that "we will tidy it later" is not
 ### 11.10 Accessibility and language
 
 - **WCAG 2.2 AA** as the target for all web surfaces: keyboard reachable, visible focus, contrast
-  verified by test, no colour-only signals — which the volunteer dashboard's pressure indicator must
+  verified by test, no colour-only signals, which the volunteer dashboard's pressure indicator must
   respect (§6).
 - Every user-facing string in a resource file from day one, in both the web app and the bot.
   **Malayalam is a requirement deferred, not declined** (§13), and retrofitting externalisation is far
@@ -1445,7 +1445,7 @@ each citation against the current text rather than trusting this table.
 | Regime | Why it reaches this app | What it implies |
 |---|---|---|
 | **Drugs and Cosmetics Act 1940 & Rules 1945** (Schedule F, blood centre provisions) | Blood centres are licensed establishments; their records, storage and issue are regulated | The bag register, issue records, donor records and their retention are **regulated records**, not merely app data. Storage conditions, labelling and traceability all carry prescribed requirements ⚖︎ |
-| **National blood transfusion council donor selection guidelines** | Define who may donate | Age 18–65, minimum weight, donation interval (90 days male / 120 female), deferral criteria — the app's rules. **All must be configuration, not constants**: guidelines are revised, and a code deploy is the wrong way to adopt a new interval |
+| **National blood transfusion council donor selection guidelines** | Define who may donate | Age 18–65, minimum weight, donation interval (90 days male / 120 female), deferral criteria: the app's rules. **All must be configuration, not constants**: guidelines are revised, and a code deploy is the wrong way to adopt a new interval |
 | **Voluntary non-remunerated donation** | Paid and professional donation is prohibited | **The bot must never offer money, vouchers, or material reward.** Thanks, recognition and a donation record are fine. This constrains any future "incentives" idea absolutely ⚖︎ |
 | **Digital Personal Data Protection Act 2023** | Donor and patient data are personal data; health data is sensitive in practice | Consent, notice, purpose limitation, minimisation, accuracy, retention limits, breach notification, grievance redressal, and data-principal rights. See §12.2. Confirm the current commencement and rule-phase deadlines ⚖︎ |
 | **Information Technology Act 2000 & SPDI Rules 2011** | Health information is sensitive personal data; reasonable security practices are required | A documented security policy, and liability for negligent handling. Confirm what survives DPDP's commencement ⚖︎ |
@@ -1463,30 +1463,30 @@ translation between the specification and the compliance conversation.
 
 | Obligation | Where it lives | What is still missing |
 |---|---|---|
-| **Notice and consent** in clear language | §5 step 10 — consent recorded with the wording version and a snapshot of the values agreed to | The wording itself needs legal review ⚖︎ |
-| **Withdrawal as easy as giving** | §5 donor self-service: snooze, opt out, delete, each one or two taps in the chat | — |
+| **Notice and consent** in clear language | §5 step 10: consent recorded with the wording version and a snapshot of the values agreed to | The wording itself needs legal review ⚖︎ |
+| **Withdrawal as easy as giving** | §5 donor self-service: snooze, opt out, delete, each one or two taps in the chat | - |
 | **Purpose limitation** | Donor data matches donors to demand, and does nothing else. No marketing, no sale, no secondary use | State it explicitly in the notice |
 | **Data minimisation** | Donors give what matching needs | **Location is the item to challenge.** Locality-level precision is justified by wave ordering (§5); write that justification down rather than assuming it |
-| **Accuracy** | The review-and-confirm summary and the fix-several flow exist precisely so records are correct and correctable | — |
+| **Accuracy** | The review-and-confirm summary and the fix-several flow exist precisely so records are correct and correctable | - |
 | **Storage limitation** | §12.3 retention schedule | Must be **implemented as scheduled deletion jobs**, not a policy document |
 | **Security safeguards** | Hashed tokens and OTPs, role separation, audit, no personal data in logs (§11.9), encryption in transit | Encryption at rest, key management, and a documented access-review cadence |
-| **Breach notification** | — | Needs detection, a runbook, timelines, and notification templates ⚖︎ |
-| **Grievance redressal** | — | A named contact reachable from the app, the bot and the public board, with a response commitment. This is a hard requirement, and it is a UI element |
-| **Rights: access, correction, erasure** | Correction exists; erasure exists with the de-identification carve-out (§5) | An **access/export** path — a donor asking "what do you hold on me?" — and an equivalent process for patients |
-| **Children's data** | Donors are 18+ by eligibility | **Patients are frequently minors** — the age unit in days and months exists for neonates. Whose consent covers a paediatric patient's record, and how it is evidenced ⚖︎ |
+| **Breach notification** | - | Needs detection, a runbook, timelines, and notification templates ⚖︎ |
+| **Grievance redressal** | - | A named contact reachable from the app, the bot and the public board, with a response commitment. This is a hard requirement, and it is a UI element |
+| **Rights: access, correction, erasure** | Correction exists; erasure exists with the de-identification carve-out (§5) | An **access/export** path, a donor asking "what do you hold on me?", and an equivalent process for patients |
+| **Children's data** | Donors are 18+ by eligibility | **Patients are frequently minors**: the age unit in days and months exists for neonates. Whose consent covers a paediatric patient's record, and how it is evidenced ⚖︎ |
 
-### 12.3 Retention — decide it once, implement it as code
+### 12.3 Retention: decide it once, implement it as code
 
 Nothing in this system should be retained "until someone deletes it". Each class of data gets a
 period, an owner, and a job that enforces it.
 
 | Data | Basis | Notes |
 |---|---|---|
-| Blood centre regulated records — bags, issue, donation | The statutory period for blood centre records ⚖︎ | The longest retention in the system, and the reason erasure is de-identification rather than deletion (§5) |
+| Blood centre regulated records: bags, issue, donation | The statutory period for blood centre records ⚖︎ | The longest retention in the system, and the reason erasure is de-identification rather than deletion (§5) |
 | Patient records, blood requests, samples | The clinical record retention period applicable to the hospital ⚖︎ | The snapshots on a request are part of the record |
 | Audit log | At least as long as the records it describes | Immutable, append-only, not editable from any UI |
 | Donor profile | While consent stands, plus a defined tail after opt-out | A deletion request short-circuits this |
-| Donor journey rows and event log | Short — months, not years, once aggregated | These grow without bound if nothing prunes them |
+| Donor journey rows and event log | Short: months, not years, once aggregated | These grow without bound if nothing prunes them |
 | Camera frames | Days (§4) | Clinical-area imagery; the shortest retention here |
 | OTPs, invite tokens, sessions | Minutes to days | Deleted on use or expiry, not merely marked used |
 
@@ -1494,7 +1494,7 @@ period, an owner, and a job that enforces it.
 
 The deployment shape in §10 puts the database and the app on hosted platforms whose regions must be
 chosen deliberately. **Health data crossing a border is a decision, not a default**, and the hosting
-choice is the moment it is made — before there is data to migrate. Confirm the current cross-border
+choice is the moment it is made, before there is data to migrate. Confirm the current cross-border
 transfer position under DPDP, and whether the hospital's own policies or any ABDM participation impose
 Indian residency independently. Choose the region, write down why, and prefer providers with an Indian
 region for every component that holds donor or patient data.
@@ -1506,12 +1506,12 @@ These are product work, not paperwork:
 1. **A grievance contact**, reachable from the web app, the bot and the public board.
 2. **A privacy notice** in the same languages as the interface, versioned, with the version recorded
    against each consent.
-3. **Data subject request handling** — access, export, correction, erasure — with a route for patients
+3. **Data subject request handling**, access, export, correction, erasure, with a route for patients
    as well as donors, and an audited record of each request and its outcome.
 4. **Retention jobs**, per §12.3, with a dry-run mode and a report of what they removed.
 5. **Breach detection and a runbook**, with notification templates and timelines.
 6. **An access review**: who holds which role, reviewed on a schedule, evidenced.
-7. **A record of processing** — what is collected, why, on what basis, who sees it, how long it is
+7. **A record of processing**. What is collected, why, on what basis, who sees it, how long it is
    kept. Generate it from the schema and keep it current, rather than writing it once into a document
    nobody opens.
 
@@ -1535,7 +1535,7 @@ standard-wording test (§2.7) is a compliance control and not a curiosity.
 A noncommercial licence is the wrong instrument here, and actively dangerous: "noncommercial"
 has no settled definition, and a private or self-financing hospital that charges patients is
 arguably a commercial user. A licence that plausibly forbids the system's own intended
-deployment is worse than no licence at all — the question surfaces during the hospital's legal
+deployment is worse than no licence at all. The question surfaces during the hospital's legal
 review, at the worst possible moment.
 
 Apache-2.0 is chosen for four reasons that matter to this specific system:
@@ -1561,7 +1561,7 @@ have its own policy on how software developed in its name is released ⚖︎.
 
 ---
 
-## 13. Scope — what the first release does not include
+## 13. Scope: what the first release does not include
 
 Deliberate exclusions. Each is deferred rather than rejected, and each is listed so it is not
 half-built by accident.
@@ -1569,7 +1569,7 @@ half-built by accident.
 **Deferred to a later release**
 
 - **Malayalam, and any second language.** Strings are externalised from day one (§11.10) and donors
-  carry a language column, so this is a translation file rather than a code change — but v1 ships in
+  carry a language column, so this is a translation file rather than a code change, but v1 ships in
   English.
 - **A reminder to a confirmed donor** before the slot or needed-by time. Confirmation and stand-down
   are in v1; the nudge in between is not.
@@ -1601,10 +1601,10 @@ during a pilot.
 
 | Risk | Where | What to do about it |
 |---|---|---|
-| **The camera cannot tell blood groups apart** | §4 | The single most likely reason that feature fails. Solve it physically — one region per group, or a printed marker — not with a better model. Decide this before ordering hardware, because it dictates the shelving |
+| **The camera cannot tell blood groups apart** | §4 | The single most likely reason that feature fails. Solve it physically, one region per group, or a printed marker, not with a better model. Decide this before ordering hardware, because it dictates the shelving |
 | **A vision count becomes trusted too early** | §4, §2.12 | Shadow mode, confidence thresholds, and a hard rule that vision never writes the register. Agree the promotion criteria in advance, in writing |
 | **A reused tag silently inherits the wrong bag's expiry** | §4 | The three collision cases must not share a button, and re-registering is a new bag record, never an edit of the old one. Expiry derives from the new collection date; a return never recalculates it |
-| **Case 3 gets a "resolve anyway" button** | §4 | A tag presented as new whose bag the register believes is on the shelf can put the wrong unit into a patient. It must block until someone physically finds that bag. Resist the pressure to make this dismissible — it will come, from busy staff, and the answer is no |
+| **Case 3 gets a "resolve anyway" button** | §4 | A tag presented as new whose bag the register believes is on the shelf can put the wrong unit into a patient. It must block until someone physically finds that bag. Resist the pressure to make this dismissible: it will come, from busy staff, and the answer is no |
 | **A returned unit is restocked without a cold-chain decision** | §4 | Default to Quarantine when the out-of-storage time is unknown; take the threshold from the hospital's SOP, not from the code |
 | **A nudged camera reports confident nonsense** | §4 | Reference-frame drift detection, calibration versioning on every observation, and a visible "needs recalibration" state that stops the counts being trusted |
 | **A confirmed donor travels to a hospital that no longer needs them** | §5, §8 | The stand-down message on a cancelled or expired demand is the highest-consequence message in the system and the easiest to forget, because it fires on the path nobody demonstrates. Test it first, not last |
@@ -1616,6 +1616,6 @@ during a pilot.
 | **Signup is ten questions long** | §5 | Every question costs completion, and the summary adds a screen before the finish line. Instrument drop-off per step, and be ready to defer weight and the durable screening to first-request rather than signup if the numbers say so |
 | **Chat templates must be approved before they can be sent** | §2.11 | On a template-gated platform, donor-facing copy has to be final weeks earlier than otherwise. Draft and submit templates while the rest is still being built |
 | **A webhook-delivered channel needs a public endpoint** | §10 | The bot stops being a process with no attack surface. Signature verification, replay protection and rate limiting become load-bearing |
-| **A public demand board is a public data surface** | §5, §6 | It is the one page an outsider can read. Verify it exposes only group, hospital, town, units and needed-by — and that no field on it can ever be traced back to a patient |
+| **A public demand board is a public data surface** | §5, §6 | It is the one page an outsider can read. Verify it exposes only group, hospital, town, units and needed-by: and that no field on it can ever be traced back to a patient |
 | **Volunteer admins are outsiders with a login** | §2.2, §6 | Their role must grant aggregates and nothing else. Test it as the wrong role, checking the response body, not just the redirect |
 | **Clinical thresholds are hard-coded** | §12.1 | Donation intervals, minimum weight, age bounds, shelf lives and the stock floor are all configuration. Guidelines are revised, and a code deploy is the wrong way to adopt a new one |

@@ -25,8 +25,8 @@ export type RequestNotDecidable = {
 /**
  * The unique constraint on `centre_decisions.request_id` fired (§7.2).
  *
- * The second transaction lost the race. Nothing it attempted was written — the
- * bags it had claimed were released when it rolled back — so the honest thing
+ * The second transaction lost the race. Nothing it attempted was written, the
+ * bags it had claimed were released when it rolled back, so the honest thing
  * to say is that the request already has an answer, and to show it.
  */
 export type RequestAlreadyDecided = {
@@ -72,7 +72,7 @@ export type DemandNotFound = { readonly kind: 'DemandNotFound'; readonly message
 /**
  * Answered before anybody said who it is for (§4, ADR 0010).
  *
- * A unit leaving the fridge has to be traceable to a named person — that is what
+ * A unit leaving the fridge has to be traceable to a named person. That is what
  * §4's traceability and the crossmatch sample both rest on. **Emergency is the
  * only exception**, because waiting for a bystander to arrive before releasing
  * units in a real emergency is the worse failure.
@@ -92,7 +92,7 @@ export const patientNotIdentified = (): PatientNotIdentified => ({
   kind: 'PatientNotIdentified',
   message:
     'No patient has been identified for this request. Take their details from ' +
-    'the bystander before issuing — only an emergency may be answered first.',
+    'the bystander before issuing, only an emergency may be answered first.',
 });
 
 export type DecideError =
@@ -130,7 +130,7 @@ export const requestNotDecidable = (status: string): RequestNotDecidable => ({
 export const requestAlreadyDecided = (): RequestAlreadyDecided => ({
   kind: 'RequestAlreadyDecided',
   message:
-    'Somebody answered this request a moment ago. Nothing you entered was saved — ' +
+    'Somebody answered this request a moment ago. Nothing you entered was saved: ' +
     'reload to see the answer that was recorded.',
 });
 
@@ -169,11 +169,11 @@ export const tagUnavailable = (kind: TagCase): TagUnavailable => ({
       ? 'That tag was retired and can never carry a bag again. Use a fresh tag.'
       : kind === 'register_conflict'
         ? 'The register says the bag on this tag is on the shelf right now. ' +
-          'Do not register anything on it. Find that bag physically first — the ' +
+          'Do not register anything on it. Find that bag physically first. The ' +
           'discrepancy workflow arrives in a later phase.'
         : kind === 'bag_terminal'
           ? 'This tag is still assigned to a finished bag. It has to be released ' +
-            'before it can carry a new one — that flow arrives in a later phase.'
+            'before it can carry a new one, that flow arrives in a later phase.'
           : 'This tag is assigned to a bag that is issued or reserved. If the unit ' +
             'has come back, it is a return, not a new registration.',
 });

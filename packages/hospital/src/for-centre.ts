@@ -10,7 +10,7 @@
  *
  * **The centre reads the snapshot, never the patient.** A request carries the
  * patient's details frozen at submit (§2.6), and that is what the centre was
- * told — so it is what the centre is shown. This is not an approximation of the
+ * told, so it is what the centre is shown. This is not an approximation of the
  * live record; it is the more correct answer, and it happens to keep the module
  * boundary clean as well.
  *
@@ -81,7 +81,7 @@ export type RequestForDecision = {
   readonly doctor: DoctorSnapshot;
 };
 
-/** Everything past `draft` carries both snapshots — the CHECK in §5.4 says so. */
+/** Everything past `draft` carries both snapshots. The CHECK in §5.4 says so. */
 function toDecisionView(row: {
   id: string;
   requestId: string | null;
@@ -112,7 +112,7 @@ function toDecisionView(row: {
     submittedAt: row.submittedAt ?? new Date(0),
     // Every field on both snapshot types is optional, so an absent snapshot
     // degrades to empty rather than to a crash. A non-draft request always has
-    // both — the CHECK in §5.4 says so — and this is the draft case.
+    // both, the CHECK in §5.4 says so, and this is the draft case.
     patient: row.patientSnapshot ?? {},
     doctor: row.doctorSnapshot ?? {},
   };
@@ -138,7 +138,7 @@ const DECISION_COLUMNS = {
  * The centre's queue: everything submitted and not yet decided.
  *
  * **Ordered by urgency, then by how long it has waited** (ADR 0010). Three of
- * the four urgencies mean today, so the date cannot separate them — a routine
+ * the four urgencies mean today, so the date cannot separate them. A routine
  * request raised on Monday would otherwise sit above an emergency raised this
  * morning. Within a level, oldest first, so nothing is buried under newer work.
  *
@@ -197,7 +197,7 @@ export async function getRequestForDecision(
 /**
  * Where the patient stands, in three states rather than two.
  *
- * This was a boolean — "is the admission open?" — and an inner join made a
+ * This was a boolean, "is the admission open?", and an inner join made a
  * request with no patient at all indistinguishable from a discharged one. The
  * centre screen then told the counter *"the patient has been discharged"* about
  * a request where nobody had ever identified a patient, which is not a smaller
@@ -207,7 +207,7 @@ export async function getRequestForDecision(
  * fields and the patient arrives later, with the bystander. So `none` is a
  * state the screen has to be able to say out loud.
  *
- * Shown, never enforced — a discharged patient can still need blood that was
+ * Shown, never enforced. A discharged patient can still need blood that was
  * requested while they were on the ward.
  */
 export type AdmissionState = 'admitted' | 'discharged' | 'none';
@@ -231,7 +231,7 @@ export async function admissionStateFor(
  * Finding the request the bystander just read out (ADR 0010).
  *
  * `DDMMYY-NNNNN`, typed at the counter with the date part prefilled. Tolerant of
- * how it arrives — it was transcribed by ear — but never of a wrong length: a
+ * how it arrives, it was transcribed by ear, but never of a wrong length: a
  * five-digit sequence heard as four is a **different request**, not a near miss,
  * and padding it would hand the counter somebody else's record.
  *
@@ -268,7 +268,7 @@ export type AttachError =
  *
  * A doctor raises four fields and reads an ID to the patient's bystander; the
  * bystander brings it here, and this is where the patient finally gets a name.
- * Until it runs, the request cannot be reserved against or issued — except for
+ * Until it runs, the request cannot be reserved against or issued. Except for
  * an emergency, which may be answered first and completed after (ADR 0010).
  *
  * One transaction: the patient, the admission, the link and the snapshot commit
@@ -318,7 +318,7 @@ export async function attachPatient(
       .set({
         admissionId: created.value.admissionId,
         // Frozen now rather than at submit, because there was nothing to freeze
-        // then. Its purpose — a request keeps what it was answered with — is
+        // then. Its purpose, a request keeps what it was answered with, is
         // unchanged (§2.6).
         patientSnapshot: created.value.snapshot,
       })
@@ -373,7 +373,7 @@ export type CancelOutcome =
  *
  * §3 gives the doctor exactly one post-submit action, and it has consequences in
  * two other modules: reserved bags go back on the shelf and an open demand is
- * withdrawn. Those must commit with the cancellation or not at all — a request
+ * withdrawn. Those must commit with the cancellation or not at all. A request
  * showing cancelled while units stay held for it is how the centre ends up
  * chasing blood nobody needs.
  *
@@ -399,7 +399,7 @@ export async function markRequestCancelled(
       and(
         eq(bloodRequests.id, requestUuid),
         // Guarded on the statuses §3 allows it from (§7.4). A draft is not
-        // cancelled — it is left, and ages visibly on the dashboard (§8).
+        // cancelled. It is left, and ages visibly on the dashboard (§8).
         inArray(bloodRequests.status, ['submitted', 'approved', 'partially_approved']),
       ),
     )

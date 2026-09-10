@@ -3,9 +3,9 @@
  * disabled would.
  *
  * React renders a server-action form with hidden `$ACTION_*` fields for
- * progressive enhancement. Replaying those exercises the whole path — the
+ * progressive enhancement. Replaying those exercises the whole path, the
  * same-origin check, the Zod parse at the boundary, the use case, the cookie
- * and the redirect — without needing a browser in the loop.
+ * and the redirect, without needing a browser in the loop.
  *
  * It complements the suites rather than repeating them: `sign-in.test.ts` proves
  * the use case against real Postgres, and this proves the wiring around it,
