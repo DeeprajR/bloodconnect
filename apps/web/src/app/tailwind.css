@@ -1,0 +1,18 @@
+/*
+ * apps/web · Tailwind v4 entry
+ *
+ * `@import "tailwindcss";` pulls in Tailwind v4's preflight, base
+ * layer, and utilities. Everything after runs through
+ * `@tailwindcss/postcss` (see `postcss.config.cjs`).
+ *
+ * `@source` tells Tailwind where to look for classes to generate
+ * utilities from. The default scan is limited to files inside this
+ * app; the kit lives in a different workspace package, so its class
+ * usage would be missed without an explicit source. The path is
+ * relative to this file: from `apps/web/src/app/tailwind.css` four
+ * levels up reaches the workspace root, then `packages/ui/src` is the
+ * kit source tree.
+ */
+
+@import 'tailwindcss';
+@source '../../../../packages/ui/src';

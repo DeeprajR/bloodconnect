@@ -62,19 +62,24 @@ install a Next PostCSS plugin into its consumers.
   ADR. Nothing renders differently: no app imports the kit's CSS yet,
   UX4G stays, `pnpm verify` stays green.
 
-- **PR-02a (this change).** Ports the primitives (Button,
-  StatusBadge, DataTable, FilterBar, form fields, Card / StatCard /
-  DescList / Timeline, Modal, ConfirmDialog, PageHeader, states,
-  Toast) and the shell (AppShell, SidebarContent) into the kit.
-  Rewrites the four token files from PR-01 into Tailwind v4 `@theme`
-  blocks and renames the per-app accent tokens from `--color-accent`
-  to `--color-primary` to match the ported components' expectations.
+- **PR-02a (shipped).** Ports the primitives (Button, StatusBadge,
+  DataTable, FilterBar, form fields, Card / StatCard / DescList /
+  Timeline, Modal, ConfirmDialog, PageHeader, states, Toast) and the
+  shell (AppShell, SidebarContent) into the kit. Rewrites the four
+  token files from PR-01 into Tailwind v4 `@theme` blocks and renames
+  the per-app accent tokens from `--color-accent*` to
+  `--color-primary*` to match the ported components' expectations.
   Still no app imports the kit at runtime; still green.
 
-- **PR-02b (next).** Adds Tailwind v4 + `@tailwindcss/postcss` to
-  `apps/web`, wires `apps/web/src/app/layout.tsx` to import the kit's
-  tokens alongside the existing UX4G, loads Geist through `next/font`,
+- **PR-02b (this change).** Adds Tailwind v4 + `@tailwindcss/postcss`
+  to `apps/web`, wires `apps/web/src/app/layout.tsx` to import the
+  kit's tokens alongside the existing UX4G, loads Geist through the
+  `geist` npm package (Vercel's official wrapper around `next/font`),
   and restyles the sign-in page + form as the first showcase screen.
+  The sign-in page drops the UX4G AppShell wrap: an unauthenticated
+  visitor has no navigation to render, so a centred card on the canvas
+  is the whole page. UX4G stays in the layout for every other screen,
+  which is why this PR touches only sign-in.
 
 - **PR-03 onward.** One screen per PR (dashboard, centre home,
   centre requests, centre stock, centre donations, demands,
@@ -91,7 +96,10 @@ install a Next PostCSS plugin into its consumers.
 
 - **Final PR.** Removes `ux4g-runtime.tsx` and the
   `ux4g-web-components` npm dependency from both apps, replaces both
-  apps' `theme.css` with a one-line import of the kit's aggregate.
+  apps' `theme.css` with a one-line import of the kit's aggregate,
+  and imports `@blood-connect/ui/tokens/preflight.css` at that point
+  (deferred until UX4G is gone so its own body/heading resets do not
+  double up).
 
 ## What did NOT come across from blood-connect-ui
 

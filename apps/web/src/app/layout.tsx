@@ -1,7 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 
 import 'ux4g-web-components/styles.css';
 import './theme.css';
+import './tailwind.css';
+import '@blood-connect/ui/tokens/base.css';
+import '@blood-connect/ui/tokens/accent-medical.css';
+import '@blood-connect/ui/tokens/typography.css';
 
 import { Ux4gRuntime } from './ux4g-runtime';
 import { ServiceWorker } from './service-worker';
@@ -43,13 +49,23 @@ export const viewport: Viewport = {
 
 /**
  * `data-theme` on `<html>` is required, not optional: UX4G components have no
- * fallback theme and render unstyled without it (Design.md §10).
+ * fallback theme and render unstyled without it (Design.md §10). Stays for
+ * every screen still on UX4G; the kit reads it too (light-only, ADR 0015).
+ *
+ * The Geist variables (`--font-geist-sans`, `--font-geist-mono`) are set on
+ * the html element by `next/font` and read by the kit's typography tokens
+ * (`--font-sans`, `--font-mono`) with a system fallback, so a page that
+ * still uses UX4G's typography renders unchanged.
  */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="light">
+    <html
+      lang="en"
+      data-theme="light"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+    >
       <body>
         <a className="app-skip-link" href="#main">
           Skip to main content
