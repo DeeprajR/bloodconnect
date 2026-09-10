@@ -1,20 +1,27 @@
 /*
  * @blood-connect/ui · base tokens
  *
- * Clinical palette shared by every Blood Connect surface. Ported from the
- * `blood-connect-ui` hackathon frontend and pared to variable declarations
- * only, so importing this file is inert: no element is selected, no property
- * is set on an element. Components (PR-02+) read these variables through
- * `var(--color-*)` / `var(--radius-*)` / `var(--shadow-*)`.
+ * Clinical palette shared by every Blood Connect surface. Ported from
+ * the `blood-connect-ui` hackathon frontend (ADR 0015).
  *
- * Light-only by decision — see ADR 0015 and ADR 0004. Accent tokens
- * (`--color-accent-*`) live in the per-app files `accent-medical.css`
- * (web) and `accent-admin.css` (administration), imported alongside this
- * file so the two applications are immediately distinguishable on a shared
- * workstation.
+ * Declared in a Tailwind v4 `@theme` block so Tailwind's PostCSS
+ * plugin generates both the `:root` CSS custom properties AND the
+ * matching utility classes (`bg-canvas`, `text-ink`, `border-border`,
+ * `rounded-card`, `shadow-card`, and so on). Without Tailwind PostCSS
+ * this file is inert — an unknown at-rule the browser ignores — which
+ * is fine, because in Bloodconnect only the apps that opt into the
+ * kit's utilities also install Tailwind. Non-Tailwind consumers can
+ * still read the values through `var(--color-*)` after Tailwind has
+ * emitted them, or import `tokens/index.css` for a bundled set.
+ *
+ * Light-only by decision — see ADR 0015 and ADR 0004. The per-app
+ * accent tokens (`--color-primary-*`) live in `accent-medical.css`
+ * (web) and `accent-admin.css` (administration), imported alongside
+ * this file so the two applications are immediately distinguishable
+ * on a shared workstation.
  */
 
-:root {
+@theme {
   /* Surfaces & structure */
   --color-canvas: #f6f7f9;
   --color-surface: #ffffff;
@@ -27,8 +34,9 @@
   --color-ink-muted: #5b626c;
   --color-ink-subtle: #868d98;
 
-  /* Status palette. Every badge that uses these must also render a label
-   * and a shaped dot: colour is never the only signal (WCAG 1.4.1, §22). */
+  /* Status palette. Every badge that uses these must also render a
+   * label and a shaped dot: colour is never the only signal
+   * (WCAG 1.4.1, §22). */
   --color-success: #1b7f4b;
   --color-success-soft: #e6f4ec;
   --color-warning: #9a6700;

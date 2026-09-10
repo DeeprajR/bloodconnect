@@ -1,19 +1,26 @@
 /*
  * @blood-connect/ui · medical-red accent (staff app)
  *
- * The staff application (`apps/web`) is the surface a clinician touches, so
- * its accent is the medical red the hackathon frontend established. Used
- * only as an accent — never as a background — because a red field is what
- * a person's eye lands on and turning that into "the button is red" is what
- * makes an emergency badge unreadable.
+ * The staff application (`apps/web`) is the surface a clinician
+ * touches, so its accent is the medical red the hackathon frontend
+ * established. Used only as an accent — never as a background —
+ * because a red field is what a person's eye lands on, and turning
+ * that into "the button is red" is what makes an emergency badge
+ * unreadable.
+ *
+ * These become the `--color-primary*` tokens (not a separate
+ * `--color-accent`) because that is what the ported kit components
+ * expect — `bg-primary`, `text-primary`, `bg-primary-soft`,
+ * `hover:bg-primary-hover`. The value is per-app; the utility name is
+ * shared, so a single component file renders in the right accent per
+ * app without conditionals.
  *
  * Imported alongside `base.css` from `apps/web/src/app/layout.tsx`.
  */
 
-:root {
-  --color-accent: #b3261e;
-  --color-accent-hover: #99201a;
-  --color-accent-soft: #fbeae9;
-  --color-accent-ring: #e5a9a5;
-  --color-accent-ink: #ffffff;
+@theme {
+  --color-primary: #b3261e;
+  --color-primary-hover: #99201a;
+  --color-primary-soft: #fbeae9;
+  --color-primary-ring: #e5a9a5;
 }
