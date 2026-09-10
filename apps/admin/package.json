@@ -15,6 +15,7 @@
     "@blood-connect/domain": "workspace:*",
     "@blood-connect/hospital": "workspace:*",
     "@blood-connect/ids": "workspace:*",
+    "@blood-connect/ops": "workspace:*",
     "@blood-connect/platform": "workspace:*",
     "@blood-connect/result": "workspace:*",
     "drizzle-orm": "^0.45.2",

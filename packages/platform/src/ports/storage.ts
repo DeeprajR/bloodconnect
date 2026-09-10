@@ -15,6 +15,17 @@ export type StoredObject = {
 };
 
 export type StoragePort = {
+  /**
+   * Prove the bucket is there and the credentials still work.
+   *
+   * Separate from `get`, and it has to be. `get` swallows every error on
+   * purpose, because a missing seal renders a placeholder rather than a stack
+   * trace, and that makes it useless as a health check: a bucket that has been
+   * deleted and a key that was never written are indistinguishable through it.
+   *
+   * Optional, because an in-memory store has nothing to reach.
+   */
+  readonly verify?: () => Promise<{ ok: boolean; detail: string }>;
   readonly put: (
     key: string,
     body: Uint8Array,

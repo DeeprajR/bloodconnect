@@ -458,6 +458,15 @@ does not have.
 three append-only tables, and the container-stopping tests are not, and without the last one the
 panel is decoration.
 
+**Built** as `packages/ops`, recorded in
+[ADR 0014](adr/0014-the-control-panel-and-what-it-cannot-see.md). Most of its design follows from
+one constraint: `app_web` holds no grant on the `bot` schema, so four of §11.9's alerts were
+unreachable. The bot publishes them onto `hospital.process_health` instead, which makes a third
+shared table and takes the contract to 1.3.0. The container-stopping test earned its place
+immediately: the storage tile was green with MinIO stopped, because it was built on `get`, which
+swallows every error by design. Next's proxy cannot observe a downstream status, so metrics are
+taken where the status is known rather than timed in middleware and called latency.
+
 ---
 
 ### P11 · Tag reader integration: 3d · *gated on hardware*

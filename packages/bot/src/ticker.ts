@@ -41,6 +41,7 @@ import { promoteFromWaitlist } from './use-cases/journey.js';
 import { findRequestsDueAWave, sendWave } from './use-cases/waves.js';
 import { applyWalkIns } from './use-cases/walk-ins.js';
 import { remindAbandonedSignups } from './use-cases/reminders.js';
+import { publishBotHealth } from './use-cases/publish-health.js';
 
 export type TickResult = {
   readonly imported: number;
@@ -56,6 +57,8 @@ export type TickResult = {
   readonly toldItIsCovered: number;
   readonly standDownsQueued: number;
   readonly drain: DrainResult;
+  /** How many of the bot's own §11.9 alerts are live, for the control panel. */
+  readonly alertsPublished: number;
 };
 
 export async function tick(ctx: BotContext): Promise<TickResult> {
@@ -162,6 +165,18 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
 
   const drain = await drainOutbox(ctx);
 
+  /* --- 12. tell the other half how it went ------------------------------ */
+  /*
+   * Last, and after the drain, so the counts published are the counts as they
+   * stand at the end of the pass rather than halfway through it. Publishing
+   * before the drain would report a backlog this pass had already cleared.
+   *
+   * `observed_at` doubles as the liveness signal: a bot that stops stops
+   * writing this row, and the panel reads a stale row as silence rather than
+   * as health.
+   */
+  const published = await publishBotHealth(ctx);
+
   return {
     imported: imported.length,
     wavesSent,
@@ -176,5 +191,6 @@ export async function tick(ctx: BotContext): Promise<TickResult> {
     toldItIsCovered: covered.told,
     standDownsQueued,
     drain,
+    alertsPublished: published.filter((alert) => alert.count > 0).length,
   };
 }

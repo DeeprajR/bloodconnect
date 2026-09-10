@@ -48,9 +48,25 @@ export type ImportedRequest = {
  */
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+/**
+ * Eight characters, not six.
+ *
+ * Six gave 32^6, about a billion, and a birthday collision at roughly one in
+ * two thousand across a thousand ids. The uniqueness test found one, which is
+ * how this was noticed: a rate that low passes for months and then hands two
+ * demands the same deep link, and a donor who taps it arrives at the wrong
+ * request. Nothing in the schema would refuse that, because `bot_public_id`
+ * carries no unique index.
+ *
+ * Eight characters is 32^8, about a trillion: the same collision across ten
+ * thousand ids drops to roughly one in twenty million. Ids already issued are
+ * stored on their rows and keep working; only newly minted ones are longer.
+ */
+const PUBLIC_ID_LENGTH = 8;
+
 export function makePublicId(source: string): string {
   const random = source.replace(/-/g, '').slice(-16);
-  const body = Array.from({ length: 6 }, (_, i) => {
+  const body = Array.from({ length: PUBLIC_ID_LENGTH }, (_, i) => {
     // Two hex characters per output character: 8 bits of the random tail each.
     const pair = random.slice(i * 2, i * 2 + 2);
     const value = Number.parseInt(pair, 16);

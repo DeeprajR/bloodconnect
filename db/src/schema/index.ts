@@ -11,3 +11,4 @@ export * from './platform.js';
 export * from './accounts.js';
 export * from './hospital.js';
 export * from './centre.js';
+export * from './ops.js';

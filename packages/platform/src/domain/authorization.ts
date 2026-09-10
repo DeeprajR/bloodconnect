@@ -169,6 +169,13 @@ export const STAFF_ROUTE_RULES: readonly RouteRule[] = [
 
   { prefix: '/api/device', access: { kind: 'device' } },
   { prefix: '/api/public', access: { kind: 'public' } },
+  /*
+   * The load balancer's probe (§11.9). Public because a health check behind a
+   * session is a health check the load balancer cannot make, and shallow enough
+   * that being public costs nothing: one word and a status code, never a list
+   * of dependencies.
+   */
+  { prefix: '/api/health', access: { kind: 'public' } },
 ];
 
 /**
@@ -186,9 +193,13 @@ export const ADMIN_ROUTE_RULES: readonly RouteRule[] = [
   { prefix: '/offline', access: { kind: 'public' } },
   { prefix: '/manifest.webmanifest', access: { kind: 'public' } },
   { prefix: '/sw.js', access: { kind: 'public' } },
+  { prefix: '/api/health', access: { kind: 'public' } },
 
   { prefix: '/doctors', access: { kind: 'roles', roles: ['admin'] } },
   { prefix: '/updates', access: { kind: 'roles', roles: ['admin'] } },
+  // The control panel (§11.9). Administrator-only, and holding no clinical
+  // function: it can read that a demand is stuck, not answer a request.
+  { prefix: '/panel', access: { kind: 'roles', roles: ['admin'] } },
   { prefix: '/profile', access: { kind: 'roles', roles: ['admin'] } },
   { prefix: '/api/seal', access: { kind: 'roles', roles: ['admin'] } },
 ];

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -34,6 +35,23 @@ const getClient = (): S3Client => {
 const bucket = (): string => process.env['S3_BUCKET'] ?? 'blood-connect';
 
 export const s3Storage: StoragePort = {
+  /**
+   * `HeadBucket`, which is what §11.9 asks for.
+   *
+   * One call that exercises the network, the credentials and the bucket's
+   * existence together, and writes nothing. A read of a missing key would have
+   * been cheaper and would have proved nothing: `get` returns undefined for a
+   * dead server and for an absent object alike.
+   */
+  async verify(): Promise<{ ok: boolean; detail: string }> {
+    try {
+      await getClient().send(new HeadBucketCommand({ Bucket: bucket() }));
+      return { ok: true, detail: `Bucket ${bucket()} answered.` };
+    } catch (error: unknown) {
+      return { ok: false, detail: error instanceof Error ? error.message : String(error) };
+    }
+  },
+
   async put(key: string, body: Uint8Array, contentType: string): Promise<StoredObject> {
     const sha256 = createHash('sha256').update(body).digest('hex');
 

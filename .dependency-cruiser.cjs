@@ -57,6 +57,27 @@ module.exports = {
       to: { path: '^(packages/(?!contract|domain)|apps/|db/)' },
     },
     {
+      name: 'nothing-depends-on-the-control-panel',
+      comment:
+        'packages/ops reads across three modules so one screen can answer "is anything broken" ' +
+        '(§11.9). Nothing may depend on it in return: an import would mean a rule had been ' +
+        'written on the operations side of the boundary, where it would run only when somebody ' +
+        'happened to open the panel.',
+      severity: 'error',
+      from: { path: '^packages/(?!ops)' },
+      to: { path: '^packages/ops/' },
+    },
+    {
+      name: 'the-control-panel-does-not-reach-the-bot',
+      comment:
+        'The panel is on `app_web`, which holds no grant on the `bot` schema (§5.1). What it ' +
+        'knows about the bot arrives on `process_health`, published across the same boundary ' +
+        'every other bot fact crosses.',
+      severity: 'error',
+      from: { path: '^packages/ops/' },
+      to: { path: '^packages/bot/' },
+    },
+    {
       name: 'the-volunteer-board-sees-no-person',
       comment:
         'packages/volunteer reads the two shared tables of §7 and nothing else (§6). An import ' +
@@ -179,7 +200,7 @@ module.exports = {
           // Next's file conventions: a page, a layout, the proxy and the config
           // are entry points the framework calls, not modules anything imports.
           '^apps/[^/]+/next\\.config\\.ts$',
-          '^apps/[^/]+/src/(proxy|middleware)\\.ts$',
+          '^apps/[^/]+/src/(proxy|middleware|instrumentation)\\.ts$',
           '^apps/[^/]+/src/app/.+\\.(ts|tsx)$',
           // A test is run, not imported.
           '\\.(test|spec)\\.ts$',

@@ -45,6 +45,12 @@ export function AppShell({
             >
               Update requests
             </Link>
+            <Link
+              href="/panel"
+              className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md app-target"
+            >
+              Control panel
+            </Link>
             <SignOutButton />
           </div>
         ) : null}

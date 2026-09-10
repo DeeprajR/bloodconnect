@@ -95,6 +95,8 @@ export {
 
 export { createAuditWriter, type AuditEntry, type AuditWriter } from './repositories/audit.js';
 
+export { checkDatabase, messageOf, platformAlerts } from './repositories/alerts.js';
+
 export {
   countStuckEmails,
   drainEmailOutbox,

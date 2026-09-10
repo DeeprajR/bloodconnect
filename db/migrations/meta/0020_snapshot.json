@@ -1,0 +1,5018 @@
+{
+  "id": "8466bc88-63d1-431e-b202-c7ea66c38f0c",
+  "prevId": "219bd22a-6926-4a45-80d2-f9a3c06dc20a",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "reference.location_aliases": {
+      "name": "location_aliases",
+      "schema": "reference",
+      "columns": {
+        "node_id": {
+          "name": "node_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias_normalised": {
+          "name": "alias_normalised",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "location_aliases_alias_node_idx": {
+          "name": "location_aliases_alias_node_idx",
+          "columns": [
+            {
+              "expression": "alias_normalised",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "node_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "location_aliases_node_id_location_nodes_id_fk": {
+          "name": "location_aliases_node_id_location_nodes_id_fk",
+          "tableFrom": "location_aliases",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "location_aliases_node_id_alias_normalised_pk": {
+          "name": "location_aliases_node_id_alias_normalised_pk",
+          "columns": [
+            "node_id",
+            "alias_normalised"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "reference.location_dataset_versions": {
+      "name": "location_dataset_versions",
+      "schema": "reference",
+      "columns": {
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "reference.location_nodes": {
+      "name": "location_nodes",
+      "schema": "reference",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_normalised": {
+          "name": "name_normalised",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dataset_version": {
+          "name": "dataset_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "location_nodes_parent_name_idx": {
+          "name": "location_nodes_parent_name_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name_normalised",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "location_nodes_level_idx": {
+          "name": "location_nodes_level_idx",
+          "columns": [
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "location_nodes_dataset_version_location_dataset_versions_version_fk": {
+          "name": "location_nodes_dataset_version_location_dataset_versions_version_fk",
+          "tableFrom": "location_nodes",
+          "tableTo": "location_dataset_versions",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "dataset_version"
+          ],
+          "columnsTo": [
+            "version"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "location_nodes_parent_id_fk": {
+          "name": "location_nodes_parent_id_fk",
+          "tableFrom": "location_nodes",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "location_nodes_level_check": {
+          "name": "location_nodes_level_check",
+          "value": "level IN ('district', 'city', 'town', 'locality')"
+        },
+        "location_nodes_kind_check": {
+          "name": "location_nodes_kind_check",
+          "value": "kind IN ('district', 'taluk', 'corporation', 'municipality', 'grama_panchayat', 'zone')"
+        },
+        "location_nodes_root_check": {
+          "name": "location_nodes_root_check",
+          "value": "(level = 'district') = (parent_id IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.app_config": {
+      "name": "app_config",
+      "schema": "hospital",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "app_config_updated_by_users_id_fk": {
+          "name": "app_config_updated_by_users_id_fk",
+          "tableFrom": "app_config",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.audit_log": {
+      "name": "audit_log",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_kind": {
+          "name": "actor_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_type": {
+          "name": "subject_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_id": {
+          "name": "subject_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "correlation_id": {
+          "name": "correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {
+        "audit_log_subject_idx": {
+          "name": "audit_log_subject_idx",
+          "columns": [
+            {
+              "expression": "subject_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_log_correlation_idx": {
+          "name": "audit_log_correlation_idx",
+          "columns": [
+            {
+              "expression": "correlation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "audit_log_actor_user_id_users_id_fk": {
+          "name": "audit_log_actor_user_id_users_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "audit_log_actor_kind_check": {
+          "name": "audit_log_actor_kind_check",
+          "value": "actor_kind IN ('user', 'device', 'system', 'bot')"
+        },
+        "audit_log_actor_check": {
+          "name": "audit_log_actor_check",
+          "value": "(actor_kind = 'user') = (actor_user_id IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.auth_rate_limits": {
+      "name": "auth_rate_limits",
+      "schema": "hospital",
+      "columns": {
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_rate_limits_window_idx": {
+          "name": "auth_rate_limits_window_idx",
+          "columns": [
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "window_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "auth_rate_limits_scope_check": {
+          "name": "auth_rate_limits_scope_check",
+          "value": "scope IN ('login_ip', 'login_account', 'otp_ip', 'otp_account')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.sessions": {
+      "name": "sessions",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "audience": {
+          "name": "audience",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'staff'"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sessions_token_hash_idx": {
+          "name": "sessions_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sessions_live_by_user_idx": {
+          "name": "sessions_live_by_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "revoked_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessions_user_id_users_id_fk": {
+          "name": "sessions_user_id_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sessions_audience_check": {
+          "name": "sessions_audience_check",
+          "value": "audience IN ('staff', 'admin')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.users": {
+      "name": "users",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provisional_reg": {
+          "name": "provisional_reg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "district_scope_id": {
+          "name": "district_scope_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending_activation'"
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "users_email_idx": {
+          "name": "users_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "users_provisional_reg_idx": {
+          "name": "users_provisional_reg_idx",
+          "columns": [
+            {
+              "expression": "provisional_reg",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "provisional_reg IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "users_role_status_idx": {
+          "name": "users_role_status_idx",
+          "columns": [
+            {
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "users_district_scope_id_location_nodes_id_fk": {
+          "name": "users_district_scope_id_location_nodes_id_fk",
+          "tableFrom": "users",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "district_scope_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "users_role_check": {
+          "name": "users_role_check",
+          "value": "role IN ('doctor', 'admin', 'blood_centre', 'volunteer_admin')"
+        },
+        "users_status_check": {
+          "name": "users_status_check",
+          "value": "status IN ('pending_activation', 'active', 'deactivated')"
+        },
+        "users_activation_check": {
+          "name": "users_activation_check",
+          "value": "(status = 'pending_activation') = (password_hash IS NULL)"
+        },
+        "users_district_scope_check": {
+          "name": "users_district_scope_check",
+          "value": "district_scope_id IS NULL OR role = 'volunteer_admin'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.account_invites": {
+      "name": "account_invites",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consumed_at": {
+          "name": "consumed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "superseded_at": {
+          "name": "superseded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_by": {
+          "name": "sent_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "account_invites_token_hash_idx": {
+          "name": "account_invites_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_invites_one_live_idx": {
+          "name": "account_invites_one_live_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "consumed_at IS NULL AND superseded_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_invites_ageing_idx": {
+          "name": "account_invites_ageing_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_invites_user_id_users_id_fk": {
+          "name": "account_invites_user_id_users_id_fk",
+          "tableFrom": "account_invites",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_invites_sent_by_users_id_fk": {
+          "name": "account_invites_sent_by_users_id_fk",
+          "tableFrom": "account_invites",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "sent_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.account_update_requests": {
+      "name": "account_update_requests",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field": {
+          "name": "field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_value": {
+          "name": "current_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proposed_value": {
+          "name": "proposed_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "admin_note": {
+          "name": "admin_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "account_update_requests_one_pending_idx": {
+          "name": "account_update_requests_one_pending_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "field",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "status = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_update_requests_queue_idx": {
+          "name": "account_update_requests_queue_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "status = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_update_requests_user_idx": {
+          "name": "account_update_requests_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_update_requests_user_id_users_id_fk": {
+          "name": "account_update_requests_user_id_users_id_fk",
+          "tableFrom": "account_update_requests",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_update_requests_decided_by_users_id_fk": {
+          "name": "account_update_requests_decided_by_users_id_fk",
+          "tableFrom": "account_update_requests",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "decided_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "account_update_requests_field_check": {
+          "name": "account_update_requests_field_check",
+          "value": "field IN ('full_name', 'provisional_reg')"
+        },
+        "account_update_requests_status_check": {
+          "name": "account_update_requests_status_check",
+          "value": "status IN ('pending', 'approved', 'rejected', 'withdrawn')"
+        },
+        "account_update_requests_decided_check": {
+          "name": "account_update_requests_decided_check",
+          "value": "(status IN ('pending', 'withdrawn')) = (decided_by IS NULL AND decided_at IS NULL)"
+        },
+        "account_update_requests_value_check": {
+          "name": "account_update_requests_value_check",
+          "value": "length(trim(proposed_value)) > 0"
+        },
+        "account_update_requests_reason_check": {
+          "name": "account_update_requests_reason_check",
+          "value": "length(trim(reason)) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.email_change_requests": {
+      "name": "email_change_requests",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_email": {
+          "name": "current_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_email": {
+          "name": "new_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consumed_at": {
+          "name": "consumed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "superseded_at": {
+          "name": "superseded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelled_at": {
+          "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "email_change_requests_token_hash_idx": {
+          "name": "email_change_requests_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "email_change_requests_one_live_idx": {
+          "name": "email_change_requests_one_live_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "consumed_at IS NULL AND superseded_at IS NULL AND cancelled_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "email_change_requests_user_id_users_id_fk": {
+          "name": "email_change_requests_user_id_users_id_fk",
+          "tableFrom": "email_change_requests",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "email_change_requests_distinct_check": {
+          "name": "email_change_requests_distinct_check",
+          "value": "new_email <> current_email"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.email_deliveries": {
+      "name": "email_deliveries",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_address": {
+          "name": "to_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_version": {
+          "name": "template_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "provider_message_id": {
+          "name": "provider_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "email_deliveries_drain_idx": {
+          "name": "email_deliveries_drain_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "email_deliveries_user_idx": {
+          "name": "email_deliveries_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "email_deliveries_user_id_users_id_fk": {
+          "name": "email_deliveries_user_id_users_id_fk",
+          "tableFrom": "email_deliveries",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "email_deliveries_status_check": {
+          "name": "email_deliveries_status_check",
+          "value": "status IN ('queued', 'sent', 'delivered', 'bounced', 'complained', 'failed')"
+        },
+        "email_deliveries_kind_check": {
+          "name": "email_deliveries_kind_check",
+          "value": "kind IN ('invite', 'invite_resent', 'password_otp', 'password_changed', 'email_change_confirm', 'email_change_notice', 'account_deactivated')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.object_refs": {
+      "name": "object_refs",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bucket": {
+          "name": "bucket",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "byte_size": {
+          "name": "byte_size",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sha256": {
+          "name": "sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delete_after": {
+          "name": "delete_after",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "object_refs_location_idx": {
+          "name": "object_refs_location_idx",
+          "columns": [
+            {
+              "expression": "bucket",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "object_refs_retention_idx": {
+          "name": "object_refs_retention_idx",
+          "columns": [
+            {
+              "expression": "delete_after",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "object_refs_owner_idx": {
+          "name": "object_refs_owner_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "object_refs_owner_id_users_id_fk": {
+          "name": "object_refs_owner_id_users_id_fk",
+          "tableFrom": "object_refs",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "object_refs_kind_check": {
+          "name": "object_refs_kind_check",
+          "value": "kind IN ('seal', 'frame')"
+        },
+        "object_refs_size_check": {
+          "name": "object_refs_size_check",
+          "value": "byte_size > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.password_reset_otps": {
+      "name": "password_reset_otps",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "otp_hash": {
+          "name": "otp_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consumed_at": {
+          "name": "consumed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "superseded_at": {
+          "name": "superseded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "password_reset_otps_one_live_idx": {
+          "name": "password_reset_otps_one_live_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "consumed_at IS NULL AND superseded_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "password_reset_otps_user_id_users_id_fk": {
+          "name": "password_reset_otps_user_id_users_id_fk",
+          "tableFrom": "password_reset_otps",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "password_reset_otps_attempts_check": {
+          "name": "password_reset_otps_attempts_check",
+          "value": "attempts >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.user_seals": {
+      "name": "user_seals",
+      "schema": "hospital",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "object_ref_id": {
+          "name": "object_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_seals_user_id_users_id_fk": {
+          "name": "user_seals_user_id_users_id_fk",
+          "tableFrom": "user_seals",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_seals_object_ref_id_object_refs_id_fk": {
+          "name": "user_seals_object_ref_id_object_refs_id_fk",
+          "tableFrom": "user_seals",
+          "tableTo": "object_refs",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "object_ref_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "user_seals_uploaded_by_users_id_fk": {
+          "name": "user_seals_uploaded_by_users_id_fk",
+          "tableFrom": "user_seals",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.admissions": {
+      "name": "admissions",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ip_no": {
+          "name": "ip_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ward": {
+          "name": "ward",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admitted_at": {
+          "name": "admitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discharged_at": {
+          "name": "discharged_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admitted'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "admissions_ip_no_idx": {
+          "name": "admissions_ip_no_idx",
+          "columns": [
+            {
+              "expression": "ip_no",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "admissions_patient_idx": {
+          "name": "admissions_patient_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "admitted_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "admissions_patient_id_patients_id_fk": {
+          "name": "admissions_patient_id_patients_id_fk",
+          "tableFrom": "admissions",
+          "tableTo": "patients",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "patient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "admissions_created_by_users_id_fk": {
+          "name": "admissions_created_by_users_id_fk",
+          "tableFrom": "admissions",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "admissions_status_check": {
+          "name": "admissions_status_check",
+          "value": "status IN ('admitted', 'discharged')"
+        },
+        "admissions_discharge_check": {
+          "name": "admissions_discharge_check",
+          "value": "discharged_at IS NULL OR discharged_at >= admitted_at"
+        },
+        "admissions_status_consistency": {
+          "name": "admissions_status_consistency",
+          "value": "(status = 'discharged') = (discharged_at IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.blood_request_counters": {
+      "name": "blood_request_counters",
+      "schema": "hospital",
+      "columns": {
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "next_value": {
+          "name": "next_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.blood_requests": {
+      "name": "blood_requests",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "centre_id": {
+          "name": "centre_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admission_id": {
+          "name": "admission_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doctor_id": {
+          "name": "doctor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'submitted'"
+        },
+        "urgency": {
+          "name": "urgency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "indication": {
+          "name": "indication",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_required": {
+          "name": "date_required",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blood_group": {
+          "name": "blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product": {
+          "name": "product",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "units": {
+          "name": "units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelled_at": {
+          "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancel_reason": {
+          "name": "cancel_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "patient_snapshot": {
+          "name": "patient_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doctor_snapshot": {
+          "name": "doctor_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "blood_requests_request_id_idx": {
+          "name": "blood_requests_request_id_idx",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "request_id IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "blood_requests_queue_idx": {
+          "name": "blood_requests_queue_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date_required",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "blood_requests_doctor_idx": {
+          "name": "blood_requests_doctor_idx",
+          "columns": [
+            {
+              "expression": "doctor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "blood_requests_admission_idx": {
+          "name": "blood_requests_admission_idx",
+          "columns": [
+            {
+              "expression": "admission_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "blood_requests_centre_id_centres_id_fk": {
+          "name": "blood_requests_centre_id_centres_id_fk",
+          "tableFrom": "blood_requests",
+          "tableTo": "centres",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "centre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "blood_requests_admission_id_admissions_id_fk": {
+          "name": "blood_requests_admission_id_admissions_id_fk",
+          "tableFrom": "blood_requests",
+          "tableTo": "admissions",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "admission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "blood_requests_doctor_id_users_id_fk": {
+          "name": "blood_requests_doctor_id_users_id_fk",
+          "tableFrom": "blood_requests",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "doctor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "blood_requests_status_check": {
+          "name": "blood_requests_status_check",
+          "value": "status IN ('draft', 'submitted', 'approved', 'partially_approved', 'declined', 'cancelled')"
+        },
+        "blood_requests_submitted_check": {
+          "name": "blood_requests_submitted_check",
+          "value": "status = 'draft' OR (\n        request_id IS NOT NULL\n        AND doctor_snapshot IS NOT NULL\n        AND submitted_at IS NOT NULL\n        AND urgency IS NOT NULL\n        AND date_required IS NOT NULL\n        AND blood_group IS NOT NULL\n        AND product IS NOT NULL\n        AND units IS NOT NULL\n      )"
+        },
+        "blood_requests_patient_check": {
+          "name": "blood_requests_patient_check",
+          "value": "patient_snapshot IS NULL OR admission_id IS NOT NULL"
+        },
+        "blood_requests_urgency_check": {
+          "name": "blood_requests_urgency_check",
+          "value": "urgency IS NULL OR urgency IN ('emergency', 'very_urgent', 'urgent', 'routine')"
+        },
+        "blood_requests_units_check": {
+          "name": "blood_requests_units_check",
+          "value": "units IS NULL OR units >= 1"
+        },
+        "blood_requests_blood_group_check": {
+          "name": "blood_requests_blood_group_check",
+          "value": "blood_group IS NULL OR blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        },
+        "blood_requests_product_check": {
+          "name": "blood_requests_product_check",
+          "value": "product IS NULL OR product IN ('whole_blood', 'prbc', 'platelet_concentrate', 'ffp', 'cryoprecipitate')"
+        },
+        "blood_requests_cancel_check": {
+          "name": "blood_requests_cancel_check",
+          "value": "(status = 'cancelled') = (cancelled_at IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.blood_samples": {
+      "name": "blood_samples",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sample_identifier": {
+          "name": "sample_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collected_at": {
+          "name": "collected_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collected_by_doctor_id": {
+          "name": "collected_by_doctor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "blood_samples_identifier_idx": {
+          "name": "blood_samples_identifier_idx",
+          "columns": [
+            {
+              "expression": "sample_identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "blood_samples_request_idx": {
+          "name": "blood_samples_request_idx",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "collected_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "blood_samples_request_id_blood_requests_id_fk": {
+          "name": "blood_samples_request_id_blood_requests_id_fk",
+          "tableFrom": "blood_samples",
+          "tableTo": "blood_requests",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "blood_samples_collected_by_doctor_id_users_id_fk": {
+          "name": "blood_samples_collected_by_doctor_id_users_id_fk",
+          "tableFrom": "blood_samples",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "collected_by_doctor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.centres": {
+      "name": "centres",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.patients": {
+      "name": "patients",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dob": {
+          "name": "dob",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "age": {
+          "name": "age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "age_unit": {
+          "name": "age_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sex": {
+          "name": "sex",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blood_group": {
+          "name": "blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "uhid": {
+          "name": "uhid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attender_name": {
+          "name": "attender_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attender_phone": {
+          "name": "attender_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "district_id": {
+          "name": "district_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city_id": {
+          "name": "city_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diagnosis": {
+          "name": "diagnosis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "history": {
+          "name": "history",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_transfusion": {
+          "name": "previous_transfusion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        },
+        "previous_reaction": {
+          "name": "previous_reaction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "patients_uhid_idx": {
+          "name": "patients_uhid_idx",
+          "columns": [
+            {
+              "expression": "uhid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "uhid IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_created_idx": {
+          "name": "patients_created_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "patients_district_id_location_nodes_id_fk": {
+          "name": "patients_district_id_location_nodes_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "district_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_city_id_location_nodes_id_fk": {
+          "name": "patients_city_id_location_nodes_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "city_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_created_by_users_id_fk": {
+          "name": "patients_created_by_users_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "patients_age_check": {
+          "name": "patients_age_check",
+          "value": "dob IS NOT NULL OR (age IS NOT NULL AND age_unit IS NOT NULL)"
+        },
+        "patients_age_unit_check": {
+          "name": "patients_age_unit_check",
+          "value": "age_unit IS NULL OR age_unit IN ('days', 'months', 'years')"
+        },
+        "patients_age_nonneg_check": {
+          "name": "patients_age_nonneg_check",
+          "value": "age IS NULL OR age >= 0"
+        },
+        "patients_sex_check": {
+          "name": "patients_sex_check",
+          "value": "sex IN ('female', 'male', 'other')"
+        },
+        "patients_blood_group_check": {
+          "name": "patients_blood_group_check",
+          "value": "blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        },
+        "patients_previous_transfusion_check": {
+          "name": "patients_previous_transfusion_check",
+          "value": "previous_transfusion IN ('yes', 'no', 'unknown')"
+        },
+        "patients_reaction_check": {
+          "name": "patients_reaction_check",
+          "value": "previous_reaction IS NULL OR previous_transfusion = 'yes'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.bag_discards": {
+      "name": "bag_discards",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bag_id": {
+          "name": "bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "disposal_route": {
+          "name": "disposal_route",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discarded_by": {
+          "name": "discarded_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discarded_at": {
+          "name": "discarded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bag_discards_bag_idx": {
+          "name": "bag_discards_bag_idx",
+          "columns": [
+            {
+              "expression": "bag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bag_discards_when_idx": {
+          "name": "bag_discards_when_idx",
+          "columns": [
+            {
+              "expression": "discarded_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bag_discards_bag_id_blood_bags_id_fk": {
+          "name": "bag_discards_bag_id_blood_bags_id_fk",
+          "tableFrom": "bag_discards",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bag_discards_discarded_by_users_id_fk": {
+          "name": "bag_discards_discarded_by_users_id_fk",
+          "tableFrom": "bag_discards",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "discarded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bag_discards_route_check": {
+          "name": "bag_discards_route_check",
+          "value": "length(trim(disposal_route)) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.bag_quarantines": {
+      "name": "bag_quarantines",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bag_id": {
+          "name": "bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "opened_at": {
+          "name": "opened_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolution": {
+          "name": "resolution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_by": {
+          "name": "resolved_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "bag_quarantines_open_idx": {
+          "name": "bag_quarantines_open_idx",
+          "columns": [
+            {
+              "expression": "bag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "resolved_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bag_quarantines_ageing_idx": {
+          "name": "bag_quarantines_ageing_idx",
+          "columns": [
+            {
+              "expression": "opened_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "resolved_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bag_quarantines_bag_id_blood_bags_id_fk": {
+          "name": "bag_quarantines_bag_id_blood_bags_id_fk",
+          "tableFrom": "bag_quarantines",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bag_quarantines_resolved_by_users_id_fk": {
+          "name": "bag_quarantines_resolved_by_users_id_fk",
+          "tableFrom": "bag_quarantines",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "resolved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bag_quarantines_resolution_check": {
+          "name": "bag_quarantines_resolution_check",
+          "value": "resolution IS NULL OR resolution IN ('available', 'discarded')"
+        },
+        "bag_quarantines_resolved_check": {
+          "name": "bag_quarantines_resolved_check",
+          "value": "(resolved_at IS NULL) = (resolution IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.bag_returns": {
+      "name": "bag_returns",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bag_id": {
+          "name": "bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "returned_at": {
+          "name": "returned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "out_of_storage_band": {
+          "name": "out_of_storage_band",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cold_chain_documented": {
+          "name": "cold_chain_documented",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bag_returns_bag_idx": {
+          "name": "bag_returns_bag_idx",
+          "columns": [
+            {
+              "expression": "bag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "returned_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bag_returns_bag_id_blood_bags_id_fk": {
+          "name": "bag_returns_bag_id_blood_bags_id_fk",
+          "tableFrom": "bag_returns",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bag_returns_decided_by_users_id_fk": {
+          "name": "bag_returns_decided_by_users_id_fk",
+          "tableFrom": "bag_returns",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "decided_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bag_returns_band_check": {
+          "name": "bag_returns_band_check",
+          "value": "out_of_storage_band IN ('under_30m', '30m_to_limit', 'over_limit', 'unknown')"
+        },
+        "bag_returns_outcome_check": {
+          "name": "bag_returns_outcome_check",
+          "value": "outcome IN ('restock', 'quarantine', 'discard')"
+        },
+        "bag_returns_restock_check": {
+          "name": "bag_returns_restock_check",
+          "value": "outcome <> 'restock' OR out_of_storage_band = 'under_30m'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.blood_bags": {
+      "name": "blood_bags",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "centre_id": {
+          "name": "centre_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_number": {
+          "name": "unit_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blood_group": {
+          "name": "blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product": {
+          "name": "product",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collected_at": {
+          "name": "collected_at",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expiry_source": {
+          "name": "expiry_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'derived'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'available'"
+        },
+        "reserved_for_request_id": {
+          "name": "reserved_for_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issued_to_request_id": {
+          "name": "issued_to_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issued_at": {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registered_by": {
+          "name": "registered_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "blood_bags_unit_number_idx": {
+          "name": "blood_bags_unit_number_idx",
+          "columns": [
+            {
+              "expression": "unit_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "blood_bags_available_idx": {
+          "name": "blood_bags_available_idx",
+          "columns": [
+            {
+              "expression": "blood_group",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "product",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "status = 'available'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "blood_bags_status_idx": {
+          "name": "blood_bags_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "blood_bags_centre_id_centres_id_fk": {
+          "name": "blood_bags_centre_id_centres_id_fk",
+          "tableFrom": "blood_bags",
+          "tableTo": "centres",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "centre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "blood_bags_reserved_for_request_id_blood_requests_id_fk": {
+          "name": "blood_bags_reserved_for_request_id_blood_requests_id_fk",
+          "tableFrom": "blood_bags",
+          "tableTo": "blood_requests",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "reserved_for_request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "blood_bags_issued_to_request_id_blood_requests_id_fk": {
+          "name": "blood_bags_issued_to_request_id_blood_requests_id_fk",
+          "tableFrom": "blood_bags",
+          "tableTo": "blood_requests",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "issued_to_request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "blood_bags_registered_by_users_id_fk": {
+          "name": "blood_bags_registered_by_users_id_fk",
+          "tableFrom": "blood_bags",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "registered_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "blood_bags_expiry_check": {
+          "name": "blood_bags_expiry_check",
+          "value": "expires_at >= collected_at"
+        },
+        "blood_bags_group_check": {
+          "name": "blood_bags_group_check",
+          "value": "blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        },
+        "blood_bags_product_check": {
+          "name": "blood_bags_product_check",
+          "value": "product IN ('whole_blood', 'prbc', 'platelet_concentrate', 'ffp', 'cryoprecipitate')"
+        },
+        "blood_bags_status_check": {
+          "name": "blood_bags_status_check",
+          "value": "status IN ('available', 'reserved', 'issued', 'returned', 'quarantined', 'discarded', 'expired', 'lost')"
+        },
+        "blood_bags_expiry_source_check": {
+          "name": "blood_bags_expiry_source_check",
+          "value": "expiry_source IN ('derived', 'label')"
+        },
+        "blood_bags_reserved_check": {
+          "name": "blood_bags_reserved_check",
+          "value": "status <> 'reserved' OR reserved_for_request_id IS NOT NULL"
+        },
+        "blood_bags_issued_check": {
+          "name": "blood_bags_issued_check",
+          "value": "status <> 'issued' OR (issued_to_request_id IS NOT NULL AND issued_at IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.centre_decisions": {
+      "name": "centre_decisions",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision": {
+          "name": "decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "units_issued": {
+          "name": "units_issued",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "units_requested": {
+          "name": "units_requested",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "patient_unidentified": {
+          "name": "patient_unidentified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "demand_id": {
+          "name": "demand_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "centre_decisions_request_idx": {
+          "name": "centre_decisions_request_idx",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "centre_decisions_request_id_blood_requests_id_fk": {
+          "name": "centre_decisions_request_id_blood_requests_id_fk",
+          "tableFrom": "centre_decisions",
+          "tableTo": "blood_requests",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "centre_decisions_decided_by_users_id_fk": {
+          "name": "centre_decisions_decided_by_users_id_fk",
+          "tableFrom": "centre_decisions",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "decided_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "centre_decisions_decision_check": {
+          "name": "centre_decisions_decision_check",
+          "value": "decision IN ('approved', 'partial', 'declined')"
+        },
+        "centre_decisions_units_check": {
+          "name": "centre_decisions_units_check",
+          "value": "units_issued >= 0 AND units_issued <= units_requested"
+        },
+        "centre_decisions_consistency_check": {
+          "name": "centre_decisions_consistency_check",
+          "value": "(decision = 'declined' AND units_issued = 0)\n       OR (decision = 'approved' AND units_issued = units_requested)\n       OR (decision = 'partial' AND units_issued > 0 AND units_issued < units_requested)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.centre_settings": {
+      "name": "centre_settings",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "centre_id": {
+          "name": "centre_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_name": {
+          "name": "hospital_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "district_id": {
+          "name": "district_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city_id": {
+          "name": "city_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_units_per_group": {
+          "name": "min_units_per_group",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 25
+        },
+        "return_time_limit_minutes": {
+          "name": "return_time_limit_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "centre_settings_centre_id_centres_id_fk": {
+          "name": "centre_settings_centre_id_centres_id_fk",
+          "tableFrom": "centre_settings",
+          "tableTo": "centres",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "centre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "centre_settings_district_id_location_nodes_id_fk": {
+          "name": "centre_settings_district_id_location_nodes_id_fk",
+          "tableFrom": "centre_settings",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "district_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "centre_settings_city_id_location_nodes_id_fk": {
+          "name": "centre_settings_city_id_location_nodes_id_fk",
+          "tableFrom": "centre_settings",
+          "tableTo": "location_nodes",
+          "schemaTo": "reference",
+          "columnsFrom": [
+            "city_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "centre_settings_updated_by_users_id_fk": {
+          "name": "centre_settings_updated_by_users_id_fk",
+          "tableFrom": "centre_settings",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "centre_settings_single_row": {
+          "name": "centre_settings_single_row",
+          "value": "id = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.decision_bags": {
+      "name": "decision_bags",
+      "schema": "hospital",
+      "columns": {
+        "decision_id": {
+          "name": "decision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bag_id": {
+          "name": "bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "decision_bags_bag_idx": {
+          "name": "decision_bags_bag_idx",
+          "columns": [
+            {
+              "expression": "bag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "decision_bags_decision_id_centre_decisions_id_fk": {
+          "name": "decision_bags_decision_id_centre_decisions_id_fk",
+          "tableFrom": "decision_bags",
+          "tableTo": "centre_decisions",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "decision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "decision_bags_bag_id_blood_bags_id_fk": {
+          "name": "decision_bags_bag_id_blood_bags_id_fk",
+          "tableFrom": "decision_bags",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "decision_bags_decision_id_bag_id_pk": {
+          "name": "decision_bags_decision_id_bag_id_pk",
+          "columns": [
+            "decision_id",
+            "bag_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.donor_demand": {
+      "name": "donor_demand",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "centre_id": {
+          "name": "centre_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trigger": {
+          "name": "trigger",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blood_request_id": {
+          "name": "blood_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blood_group": {
+          "name": "blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product": {
+          "name": "product",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "units": {
+          "name": "units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_required": {
+          "name": "date_required",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_name": {
+          "name": "hospital_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_address": {
+          "name": "hospital_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "district_id": {
+          "name": "district_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city_id": {
+          "name": "city_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "bot_public_id": {
+          "name": "bot_public_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "donors_notified": {
+          "name": "donors_notified",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "confirmed_units": {
+          "name": "confirmed_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "waitlisted_units": {
+          "name": "waitlisted_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "completed_units": {
+          "name": "completed_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "donor_demand_awaiting_import_idx": {
+          "name": "donor_demand_awaiting_import_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "bot_public_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "status = 'open' AND bot_public_id IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "donor_demand_open_floor_idx": {
+          "name": "donor_demand_open_floor_idx",
+          "columns": [
+            {
+              "expression": "centre_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "blood_group",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "trigger = 'stock_floor' AND status = 'open'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "donor_demand_status_idx": {
+          "name": "donor_demand_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date_required",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "donor_demand_centre_id_centres_id_fk": {
+          "name": "donor_demand_centre_id_centres_id_fk",
+          "tableFrom": "donor_demand",
+          "tableTo": "centres",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "centre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "donor_demand_blood_request_id_blood_requests_id_fk": {
+          "name": "donor_demand_blood_request_id_blood_requests_id_fk",
+          "tableFrom": "donor_demand",
+          "tableTo": "blood_requests",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "blood_request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "donor_demand_trigger_check": {
+          "name": "donor_demand_trigger_check",
+          "value": "trigger IN ('request_shortfall', 'stock_floor')"
+        },
+        "donor_demand_status_check": {
+          "name": "donor_demand_status_check",
+          "value": "status IN ('open', 'fulfilled', 'completed', 'cancelled', 'expired')"
+        },
+        "donor_demand_group_check": {
+          "name": "donor_demand_group_check",
+          "value": "blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        },
+        "donor_demand_product_check": {
+          "name": "donor_demand_product_check",
+          "value": "product IN ('whole_blood', 'prbc')"
+        },
+        "donor_demand_units_check": {
+          "name": "donor_demand_units_check",
+          "value": "units >= 1"
+        },
+        "donor_demand_counters_check": {
+          "name": "donor_demand_counters_check",
+          "value": "donors_notified >= 0 AND confirmed_units >= 0 AND waitlisted_units >= 0 AND completed_units >= 0"
+        },
+        "donor_demand_trigger_link_check": {
+          "name": "donor_demand_trigger_link_check",
+          "value": "(trigger = 'request_shortfall') = (blood_request_id IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.donor_demand_confirmations": {
+      "name": "donor_demand_confirmations",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "demand_id": {
+          "name": "demand_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donor_id": {
+          "name": "donor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donor_name": {
+          "name": "donor_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donor_phone": {
+          "name": "donor_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blood_group": {
+          "name": "blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "acknowledged_at": {
+          "name": "acknowledged_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'confirmed'"
+        },
+        "donated_at": {
+          "name": "donated_at",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bag_identifier": {
+          "name": "bag_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "donated_blood_group": {
+          "name": "donated_blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "marked_by": {
+          "name": "marked_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "donor_demand_confirmations_donor_idx": {
+          "name": "donor_demand_confirmations_donor_idx",
+          "columns": [
+            {
+              "expression": "demand_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "donor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "donor_demand_confirmations_status_idx": {
+          "name": "donor_demand_confirmations_status_idx",
+          "columns": [
+            {
+              "expression": "demand_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "donor_demand_confirmations_demand_id_donor_demand_id_fk": {
+          "name": "donor_demand_confirmations_demand_id_donor_demand_id_fk",
+          "tableFrom": "donor_demand_confirmations",
+          "tableTo": "donor_demand",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "demand_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "donor_demand_confirmations_status_check": {
+          "name": "donor_demand_confirmations_status_check",
+          "value": "status IN ('confirmed', 'completed', 'no_show', 'cancelled')"
+        },
+        "donor_demand_confirmations_group_check": {
+          "name": "donor_demand_confirmations_group_check",
+          "value": "blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        },
+        "donor_demand_confirmations_donated_check": {
+          "name": "donor_demand_confirmations_donated_check",
+          "value": "donated_at IS NULL OR status = 'completed'"
+        },
+        "donor_demand_confirmations_typed_group_check": {
+          "name": "donor_demand_confirmations_typed_group_check",
+          "value": "donated_blood_group IS NULL OR donated_blood_group IN\n            ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.product_shelf_lives": {
+      "name": "product_shelf_lives",
+      "schema": "hospital",
+      "columns": {
+        "product": {
+          "name": "product",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "shelf_life_days": {
+          "name": "shelf_life_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "product_shelf_lives_updated_by_users_id_fk": {
+          "name": "product_shelf_lives_updated_by_users_id_fk",
+          "tableFrom": "product_shelf_lives",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "product_shelf_lives_product_check": {
+          "name": "product_shelf_lives_product_check",
+          "value": "product IN ('whole_blood', 'prbc', 'platelet_concentrate', 'ffp', 'cryoprecipitate')"
+        },
+        "product_shelf_lives_days_check": {
+          "name": "product_shelf_lives_days_check",
+          "value": "shelf_life_days > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.rfid_tags": {
+      "name": "rfid_tags",
+      "schema": "hospital",
+      "columns": {
+        "tag_uid": {
+          "name": "tag_uid",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unassigned'"
+        },
+        "current_bag_id": {
+          "name": "current_bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retired_at": {
+          "name": "retired_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retire_reason": {
+          "name": "retire_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rfid_tags_current_bag_id_blood_bags_id_fk": {
+          "name": "rfid_tags_current_bag_id_blood_bags_id_fk",
+          "tableFrom": "rfid_tags",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "current_bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "rfid_tags_status_check": {
+          "name": "rfid_tags_status_check",
+          "value": "status IN ('unassigned', 'assigned', 'retired')"
+        },
+        "rfid_tags_assigned_check": {
+          "name": "rfid_tags_assigned_check",
+          "value": "status <> 'assigned' OR current_bag_id IS NOT NULL"
+        },
+        "rfid_tags_retired_check": {
+          "name": "rfid_tags_retired_check",
+          "value": "status <> 'retired' OR current_bag_id IS NULL"
+        },
+        "rfid_tags_retired_at_check": {
+          "name": "rfid_tags_retired_at_check",
+          "value": "(status = 'retired') = (retired_at IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.tag_assignments": {
+      "name": "tag_assignments",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tag_uid": {
+          "name": "tag_uid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bag_id": {
+          "name": "bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_at": {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "assigned_by": {
+          "name": "assigned_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "released_at": {
+          "name": "released_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "released_by": {
+          "name": "released_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "release_reason": {
+          "name": "release_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tag_assignments_live_tag_idx": {
+          "name": "tag_assignments_live_tag_idx",
+          "columns": [
+            {
+              "expression": "tag_uid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "released_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tag_assignments_live_bag_idx": {
+          "name": "tag_assignments_live_bag_idx",
+          "columns": [
+            {
+              "expression": "bag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "released_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tag_assignments_bag_idx": {
+          "name": "tag_assignments_bag_idx",
+          "columns": [
+            {
+              "expression": "bag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "assigned_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tag_assignments_tag_uid_rfid_tags_tag_uid_fk": {
+          "name": "tag_assignments_tag_uid_rfid_tags_tag_uid_fk",
+          "tableFrom": "tag_assignments",
+          "tableTo": "rfid_tags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "tag_uid"
+          ],
+          "columnsTo": [
+            "tag_uid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tag_assignments_bag_id_blood_bags_id_fk": {
+          "name": "tag_assignments_bag_id_blood_bags_id_fk",
+          "tableFrom": "tag_assignments",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tag_assignments_assigned_by_users_id_fk": {
+          "name": "tag_assignments_assigned_by_users_id_fk",
+          "tableFrom": "tag_assignments",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "assigned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tag_assignments_released_by_users_id_fk": {
+          "name": "tag_assignments_released_by_users_id_fk",
+          "tableFrom": "tag_assignments",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "released_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "hospital.tag_discrepancies": {
+      "name": "tag_discrepancies",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tag_uid": {
+          "name": "tag_uid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presented_at": {
+          "name": "presented_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "presented_by": {
+          "name": "presented_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "conflicting_bag_id": {
+          "name": "conflicting_bag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "finding": {
+          "name": "finding",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_by": {
+          "name": "resolved_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "tag_discrepancies_open_idx": {
+          "name": "tag_discrepancies_open_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "presented_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tag_discrepancies_tag_uid_rfid_tags_tag_uid_fk": {
+          "name": "tag_discrepancies_tag_uid_rfid_tags_tag_uid_fk",
+          "tableFrom": "tag_discrepancies",
+          "tableTo": "rfid_tags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "tag_uid"
+          ],
+          "columnsTo": [
+            "tag_uid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tag_discrepancies_presented_by_users_id_fk": {
+          "name": "tag_discrepancies_presented_by_users_id_fk",
+          "tableFrom": "tag_discrepancies",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "presented_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tag_discrepancies_conflicting_bag_id_blood_bags_id_fk": {
+          "name": "tag_discrepancies_conflicting_bag_id_blood_bags_id_fk",
+          "tableFrom": "tag_discrepancies",
+          "tableTo": "blood_bags",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "conflicting_bag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tag_discrepancies_resolved_by_users_id_fk": {
+          "name": "tag_discrepancies_resolved_by_users_id_fk",
+          "tableFrom": "tag_discrepancies",
+          "tableTo": "users",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "resolved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "tag_discrepancies_status_check": {
+          "name": "tag_discrepancies_status_check",
+          "value": "status IN ('open', 'resolved')"
+        },
+        "tag_discrepancies_finding_check": {
+          "name": "tag_discrepancies_finding_check",
+          "value": "finding IS NULL OR finding IN ('duplicate_tag', 'bag_missing', 'mis_scan')"
+        },
+        "tag_discrepancies_resolved_check": {
+          "name": "tag_discrepancies_resolved_check",
+          "value": "(status = 'resolved') = (resolved_at IS NOT NULL AND finding IS NOT NULL\n                                    AND resolved_by IS NOT NULL AND note IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.walk_in_donations": {
+      "name": "walk_in_donations",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "demand_id": {
+          "name": "demand_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donor_name": {
+          "name": "donor_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donor_phone": {
+          "name": "donor_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blood_group": {
+          "name": "blood_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bag_identifier": {
+          "name": "bag_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donated_on": {
+          "name": "donated_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recorded_by": {
+          "name": "recorded_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "walk_in_donations_demand_idx": {
+          "name": "walk_in_donations_demand_idx",
+          "columns": [
+            {
+              "expression": "demand_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "walk_in_donations_demand_id_donor_demand_id_fk": {
+          "name": "walk_in_donations_demand_id_donor_demand_id_fk",
+          "tableFrom": "walk_in_donations",
+          "tableTo": "donor_demand",
+          "schemaTo": "hospital",
+          "columnsFrom": [
+            "demand_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "walk_in_donations_group_check": {
+          "name": "walk_in_donations_group_check",
+          "value": "blood_group IN ('O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.process_health": {
+      "name": "process_health",
+      "schema": "hospital",
+      "columns": {
+        "process": {
+          "name": "process",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_version": {
+          "name": "contract_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "build_id": {
+          "name": "build_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alerts": {
+          "name": "alerts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "process_health_process_check": {
+          "name": "process_health_process_check",
+          "value": "process IN ('web', 'bot')"
+        },
+        "process_health_status_check": {
+          "name": "process_health_status_check",
+          "value": "status IN ('ok', 'degraded', 'down')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "hospital.request_samples": {
+      "name": "request_samples",
+      "schema": "hospital",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "surface": {
+          "name": "surface",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "route": {
+          "name": "route",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "method": {
+          "name": "method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "correlation_id": {
+          "name": "correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "request_samples_window_idx": {
+          "name": "request_samples_window_idx",
+          "columns": [
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "surface",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "request_samples_correlation_idx": {
+          "name": "request_samples_correlation_idx",
+          "columns": [
+            {
+              "expression": "correlation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "request_samples_status_check": {
+          "name": "request_samples_status_check",
+          "value": "status >= 100 AND status < 600"
+        },
+        "request_samples_duration_check": {
+          "name": "request_samples_duration_check",
+          "value": "duration_ms >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "reference": "reference",
+    "hospital": "hospital"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

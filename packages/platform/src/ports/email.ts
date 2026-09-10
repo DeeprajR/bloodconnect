@@ -25,6 +25,19 @@ export type SendResult =
 
 export type EmailPort = {
   readonly send: (email: OutgoingEmail) => Promise<SendResult>;
+  /**
+   * Prove the server is reachable and willing, without sending anything.
+   *
+   * The control panel needs a tile that goes red when SMTP is broken, and the
+   * only honest way to know that is to talk to the server. Sending a real
+   * message would mean the panel emitted an email every time somebody opened
+   * it; a TCP ping would stay green through a rejected login, which is the
+   * outage that actually happens. So the adapter does the handshake and stops
+   * there.
+   *
+   * Optional, because an in-memory adapter has nothing to verify.
+   */
+  readonly verify?: () => Promise<{ ok: boolean; detail: string }>;
 };
 
 /**

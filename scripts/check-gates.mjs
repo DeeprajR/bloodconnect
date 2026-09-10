@@ -70,6 +70,14 @@ const PUBLIC_PAGES = new Set([
   'apps/admin/src/app/forbidden/page.tsx',
   // Administration has no landing page; this redirects to a guarded one.
   'apps/admin/src/app/page.tsx',
+  /*
+   * The load balancer's probe (§11.9). Public by design and public in the route
+   * rules, because a health check behind a session is one the load balancer
+   * cannot make. It reads no table, returns one word and a status code, and
+   * enumerates nothing: the detailed panel is the authenticated screen.
+   */
+  'apps/web/src/app/api/health/route.ts',
+  'apps/admin/src/app/api/health/route.ts',
 ]);
 
 const GUARDS = ['requireAccess', 'requirePermission', 'currentActor', 'redirect('];

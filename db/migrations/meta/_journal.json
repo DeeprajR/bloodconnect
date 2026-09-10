@@ -141,6 +141,20 @@
       "when": 1788981493254,
       "tag": "0019_the_account_update_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789021467298,
+      "tag": "0020_the_control_panel",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789023493497,
+      "tag": "0021_the_panel_reads_its_own_bookkeeping",
+      "breakpoints": true
     }
   ]
 }

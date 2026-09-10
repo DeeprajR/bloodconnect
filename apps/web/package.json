@@ -17,6 +17,7 @@
     "@blood-connect/domain": "workspace:*",
     "@blood-connect/hospital": "workspace:*",
     "@blood-connect/ids": "workspace:*",
+    "@blood-connect/ops": "workspace:*",
     "@blood-connect/platform": "workspace:*",
     "@blood-connect/result": "workspace:*",
     "@blood-connect/volunteer": "workspace:*",

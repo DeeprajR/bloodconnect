@@ -41,6 +41,22 @@ function isRetryable(error: unknown): boolean {
 }
 
 export const smtpEmailPort: EmailPort = {
+  /**
+   * `verify` opens a connection, greets the server and authenticates if
+   * credentials are configured, then hangs up without sending. That is the
+   * whole of what the control panel needs to know, and it catches the failure a
+   * port scan cannot: a server that answers and then refuses the login.
+   */
+  async verify(): Promise<{ ok: boolean; detail: string }> {
+    try {
+      await getTransport().verify();
+      const host = process.env['SMTP_HOST'] ?? 'localhost';
+      return { ok: true, detail: `${host} accepted the handshake.` };
+    } catch (error: unknown) {
+      return { ok: false, detail: error instanceof Error ? error.message : String(error) };
+    }
+  },
+
   async send(email: OutgoingEmail): Promise<SendResult> {
     try {
       const info = (await getTransport().sendMail({

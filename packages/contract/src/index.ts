@@ -33,7 +33,7 @@ import { z } from 'zod';
  * and requires both sides shipped in the same release. A mismatched deploy is a
  * refused start, not silent corruption.
  */
-export const CONTRACT_VERSION = '1.2.0';
+export const CONTRACT_VERSION = '1.3.0';
 
 export const CONTRACT_VERSION_CONFIG_KEY = 'contract.version';
 

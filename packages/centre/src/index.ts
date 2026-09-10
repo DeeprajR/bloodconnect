@@ -11,6 +11,8 @@
  * appears in it.
  */
 
+export { centreAlerts } from './alerts.js';
+
 export { cancelRequest, type CancelResult } from './use-cases/cancel.js';
 
 export {
