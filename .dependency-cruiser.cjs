@@ -57,6 +57,26 @@ module.exports = {
       to: { path: '^(packages/(?!contract|domain)|apps/|db/)' },
     },
     {
+      name: 'the-volunteer-board-sees-no-person',
+      comment:
+        'packages/volunteer reads the two shared tables of §7 and nothing else (§6). An import ' +
+        'of hospital, centre or bot would give it a path to a patient, a doctor or a donor — ' +
+        'the three things §6 says must never reach this surface. It may use platform for the ' +
+        'context and domain for the rules, and that is the whole of its reach.',
+      severity: 'error',
+      from: { path: '^packages/volunteer/' },
+      to: { path: '^packages/(hospital|centre|bot)/' },
+    },
+    {
+      name: 'nothing-depends-on-the-volunteer-board',
+      comment:
+        'Module 4 is a read of shared state, so nothing should need it (§6). A module importing ' +
+        'it would mean a rule had been written on the presentation side of the boundary.',
+      severity: 'error',
+      from: { path: '^packages/(?!volunteer)' },
+      to: { path: '^packages/volunteer/' },
+    },
+    {
       name: 'the-bot-is-its-own-side',
       comment:
         'packages/bot integrates with the centre through two shared tables and no function call ' +

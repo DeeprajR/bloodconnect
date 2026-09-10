@@ -1,5 +1,5 @@
 /*
- * UX4G root token overrides — two, both deliberate.
+ * UX4G root token overrides, two, both deliberate.
  *
  * Overrides tokens, never component selectors (Design.md §0.6). Every custom
  * property below is confirmed present in ux4g-web-components@2.1.0's
@@ -25,8 +25,8 @@
    * at 1.21:1 against the page and calls it a release blocker, not backlog:
    * under WCAG 1.4.11 the boundary of an input is a required 3:1 non-text
    * target when it is the only thing showing the control's extent. The contract
-   * states the fix — repoint at a darker step of the same ramp, do not add a
-   * colour — so this moves to neutral-500 (#737373), 4.54:1 on white.
+   * states the fix, repoint at a darker step of the same ramp, do not add a
+   * colour, so this moves to neutral-500 (#737373), 4.54:1 on white.
    *
    * Remove this when the design system ships the fix upstream.
    */
@@ -38,15 +38,15 @@
  * Application layout.
  *
  * No colour, radius, typography, border or state value is written here that a
- * UX4G token provides. Spacing uses the **semantic** axes of Design.md §5 —
+ * UX4G token provides. Spacing uses the **semantic** axes of Design.md §5,
  * Padding for a container's inside, Section for the rhythm between page
- * sections — picked by role rather than by value, because `--ux4g-padding-m`
+ * sections, picked by role rather than by value, because `--ux4g-padding-m`
  * and `--ux4g-section-xs` being 1rem apart today is not a promise.
  *
  * Every var() carries a fallback, and that is not belt-and-braces. An
  * undefined custom property makes the *whole declaration* invalid at
  * computed-value time, so a single wrong token name silently removes the
- * padding rather than warning about it — which is exactly how the header and
+ * padding rather than warning about it, which is exactly how the header and
  * the first section ended up touching: this file previously asked for
  * `--ux4g-space-9`, and the shipped ramp skips 9. Design.md §3 lists it, so
  * that is contract drift; the fallbacks mean the next one costs nothing.
@@ -114,7 +114,7 @@
   padding: var(--ux4g-padding-m, 1rem);
   display: flex;
   flex-direction: column;
-  /* Section rhythm, not container padding — a different axis on purpose. */
+  /* Section rhythm, not container padding. A different axis on purpose. */
   gap: var(--ux4g-section-xs, 1.5rem);
 }
 
@@ -202,7 +202,7 @@
 
 /*
  * A table that does not force the page to scroll sideways. The wrapper scrolls,
- * the document does not — on a phone, a horizontally scrolling page makes every
+ * the document does not, on a phone, a horizontally scrolling page makes every
  * other control hard to hit.
  */
 .app-scroll-x {
@@ -211,12 +211,12 @@
 }
 
 /* ---------------------------------------------------------------------------
- * The request slip — the doctor's one screen (§3, ADR 0010).
+ * The request slip. The doctor's one screen (§3, ADR 0010).
  *
  * Speed is the requirement, and the two things that buy it are big tap targets
  * and no scrolling past what is optional. So the four answers are grids of
- * radio labels rather than dropdowns — one tap, no aim, no scroll inside a
- * native select — and everything else lives behind a `<details>` that starts
+ * radio labels rather than dropdowns, one tap, no aim, no scroll inside a
+ * native select, and everything else lives behind a `<details>` that starts
  * closed and costs one line of vertical space.
  * ------------------------------------------------------------------------- */
 
@@ -294,13 +294,13 @@
  *
  * A native disclosure: it opens without JavaScript, so it works before
  * hydration and on a bad hospital connection, and the fields inside stay in the
- * form when it is collapsed again — a doctor who filled it and closed it does
+ * form when it is collapsed again. A doctor who filled it and closed it does
  * not lose the answers.
  */
 /*
  * The disclosure, as a standard accordion panel.
  *
- * It is still a native `<details>` — no JavaScript decides whether it opens, so
+ * It is still a native `<details>`, no JavaScript decides whether it opens, so
  * it works before hydration and the fields inside stay in the form when it is
  * collapsed again. What changed is that it now **looks** like something you can
  * open.
@@ -360,7 +360,7 @@
 }
 
 /*
- * Pointing down when closed, up when open — the direction says which way the
+ * Pointing down when closed, up when open. The direction says which way the
  * panel will move. The reduced-motion block at the end of this file already
  * neutralises the transition for anybody who asked for that.
  */
@@ -384,7 +384,7 @@
  * The ID, at handoff size.
  *
  * Read aloud across a bed to somebody who will carry it to another building, so
- * it is the largest thing on the page and set in tabular figures — a `0` and an
+ * it is the largest thing on the page and set in tabular figures. A `0` and an
  * `O` must not be confusable when it is being transcribed by ear.
  */
 .app-handoff-id {
@@ -471,8 +471,8 @@
  *
  * **Ramp tokens, not the semantic ones**, and that is a deliberate departure
  * from the rule this file otherwise keeps. The semantic set (`bg-success-soft`,
- * `bg-warning-soft`, `bg-error-*`) has no yellow at all — warning maps to
- * orange — so it cannot express five ordered steps, and its soft fills were too
+ * `bg-warning-soft`, `bg-error-*`) has no yellow at all, warning maps to
+ * orange, so it cannot express five ordered steps, and its soft fills were too
  * pale to tell apart at a glance on a counter monitor. A severity scale needs
  * its five steps to stay in a fixed order and a fixed relationship to their text
  * colour, which is exactly what a semantic token is free to change between
@@ -494,7 +494,7 @@
   gap: var(--ux4g-space-4, 0.5rem);
   /*
    * Tall enough that the bottom of the range stays readable. Against a floor of
-   * 25 the difference between 1, 3 and 6 units is 10px, 29px and 58px here —
+   * 25 the difference between 1, 3 and 6 units is 10px, 29px and 58px here,
    * three clearly different bars. At half this height they are 5, 14 and 29,
    * and the first two stop being distinguishable.
    */
@@ -535,7 +535,7 @@
    *
    * `flex: none` matters: as a flex item this would otherwise shrink to fit
    * beside the label above it, and every short bar would end up the same
-   * height as every other short bar — which is the bug this replaced. The only
+   * height as every other short bar, which is the bug this replaced. The only
    * minimum is a hairline, so that one unit is still visible as a bar rather
    * than as nothing at all.
    */
@@ -552,8 +552,8 @@
 /*
  * The count, when the fill is too short to hold it.
  *
- * Printed just above the bar instead of inside it. The alternative — a minimum
- * height big enough for the text — is what made 1/25, 3/25 and 6/25 render as
+ * Printed just above the bar instead of inside it. The alternative, a minimum
+ * height big enough for the text, is what made 1/25, 3/25 and 6/25 render as
  * three identical bars.
  */
 .app-chart-count {
@@ -585,7 +585,7 @@
 }
 
 /*
- * Nothing on the shelf — the darkest step, and the one state that is not a
+ * Nothing on the shelf. The darkest step, and the one state that is not a
  * degree of the others: the next request for this group cannot be answered
  * from stock at all.
  */
@@ -627,7 +627,7 @@
 
 /* ---------------------------------------------------------------------------
  * Breakpoints, from Design.md §8. The mode names there do not match device
- * reality — a portrait tablet resolves to Mobile — so these are written as
+ * reality, a portrait tablet resolves to Mobile, so these are written as
  * min-widths against the stated ranges rather than by name.
  * ------------------------------------------------------------------------- */
 
@@ -726,4 +726,139 @@
   flex-direction: column;
   gap: var(--ux4g-space-3, 0.375rem);
   align-items: flex-start;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The volunteer tiles (§6)                                                   */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Eight tiles, two across on a phone and four on anything wider. A volunteer
+ * reads this mid-conversation, so the whole board has to be one glance rather
+ * than a scroll.
+ */
+.app-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ux4g-space-3, 0.375rem);
+}
+
+@media (min-width: 40rem) {
+  .app-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.app-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ux4g-space-1, 0.125rem);
+  /* A thumb target, not a link (§11.10). */
+  min-block-size: 6.5rem;
+  padding: var(--ux4g-padding-m, 1rem);
+  border: 2px solid transparent;
+  border-radius: var(--ux4g-radius-m, 0.5rem);
+  text-decoration: none;
+}
+
+.app-tile:hover {
+  filter: brightness(0.94);
+}
+
+.app-tile:focus-visible {
+  outline: 3px solid var(--ux4g-color-blue-700, #0b57d0);
+  outline-offset: 2px;
+}
+
+/* The chosen tile keeps its colour and gains an edge, so the state a volunteer
+ * came here to read is never replaced by the fact that they tapped it. */
+.app-tile-selected {
+  border-color: var(--ux4g-color-neutral-900, #171717);
+}
+
+.app-tile-group {
+  font-size: var(--ux4g-font-size-l, 1.125rem);
+  font-weight: var(--ux4g-font-weight-bold, 700);
+}
+
+.app-tile-count {
+  font-size: var(--ux4g-font-size-xl, 1.5rem);
+  font-weight: var(--ux4g-font-weight-bold, 700);
+  line-height: 1.1;
+}
+
+.app-tile-unit {
+  font-size: var(--ux4g-font-size-s, 0.875rem);
+  font-weight: var(--ux4g-font-weight-regular, 400);
+}
+
+.app-tile-state {
+  font-weight: var(--ux4g-font-weight-semibold, 600);
+}
+
+.app-tile-note {
+  font-size: var(--ux4g-font-size-s, 0.875rem);
+  opacity: 0.9;
+}
+
+/*
+ * The same four saturated steps the stock chart uses, so a colour means the
+ * same thing on every screen in the system. Each pairing is checked for
+ * contrast: green-700 on white is 6.6:1, yellow-500 under near-black is 13.1:1,
+ * orange-600 under near-black is 7.7:1, red-700 on white is 6.1:1.
+ */
+.app-tile-met {
+  background: var(--ux4g-color-green-700, #006c35);
+  color: var(--ux4g-color-neutral-0, #fff);
+}
+
+.app-tile-recruiting {
+  background: var(--ux4g-color-yellow-500, #ffd72a);
+  color: var(--ux4g-color-neutral-900, #171717);
+}
+
+.app-tile-short {
+  background: var(--ux4g-color-orange-600, #fa8c16);
+  color: var(--ux4g-color-neutral-900, #171717);
+}
+
+.app-tile-critical {
+  background: var(--ux4g-color-red-700, #b3261e);
+  color: var(--ux4g-color-neutral-0, #fff);
+}
+
+.app-share-box {
+  font-family: var(--ux4g-font-family-mono, ui-monospace, monospace);
+  font-size: var(--ux4g-font-size-s, 0.875rem);
+  inline-size: 100%;
+  resize: vertical;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The trend strip and the public board                                       */
+/* -------------------------------------------------------------------------- */
+
+.app-trend-track {
+  display: block;
+  block-size: 0.75rem;
+  min-inline-size: 2px;
+  background: var(--ux4g-color-neutral-200, #e5e5e5);
+  border-radius: var(--ux4g-radius-s, 0.25rem);
+  overflow: hidden;
+}
+
+.app-trend-met {
+  display: block;
+  block-size: 100%;
+  background: var(--ux4g-color-green-700, #006c35);
+}
+
+.app-board-chip {
+  display: inline-block;
+  margin-inline-end: var(--ux4g-space-3, 0.375rem);
+  margin-block-end: var(--ux4g-space-2, 0.25rem);
+  padding: var(--ux4g-space-2, 0.25rem) var(--ux4g-space-4, 0.5rem);
+  border: 1px solid var(--ux4g-color-neutral-300, #d4d4d4);
+  border-radius: var(--ux4g-radius-s, 0.25rem);
+  font-weight: var(--ux4g-font-weight-semibold, 600);
 }

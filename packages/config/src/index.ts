@@ -34,7 +34,7 @@ export const appConfigSchema = z.object({
       female: positiveInt,
       /**
        * The national guideline addresses men and women. `other` is not covered,
-       * so this system applies the longer of the two by default — the safe
+       * so this system applies the longer of the two by default. The safe
        * direction. Open question #1 puts the wording in front of the centre.
        */
       other: positiveInt,
@@ -102,7 +102,7 @@ export const appConfigSchema = z.object({
   /**
    * Where the stock chart turns from orange to red (§4).
    *
-   * The floor itself is **not** here — it is `centre_settings.min_units_per_group`,
+   * The floor itself is **not** here. It is `centre_settings.min_units_per_group`,
    * edited on the settings screen. This is the one boundary below it that has no
    * screen: at what share of the floor a group stops being merely low and starts
    * being the thing somebody should act on tonight.
@@ -110,7 +110,7 @@ export const appConfigSchema = z.object({
   stock: z
     .object({
       /**
-       * At or above this share of the floor, a group is merely **low** — worth
+       * At or above this share of the floor, a group is merely **low**. Worth
        * watching. Below it, the centre should be recruiting.
        */
       lowFraction: z.number().gt(0).max(1),
@@ -118,13 +118,34 @@ export const appConfigSchema = z.object({
        * Below this share of the floor, a group is **critically low**: recruit
        * tonight, not this week.
        *
-       * The outer two boundaries are structural rather than tunable — at or
+       * The outer two boundaries are structural rather than tunable, at or
        * above the floor is adequate by definition, and an empty shelf is its own
        * state whatever the floor says.
        */
       criticalFraction: z.number().gt(0).max(1),
     })
     .describe('Stock chart bands'),
+
+  /**
+   * Where a volunteer tile turns from green to red (§6).
+   *
+   * The same shape as `stock` above and a different question: `stock` asks how
+   * full the shelf is, this asks how much of what is *asked for* has somebody
+   * coming for it. A group can be adequately stocked and still be short of
+   * donors for a demand raised an hour ago.
+   *
+   * The two outer states are structural rather than tunable: nothing
+   * outstanding is covered by definition, and nobody confirmed is its own state
+   * whatever the fractions say.
+   */
+  pressure: z
+    .object({
+      /** At or above this share of the units asked for, donors are coming. */
+      recruitingFraction: z.number().gt(0).max(1),
+      /** Below this share, the group needs posting rather than watching. */
+      shortFraction: z.number().gt(0).max(1),
+    })
+    .describe('Volunteer pressure tiles'),
 
   ageing: z.object({
     quarantineDays: nonNegativeInt,
@@ -181,7 +202,7 @@ export const CONFIG_DEFAULTS: AppConfig = {
    *
    * Against a floor of 25 that reads: 15 and up is worth watching, 8 to 14 means
    * recruit, below 8 means recruit tonight. Expected to be corrected by the
-   * centre rather than by a commit — these are the numbers a blood centre has an
+   * centre rather than by a commit. These are the numbers a blood centre has an
    * opinion about.
    */
   /**
@@ -193,6 +214,7 @@ export const CONFIG_DEFAULTS: AppConfig = {
     responseMinutes: { emergency: 15, very_urgent: 60, urgent: 240, routine: null },
   },
   stock: { lowFraction: 0.6, criticalFraction: 0.3 },
+  pressure: { recruitingFraction: 0.5, shortFraction: 0.2 },
   ageing: { quarantineDays: 7, reconciliationHours: 24, inviteDays: 7, draftDays: 3 },
   retention: { framesDays: 30, journeyMonths: 24, donorTailDays: 90 },
   flag: {

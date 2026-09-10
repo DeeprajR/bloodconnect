@@ -26,6 +26,9 @@
       "path": "packages/centre"
     },
     {
+      "path": "packages/volunteer"
+    },
+    {
       "path": "packages/bot"
     },
     {

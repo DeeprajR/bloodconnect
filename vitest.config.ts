@@ -23,6 +23,7 @@ export default defineConfig({
       '@blood-connect/hospital': pkg('hospital'),
       '@blood-connect/centre': pkg('centre'),
       '@blood-connect/bot': pkg('bot'),
+      '@blood-connect/volunteer': pkg('volunteer'),
       // The web app's own path alias, so its module tests import exactly what
       // the app imports.
       // The longer alias first: Vite matches by prefix, so `@blood-connect/db`

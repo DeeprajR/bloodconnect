@@ -1,0 +1,29 @@
+{
+  "name": "@blood-connect/volunteer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@blood-connect/db": "workspace:*",
+    "@blood-connect/domain": "workspace:*",
+    "@blood-connect/platform": "workspace:*",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@blood-connect/config": "workspace:*",
+    "@blood-connect/ids": "workspace:*",
+    "@blood-connect/testing": "workspace:*",
+    "postgres": "^3.4.9"
+  }
+}
