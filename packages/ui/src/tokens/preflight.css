@@ -1,0 +1,34 @@
+/*
+ * @blood-connect/ui · preflight
+ *
+ * The only tokens file that selects elements. Sets the body background and
+ * text colour, the base font size and line height, and a focus ring that
+ * §22 requires to be visible.
+ *
+ * NOT imported by either app in PR-01, deliberately: PR-01 must ship no
+ * visible change. PR-02 (which also removes UX4G's `theme.css` and its
+ * runtime component) turns this on.
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+th {
+  text-align: left;
+  font-weight: 600;
+}

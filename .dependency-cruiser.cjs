@@ -117,6 +117,29 @@ module.exports = {
       to: { path: '^packages/bot/' },
     },
     {
+      name: 'ui-is-presentation-only',
+      comment:
+        'packages/ui is the shared design kit (ADR 0015). It may not import from any module ' +
+        'that reads or writes the database, so a badge or a table cell can never leak the shape ' +
+        'of a row a role is not allowed to see (§14). Presentation reads props, nothing else.',
+      severity: 'error',
+      from: { path: '^packages/ui/' },
+      to: {
+        path:
+          '^(packages/(domain|platform|hospital|centre|bot|contract|config|ids|result|ops|volunteer|testing)|db)/',
+      },
+    },
+    {
+      name: 'nothing-depends-on-ui-except-apps',
+      comment:
+        'The kit is a presentation surface for the two applications. A package importing it ' +
+        'would mean a domain rule had been written in the styling layer, where it would run ' +
+        'only when somebody happened to render the component.',
+      severity: 'error',
+      from: { path: '^packages/(?!ui)' },
+      to: { path: '^packages/ui/' },
+    },
+    {
       name: 'no-production-code-in-testing',
       comment:
         'packages/testing holds fakes and harnesses. Nothing outside a test may import it, so ' +

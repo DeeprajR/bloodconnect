@@ -35,6 +35,9 @@
       "path": "packages/bot"
     },
     {
+      "path": "packages/ui"
+    },
+    {
       "path": "packages/testing"
     },
     {

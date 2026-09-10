@@ -1,0 +1,20 @@
+/*
+ * @blood-connect/ui · slate-blue accent (administration app)
+ *
+ * The administration application (`apps/admin`) runs on :3001 and holds no
+ * clinical role (ADR 0003). A different accent from the staff app is
+ * deliberate: on a shared workstation, a person switching windows can tell
+ * at a glance which app they are looking at, and an administrator will not
+ * accidentally submit a doctor-management form thinking it is a request
+ * queue.
+ *
+ * Imported alongside `base.css` from `apps/admin/src/app/layout.tsx`.
+ */
+
+:root {
+  --color-accent: #1f5f8b;
+  --color-accent-hover: #184b6e;
+  --color-accent-soft: #e7f0f6;
+  --color-accent-ring: #a3c3d6;
+  --color-accent-ink: #ffffff;
+}

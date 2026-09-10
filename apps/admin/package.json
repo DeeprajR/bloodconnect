@@ -18,6 +18,7 @@
     "@blood-connect/ops": "workspace:*",
     "@blood-connect/platform": "workspace:*",
     "@blood-connect/result": "workspace:*",
+    "@blood-connect/ui": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "next": "^16.3.4",
     "postgres": "^3.4.9",

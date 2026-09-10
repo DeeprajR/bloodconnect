@@ -1,0 +1,17 @@
+/*
+ * @blood-connect/ui · aggregate token entry point
+ *
+ * A single-import convenience for future callers. PR-01 imports the token
+ * files individually from each app's layout, so the app can pick the right
+ * accent (medical for web, admin for administration). This aggregate is
+ * kept for tests, previews, and any surface that only ever needs the base
+ * palette without an accent (e.g. a printable audit-log export).
+ *
+ * Includes `preflight.css`; do NOT use this file if you need tokens only
+ * without body/focus/heading styling — import the individual files
+ * instead.
+ */
+
+@import "./base.css";
+@import "./typography.css";
+@import "./preflight.css";

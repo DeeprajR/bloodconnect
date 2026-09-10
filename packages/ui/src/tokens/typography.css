@@ -1,0 +1,33 @@
+/*
+ * @blood-connect/ui · typography tokens
+ *
+ * Geist is loaded by each app via `next/font` (bundled at build time, so it
+ * satisfies the offline-first PWA rule ADR 0004 names). `next/font` sets
+ * `--font-geist` / `--font-geist-mono` on `<html>`; the tokens here read
+ * those variables and fall back to a system stack when the app has not
+ * wired Geist up yet (e.g. inside a test or a print stylesheet).
+ *
+ * Nothing here selects an element. `preflight.css` is where the body font
+ * is actually set, and that file is imported by the app layout in PR-02.
+ */
+
+:root {
+  --font-sans: var(
+    --font-geist,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif
+  );
+  --font-mono: var(
+    --font-geist-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace
+  );
+}
