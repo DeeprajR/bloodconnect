@@ -407,3 +407,44 @@
   font-size: var(--ux4g-font-size-xs, 0.75rem);
   word-break: break-all;
 }
+
+/*
+ * Who is signed in, in the corner where an account belongs.
+ *
+ * The name reads first and the address sits under it at label size: on a shared
+ * workstation the address is what settles "am I in my own account", and it is
+ * the thing somebody squints at, not the thing they scan. Both truncate rather
+ * than wrap, because a header that grows a line on a long address pushes the
+ * page down on every screen.
+ */
+.app-account {
+  align-items: center;
+  gap: var(--ux4g-space-5, 0.75rem);
+  min-width: 0;
+}
+
+.app-account-identity {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+  max-width: 16rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app-account-identity > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-account-email {
+  color: var(--ux4g-text-neutral-subtle, #595959);
+}
+
+/* A link only in the staff app, where the profile page exists. */
+a.app-account-identity:hover .ux4g-label-m-strong,
+a.app-account-identity:focus-visible .ux4g-label-m-strong {
+  text-decoration: underline;
+}

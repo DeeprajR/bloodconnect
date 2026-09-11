@@ -10,7 +10,8 @@ import type { DonationRow } from '@blood-connect/centre';
  * `/centre/donations` shows the full lists. A second implementation would drift,
  * and the two would disagree about what a walk-in looks like within a month.
  *
- * **No phone numbers here.** The roster page carries them because that is where
+ * **No phone numbers here.** The demand's own donor list carries them, because
+ * that is where
  * somebody is calling a name at a desk; a list to be read does not need them,
  * and §2.10 asks for the narrower read wherever one will do.
  */
@@ -45,7 +46,7 @@ export function UpcomingDonations({
             <th scope="col">Expected by</th>
             <th scope="col">Reached on</th>
             <th scope="col">
-              <span className="app-sr-only">Roster</span>
+              <span className="app-sr-only">Donors coming in</span>
             </th>
           </tr>
         </thead>
@@ -57,9 +58,9 @@ export function UpcomingDonations({
               <td className="app-figure">{row.day}</td>
               <td>{channelLabel(row.channel)}</td>
               <td>
-                {/* Marking somebody off happens on the roster, with the phone
-                    number next to the name. */}
-                <Link href={`/centre/demands/${row.demandId}`}>Open roster</Link>
+                {/* Marking somebody off happens on the demand's donor list,
+                    with the phone number next to the name. */}
+                <Link href={`/centre/demands/${row.demandId}`}>See donors</Link>
               </td>
             </tr>
           ))}

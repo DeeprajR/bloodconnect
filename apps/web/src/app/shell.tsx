@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import type { Actor, UserRole } from '@blood-connect/platform';
+import { db, findAccountById } from '@blood-connect/platform';
 import { SignOutButton } from './sign-out-button';
 
 const ROLE_LABELS: Readonly<Record<UserRole, string>> = {
@@ -18,8 +19,14 @@ const ROLE_LABELS: Readonly<Record<UserRole, string>> = {
  * competes with both. What belongs in a header here is who you are signed in as
  *, because the same screens behave differently by role, and a doctor who
  * thinks they are looking at the centre's queue will misread it.
+ *
+ * The name and address are read here rather than threaded through every page.
+ * One query per render against a row the session already resolved, and the
+ * alternative is a prop added to twenty call sites that all mean the same
+ * thing. The role label stays: it is what changes the behaviour of the screen,
+ * and a shared workstation is exactly where the wrong account goes unnoticed.
  */
-export function AppShell({
+export async function AppShell({
   actor,
   title,
   children,
@@ -30,6 +37,8 @@ export function AppShell({
   children: React.ReactNode;
   narrow?: boolean;
 }) {
+  const account = actor.kind === 'user' ? await findAccountById(db, actor.userId) : undefined;
+
   return (
     <div className="app-page">
       <header className="app-header">
@@ -41,7 +50,13 @@ export function AppShell({
         </div>
 
         {actor.kind === 'user' ? (
-          <div className="app-row">
+          <div className="app-row app-account">
+            <Link className="app-account-identity" href="/profile">
+              <span className="ux4g-label-m-strong">{account?.fullName ?? 'Your account'}</span>
+              <span className="ux4g-label-s-default app-account-email">
+                {account?.email ?? ROLE_LABELS[actor.role]}
+              </span>
+            </Link>
             <span className="ux4g-label-m-default">{ROLE_LABELS[actor.role]}</span>
             <SignOutButton />
           </div>

@@ -8,11 +8,16 @@ import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getRequest, listSamples } from '@blood-connect/hospital';
 import { getDecisionForRequest } from '@blood-connect/centre';
 import {
+  URGENCY_LABELS,
+  URGENCY_SHORT,
   WORDING,
   bloodGroupLabel,
+  isUrgency,
   productLabel,
+  responseMinutesFor,
   type BloodGroup,
   type Product,
+  type Urgency,
 } from '@blood-connect/domain';
 
 export const metadata: Metadata = { title: 'Blood request · Blood Connect' };
@@ -64,6 +69,22 @@ export default async function RequestPage({
   const samples = await listSamples(ctx, id);
   const canCancel = CANCELLABLE.includes(request.status);
 
+  /**
+   * The priority, beside the identifier rather than buried in the detail list.
+   *
+   * The two travel together: the bystander carries the ID to the counter, and
+   * how fast it gets answered is the other half of what the counter needs to
+   * know. Three of the four levels land on today (ADR 0010), so the date beside
+   * it cannot say this and the level has to.
+   */
+  const urgency = isUrgency(request.urgency ?? '')
+    ? (request.urgency as Urgency)
+    : undefined;
+  const answerMinutes =
+    urgency === undefined
+      ? null
+      : responseMinutesFor(urgency, ctx.config.request.responseMinutes);
+
   const when = new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
     month: 'short',
@@ -86,6 +107,16 @@ export default async function RequestPage({
           <div className="ux4g-card-body app-stack-tight">
             <p className="ux4g-label-l-strong">Give this to the patient’s bystander</p>
             <p className="app-handoff-id app-figure">{request.requestId}</p>
+            {urgency ? (
+              <p className={`app-priority app-priority-${urgency}`}>
+                <span className="app-priority-label">{URGENCY_SHORT[urgency]}</span>
+                <span className="ux4g-label-m-default">
+                  {answerMinutes === null
+                    ? 'Answered in the order the queue reaches it'
+                    : `The centre is asked to answer within ${String(answerMinutes)} minutes`}
+                </span>
+              </p>
+            ) : null}
             <p className="ux4g-body-m-default">
               They take it to the blood centre, who will ask them for the patient’s
               details. Nothing else is needed from you.
@@ -96,9 +127,16 @@ export default async function RequestPage({
 
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong app-figure">{request.requestId}</h1>
-        <p className="ux4g-body-m-default">
-          {STATUS_LABELS[request.status] ?? request.status}
-        </p>
+        <div className="app-row">
+          {urgency ? (
+            <span className={`app-priority-tag app-priority-${urgency}`}>
+              {URGENCY_SHORT[urgency]}
+            </span>
+          ) : null}
+          <p className="ux4g-body-m-default">
+            {STATUS_LABELS[request.status] ?? request.status}
+          </p>
+        </div>
       </div>
 
       <div className="app-grid">
@@ -124,6 +162,12 @@ export default async function RequestPage({
                   {request.bloodGroup
                     ? bloodGroupLabel(request.bloodGroup as BloodGroup)
                     : '-'}
+                </dd>
+              </div>
+              <div className="app-row">
+                <dt className="ux4g-label-m-strong">Priority</dt>
+                <dd className="ux4g-body-s-default">
+                  {urgency ? URGENCY_LABELS[urgency] : '-'}
                 </dd>
               </div>
               <div className="app-row">

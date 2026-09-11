@@ -20,6 +20,7 @@ system at any point. That is a property of the build, not a limitation of the de
 | [input-fields.md](docs/input-fields.md) | Every screen that accepts input, and every field on it |
 | [backend-architecture.md](docs/backend-architecture.md) | How it is built: processes, schema, transactions, ports |
 | [build-plan.md](docs/build-plan.md) | In what order, and by when |
+| [qa-test-plan.md](docs/qa-test-plan.md) | Manual test protocol: every flow, and how it is most likely to break |
 | [docs/adr/](docs/adr/) | Decisions taken along the way, and why |
 
 Section references written as §n point at the specification.
@@ -195,6 +196,7 @@ exists will not re-run it: `docker compose down -v` then `pnpm up` to start clea
 | `pnpm check:gates` | Every page decides access (§13); every mutating use case records what it did (§14) |
 | `pnpm test` | Vitest. Database suites skip without `TEST_DATABASE_URL` |
 | `node scripts/make-icons.mjs` | Regenerate the PWA icons from the committed drawing |
+| `pnpm clean:next` | Deletes both `.next` caches. What to run when a page that has always worked fails on navigation with an ENOENT for a `build-manifest.json`: the route is fine, the Turbopack development cache is describing a build that no longer exists. Stop the dev server first |
 | `pnpm smoke:signin [url]` | Signs in against a running server the way a browser with no JavaScript would: the wiring a unit test cannot see |
 | `pnpm smoke:centre` | Runs the centre's writes as `app_web` and asserts what that role must not be able to do. The suite connects as `migrator`, so it proves nothing about the grants; this does |
 | `pnpm smoke:bot` | The same for `app_bot`: the interview, the profile edit, erasure, and the six things the bot must not be able to reach |

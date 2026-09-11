@@ -19,12 +19,14 @@
  *    ignoring it is how an account gets limited harder.
  */
 
-import type {
-  ChannelAddress,
-  ChannelPort,
-  IncomingUpdate,
-  OutgoingMessage,
-  SendResult,
+import {
+  INERT_CHOICE,
+  type ChannelAddress,
+  type ChannelPort,
+  type Choice,
+  type IncomingUpdate,
+  type OutgoingMessage,
+  type SendResult,
 } from '../ports/channel.js';
 
 export const TELEGRAM_CHANNEL = 'telegram';
@@ -63,11 +65,69 @@ export type TelegramOptions = {
 };
 
 /**
+ * What the blue Menu button offers (§5, §8).
+ *
+ * Telegram keeps this list against the bot account rather than against a
+ * message, so it is the one part of the interface that is there before anybody
+ * has said anything, and it survives clearing the chat. Without it a first-time
+ * visitor faces a text box and has to guess that words like "needs" do
+ * something.
+ *
+ * Every entry is a word the router already understands, arriving as `/needs`
+ * and handled in the same branch as somebody typing it. The menu adds
+ * discoverability and no behaviour, which is what keeps this an adapter concern
+ * rather than a second way through the system.
+ *
+ * The descriptions are what the command does for the person, because Telegram
+ * shows them in the list underneath each command.
+ */
+const COMMANDS: readonly { command: string; description: string }[] = [
+  { command: 'needs', description: 'What is needed near you right now' },
+  { command: 'donate', description: 'Tell us you would like to give' },
+  { command: 'profile', description: 'Check or change your details' },
+  { command: 'pause', description: 'Stop being asked for a while' },
+  { command: 'resume', description: 'Start being asked again' },
+  { command: 'help', description: 'What you can say' },
+  { command: 'stop', description: 'Stop being contacted at all' },
+];
+
+/**
  * Chat platforms allow at most a handful of buttons per row. Three is what fits
  * on a phone without wrapping into something unreadable at arm's length in a
  * corridor.
  */
 const BUTTONS_PER_ROW = 3;
+
+/**
+ * One button, in whichever of the three states it is in.
+ *
+ * **Telegram has no disabled button.** The API offers no such flag, so the two
+ * halves of "deactivated" are done separately: the label says so, and the
+ * callback data is replaced with an inert marker the router ignores. Both are
+ * needed. The label alone leaves a live button behind a greyed-out word, and
+ * the data alone leaves a button that looks answerable and silently is not.
+ *
+ * The marks are a tick for the answer given and a middle dot for the rest.
+ * Deliberately not colour, which a button label cannot carry anyway, and
+ * deliberately not removing the other options: somebody scrolling back should
+ * be able to see what they were asked as well as what they said.
+ */
+function button(choice: Choice): { text: string; callback_data: string } {
+  const label =
+    choice.state === 'chosen'
+      ? `\u2705 ${choice.label}`
+      : choice.state === 'unavailable'
+        ? `\u00b7 ${choice.label}`
+        : choice.label;
+
+  return {
+    text: label,
+    // Telegram caps callback data at 64 bytes. The ids are UUIDs with a short
+    // verb, which fits, but truncating silently would produce a callback that
+    // matches no journey, so it is sliced deliberately rather than by accident.
+    callback_data: (choice.state === 'unavailable' ? INERT_CHOICE : choice.data).slice(0, 64),
+  };
+}
 
 export function createTelegramChannel(options: TelegramOptions): ChannelPort {
   const {
@@ -131,15 +191,7 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
 
     const rows: { text: string; callback_data: string }[][] = [];
     for (let i = 0; i < message.choices.length; i += BUTTONS_PER_ROW) {
-      rows.push(
-        message.choices.slice(i, i + BUTTONS_PER_ROW).map((c) => ({
-          text: c.label,
-          // Telegram caps callback data at 64 bytes. The ids are UUIDs with a
-          // short verb, which fits, but truncating silently would produce a
-          // callback that matches no journey, so it is checked.
-          callback_data: c.data.slice(0, 64),
-        })),
-      );
+      rows.push(message.choices.slice(i, i + BUTTONS_PER_ROW).map(button));
     }
     return { inline_keyboard: rows };
   };
@@ -150,16 +202,29 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
     async send(to: ChannelAddress, message: OutgoingMessage): Promise<SendResult> {
       const markup = keyboard(message);
 
+      /**
+       * Three shapes, and which one is used is decided here rather than by the
+       * caller: a fresh message, a full edit, or an edit of the buttons alone.
+       *
+       * The last is what locking an answered question uses. `editMessageText`
+       * would work too, but it would re-send text already on the person's
+       * screen, and Telegram refuses an edit whose text is unchanged, so a
+       * question locked without altering a word would fail every time.
+       */
+      const editingButtonsOnly = message.editChoicesOnly === true && Boolean(message.replaces);
+      const method = editingButtonsOnly
+        ? 'editMessageReplyMarkup'
+        : message.replaces
+          ? 'editMessageText'
+          : 'sendMessage';
+
       try {
-        const response = await call<{ message_id: number }>(
-          message.replaces ? 'editMessageText' : 'sendMessage',
-          {
-            chat_id: to.channelUserId,
-            text: message.text,
-            ...(message.replaces ? { message_id: Number(message.replaces) } : {}),
-            ...(markup ? { reply_markup: markup } : {}),
-          },
-        );
+        const response = await call<{ message_id: number }>(method, {
+          chat_id: to.channelUserId,
+          ...(editingButtonsOnly ? {} : { text: message.text }),
+          ...(message.replaces ? { message_id: Number(message.replaces) } : {}),
+          ...(markup ? { reply_markup: markup } : {}),
+        });
 
         if (response.ok && response.result) {
           return { ok: true, messageRef: String(response.result.message_id) };
@@ -253,6 +318,20 @@ export function createTelegramChannel(options: TelegramOptions): ChannelPort {
         // `getMe` verifies the token and that the platform is reachable. A
         // real check, not a process-liveness ping (§11.9).
         const response = await call<{ username?: string }>('getMe', {});
+
+        /**
+         * Publish the menu on the way past, and never fail the check for it.
+         *
+         * `setMyCommands` is idempotent and cheap, so the health check is the
+         * natural place: it runs at boot, and re-running it after a restart is
+         * how the list gets corrected if it was ever edited by hand. A bot that
+         * refused to start because its menu could not be published would be
+         * trading a working recruitment loop for a cosmetic one.
+         */
+        if (response.ok) {
+          await call('setMyCommands', { commands: COMMANDS });
+        }
+
         return response.ok
           ? { ok: true, detail: `connected as @${response.result?.username ?? 'unknown'}` }
           : { ok: false, detail: response.description ?? 'getMe failed' };

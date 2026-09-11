@@ -58,16 +58,18 @@ export const MESSAGES = {
    * A welcome that ends without a question leaves somebody wondering what to do.
    */
   welcome:
-    'Hello, and thank you for coming here.\n\n' +
-    'Blood Connect asks people nearby when a patient needs blood. Registering ' +
-    'takes about a minute, and nothing is saved until you agree at the end.',
+    'Hello, and thank you for coming.\n\n' +
+    'We message people nearby when a patient needs blood.\n\n' +
+    'A few quick questions, about a minute. Nothing is saved until you say so ' +
+    'at the end.',
 
-  askName: 'What should we call you?',
+  askName: 'What is your name?',
+
   askPhone:
-    'Your phone number, please.\n\n' +
-    'Only the blood centre sees it, and only once you have agreed to give for ' +
-    'a particular patient.',
-  askDob: 'Your date of birth, please, like 1995-04-23.',
+    'What is your phone number?\n\n' +
+    'Only the blood centre sees it, and only after you say yes to a patient.',
+
+  askDob: 'What is your date of birth? Like 1995-04-23.',
 
   /**
    * Year, then month, then day (§5).
@@ -77,23 +79,22 @@ export const MESSAGES = {
    * being asked.
    */
   askBirthYear: 'Which year were you born?',
-  askBirthMonth: 'And which month?',
-  askBirthDay: 'And the day?',
+  askBirthMonth: 'Which month?',
+  askBirthDay: 'Which day?',
 
   /** Only ever seen if the durable set is empty, which it is not. */
   askScreeningDone: 'Thank you.',
 
   askLastDonation:
     'When did you last give blood?\n\n' +
-    'If you know the exact date, you can type it as YYYY-MM-DD. Otherwise ' +
-    'pick the closest.',
+    'Pick the closest. If you know the date, you can type it as YYYY-MM-DD.',
 
   askLocationLevel: (level: string): string =>
     level === 'city'
       ? 'Which city or taluk?'
       : level === 'town'
         ? 'Which town?'
-        : 'And which part of town?',
+        : 'Which part of town?',
 
   /**
    * The type-ahead (§5).
@@ -103,21 +104,21 @@ export const MESSAGES = {
    */
   askLocationTypeAhead: (level: string): string =>
     level === 'town'
-      ? 'Which town? Type the first few letters and I will find it.'
+      ? 'Which town? Type the first few letters.'
       : level === 'city'
         ? 'Which city or taluk? Type the first few letters.'
         : 'Which part of town? Type the first few letters.',
 
   locationMatches: (term: string): string =>
-    `Places matching “${term}”. Pick yours, or type a little more.`,
+    `Places matching “${term}”. Pick yours, or type a bit more.`,
 
   /* ------------------------------------------------------------- summary */
 
   summaryTitle: 'Please check these details.',
 
   summaryHelp:
-    'Tap “Yes, this is correct” if it all looks right, or “Fix something” to ' +
-    'change an answer. You can also just send the row number.',
+    'All correct? Tap “Yes, this is correct”. To change something, tap ' +
+    '“Fix something”, or send its row number.',
 
   fixWhich:
     'Which ones need fixing?\n\n' +
@@ -193,14 +194,16 @@ ${why}`;
     `That ${group(bloodGroup)} request is covered now. Enough people came ` +
     'forward. Nothing to do, and thank you for being there.',
   askSex:
-    'And are you male or female?\n\n' +
+    'Are you male or female?\n\n' +
     'This only sets how long you wait between donations.',
+
   askBloodGroup:
-    'Which blood group are you?\n\n' +
-    'If you are not certain, pick your best guess. The centre tests every ' +
-    'unit before it is used.',
+    'What is your blood group?\n\n' +
+    'Your best guess is fine. The centre tests every unit before it is used.',
+
   askWeight: 'Roughly what do you weigh?',
-  askDistrict: 'Last one, which district are you in?',
+
+  askDistrict: 'Which district are you in?',
 
   consentTitle: 'Almost done',
   consentBody:
@@ -261,18 +264,27 @@ ${why}`;
    * A donor who understands why they were skipped stays; one who feels ignored
    * leaves. Each line says what would change it.
    */
-  boardBlocked: (reason: string, until: string): string => {
+  /**
+   * Why this person cannot answer anything on the board (§5).
+   *
+   * `detail` is whatever the reason needs: a date for the two that name one, and
+   * for `not_qualified` the sentence already stored on the donor when they
+   * answered. Repeating the stored wording rather than writing a second version
+   * of it is what stops the bot telling somebody two different things about the
+   * same fact.
+   */
+  boardBlocked: (reason: string, detail: string): string => {
     switch (reason) {
       case 'not_registered':
         return 'Send anything to register. It takes about a minute, and then we can tell you which of these you could give for.';
-      case 'group_unverified':
-        return 'We cannot match you yet because your blood group has not been confirmed. The centre types you at your first donation. Walk in any time.';
+      case 'not_qualified':
+        return detail;
       case 'flagged':
         return 'The centre wants a word before your next donation, so we are not asking for now. That is a conversation, not a no.';
       case 'paused':
-        return `You have paused messages until ${readableDay(until)}. Send “resume” if you would like to be asked again.`;
+        return `You have paused messages until ${readableDay(detail)}. Send “resume” if you would like to be asked again.`;
       case 'interval':
-        return `You gave recently. The next time you can give is ${readableDay(until)}.`;
+        return `You gave recently. You can give again from ${readableDay(detail)}.`;
       default:
         return '';
     }
@@ -438,11 +450,66 @@ ${why}`;
   requestClosed: 'That request has already ended. Thank you for coming back to it.',
 
   help:
-    'You can say:\n' +
+    'You can tap a button below, or say:\n' +
     '• "needs" for what is needed near you now\n' +
+    '• "donate" to tell us you would like to give\n' +
+    '• "profile" to check or change your details\n' +
     '• "pause" to stop being asked for a while\n' +
     '• "resume" to start being asked again\n' +
     '• "stop" to stop being asked at all\n' +
     '• "delete" to remove everything about you\n\n' +
     'We do not give medical advice. The blood centre checks you on the day.',
+
+  /* ---------------------------------------------------------------- menu */
+
+  /**
+   * The labels on the menu.
+   *
+   * Written as what the person wants, not as what the system does: "What is
+   * needed now" rather than "Board", "I want to give" rather than "Declare
+   * interest". Somebody opening this bot for the first time should not have to
+   * learn a vocabulary in order to use it.
+   */
+  /* The two answers every yes/no question offers, worded once. */
+  answerYes: 'Yes',
+  answerNo: 'No',
+
+  /* The two answers on a request card. */
+  cardYes: 'Yes, I can give',
+  cardNo: 'Not this time',
+
+  menu: {
+    needs: 'What is needed now',
+    donate: 'I want to give',
+    profile: 'My details',
+    pause: 'Pause messages',
+    resume: 'Start again',
+    help: 'Help',
+  },
+
+  /* ------------------------------------------------- offering to donate */
+
+  /**
+   * Somebody who came looking rather than waiting to be asked (§5).
+   *
+   * Thanked first, then told the one thing that is true for them: either they
+   * are in the pool and will be messaged, or something is standing in the way
+   * and this is what it is. Never a form, and never silence.
+   */
+  interestNoted:
+    'Thank you. We have noted that you would like to give.\n\n' +
+    'You are in the pool, so we will message you the moment somebody near you ' +
+    'needs your blood group. You do not have to wait for that: the centre ' +
+    'takes walk-in donors during opening hours.',
+
+  /**
+   * The same thanks, for a donor nothing can currently be sent to.
+   *
+   * The reason follows the thanks rather than replacing it. A first-time donor
+   * whose group nobody has typed yet is the commonest case here, and they are
+   * the last person who should be met with a blank list.
+   */
+  interestBlocked: (reason: string): string =>
+    'Thank you. We have noted that you would like to give.\n\n' + reason,
+
 } as const;

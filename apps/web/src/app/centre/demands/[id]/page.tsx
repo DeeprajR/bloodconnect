@@ -8,7 +8,7 @@ import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getDemand, listRoster, listWalkIns } from '@blood-connect/centre';
 import { WORDING, bloodGroupLabel, productLabel } from '@blood-connect/domain';
 
-export const metadata: Metadata = { title: 'Roster · Blood Connect' };
+export const metadata: Metadata = { title: 'Donors coming in · Blood Connect' };
 
 const OUTCOME_LABELS: Readonly<Record<string, string>> = {
   confirmed: 'Expected',
@@ -19,12 +19,16 @@ const OUTCOME_LABELS: Readonly<Record<string, string>> = {
 };
 
 /**
- * The counter's roster for one demand (§4, §8.3).
+ * The donors coming in for one demand (§4, §8.3).
  *
  * It is a **separate page** on purpose. Donor names and phone numbers are the
  * only donor contact details that cross into the centre's half of the database
  * (§2.10), and they belong on the screen where somebody is actually calling a
  * name at a desk, not spread across a list of every demand ever raised.
+ *
+ * The word "roster" is kept out of everything a person reads here. It is the
+ * name of the table, not a word a counter clerk uses, and the screen says
+ * "donors coming in", which is what it is.
  */
 export default async function RosterPage({
   params,
@@ -45,7 +49,7 @@ export default async function RosterPage({
   const open = demand.status === 'open' || demand.status === 'fulfilled';
 
   return (
-    <CentreShell actor={actor} title="Roster">
+    <CentreShell actor={actor} title="Donors coming in">
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">
           {bloodGroupLabel(demand.bloodGroup as never)} · {productLabel(demand.product as never)}
@@ -53,7 +57,7 @@ export default async function RosterPage({
         <p className="ux4g-body-m-default">
           {demand.units} {demand.units === 1 ? 'unit' : 'units'} wanted by{' '}
           <span className="app-figure">{demand.dateRequired}</span>. {demand.completedUnits}{' '}
-          collected from the roster
+          collected from the donors we asked
           {walkIns.length > 0 ? (
             <>
               , and <span className="app-figure">{walkIns.length}</span> from people who
@@ -136,12 +140,12 @@ export default async function RosterPage({
             </h2>
             <p className="ux4g-card-sub-title">
               {/*
-                The centre's own record, not a roster row: it holds no INSERT on
-                the bot's roster at all (§5.1). The bot reads these and stops
+                The centre's own record, not a row in the bot's own list: it holds
+                no INSERT on that at all (§5.1). The bot reads these and stops
                 recruiting for a unit already collected.
               */}
-              Recorded here rather than on the roster, because nobody on this list was
-              ever asked by the bot. Each one counts against what is still needed.
+              Recorded here, because nobody on this list was ever asked by the bot.
+              Each one counts against what is still needed.
             </p>
           </div>
           <div className="ux4g-card-body app-scroll-x">

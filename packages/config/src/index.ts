@@ -195,7 +195,15 @@ export const CONFIG_DEFAULTS: AppConfig = {
     otpTtlMinutes: 10,
     otpMaxAttempts: 5,
     loginThrottle: { windowMinutes: 15, maxAttemptsPerAccount: 5, maxAttemptsPerIp: 20 },
-    minPasswordLength: 12,
+    /**
+     * Six, lowered from §15's twelve at the operator's request.
+     *
+     * It stays a row rather than a constant, which is the part that matters: a
+     * deployment that wants twelve back sets `auth.min_password_length` and
+     * gets it without a release. Throttling per account and per IP is what
+     * actually bounds guessing here, and neither of those moved.
+     */
+    minPasswordLength: 6,
   },
   /**
    * Three fifths and three tenths of the floor.

@@ -18,7 +18,7 @@ import { handleUpdate } from './conversation.js';
 import { drainOutbox } from './outbox.js';
 import { remindAbandonedSignups } from './use-cases/reminders.js';
 import { tellUnansweredItIsCovered } from './use-cases/close-demand.js';
-import type { IncomingUpdate, OutgoingMessage } from './ports/channel.js';
+import type { Choice, IncomingUpdate, OutgoingMessage } from './ports/channel.js';
 
 const testUrl = process.env['TEST_DATABASE_URL'];
 const CENTRE_ID = '01930000-0000-7000-8000-000000000001';
@@ -57,12 +57,28 @@ describe.skipIf(!testUrl)('the conversation', () => {
 
   const WHO = { channel: 'memory', channelUserId: 'conv-1' };
 
+  /**
+   * What a person would actually read, in order.
+   *
+   * Edits are filtered out. Locking an answered question rewrites the buttons on
+   * a message already on their screen (§8); it is not a new message, and
+   * counting it as one would make every transcript here off by one while
+   * describing something nobody receives. `edits()` below is how the locking is
+   * asserted on instead.
+   */
   const deliver = async (update: IncomingUpdate): Promise<OutgoingMessage[]> => {
     const before = channel.sent.length;
     await handleUpdate(context(), update);
     await drainOutbox(context(), 50);
-    return channel.sent.slice(before).map((m) => m.message);
+    return channel.sent
+      .slice(before)
+      .map((m) => m.message)
+      .filter((m) => m.editChoicesOnly !== true);
   };
+
+  /** Every in-place button edit sent so far, newest last. */
+  const edits = (): readonly OutgoingMessage[] =>
+    channel.sent.map((m) => m.message).filter((m) => m.editChoicesOnly === true);
 
   /** Sends a message and returns everything the bot said back, in order. */
   async function say(text: string): Promise<string[]> {
@@ -102,8 +118,11 @@ describe.skipIf(!testUrl)('the conversation', () => {
   }
 
   /** The last message's buttons, for asserting what was actually offered. */
-  const lastChoices = (): readonly { label: string; data: string }[] =>
+  const lastChoices = (): readonly Choice[] =>
     channel.sent[channel.sent.length - 1]?.message.choices ?? [];
+
+  /** The buttons on the most recent locked question. */
+  const lastEditChoices = (): readonly Choice[] => edits().at(-1)?.choices ?? [];
 
   /**
    * The interview up to the summary, the way a person walks it.
@@ -190,7 +209,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
     const said = await say('hi');
 
     expect(said).toHaveLength(2);
-    expect(said[0]).toContain('Blood Connect asks people nearby');
+    expect(said[0]).toContain('We message people nearby');
     expect(said[1]).toContain('phone number');
   });
 
@@ -356,12 +375,19 @@ describe.skipIf(!testUrl)('the conversation', () => {
     // Derived consequences, shown as consequences.
     expect(text).toContain('age 32');
     // The durable answers in the donor's own terms, not as a hidden score.
-    expect(text).toContain('No long-term illness or medication');
+    expect(text).toContain('No long-term illness or medicine');
   });
 
-  it('says the group is unconfirmed until staff type it', async () => {
+  it('shows the group the donor gave, with no caveat attached', async () => {
     const summary = await walkToSummary();
-    expect(summary.join('\n')).toContain('to be confirmed by staff');
+    /*
+      The summary used to hedge the group as "to be confirmed by staff at your
+      first donation", which was accurate while a self-declared group blocked
+      every match and is misleading now that it does not. It is the group
+      recruitment acts on, and saying so is the honest version.
+    */
+    expect(summary.join('\n')).toContain('Blood group: O');
+    expect(summary.join('\n')).not.toContain('to be confirmed');
   });
 
   it('commits nothing until the acknowledgement', async () => {
@@ -429,7 +455,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
     await walkToSummary();
 
     const asked = await say('2');
-    expect(asked[0]).toContain('What should we call you?');
+    expect(asked[0]).toContain('What is your name?');
 
     const back = await say('Anitha');
     // Back to the summary, once, with the change marked (§5).
@@ -457,7 +483,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
 
     const first = await tap('fix:go');
     // In summary order, whatever order they were tapped: name (2) first.
-    expect(first[0]).toContain('What should we call you?');
+    expect(first[0]).toContain('What is your name?');
 
     const second = await say('Anitha');
     expect(second[0]).toContain('what do you weigh');
@@ -493,7 +519,7 @@ describe.skipIf(!testUrl)('the conversation', () => {
     // §2.11: WhatsApp's interactive lists cap rows per message, so its adapter
     // renders the numbered list and accepts "3, 5, 7" as a reply.
     const first = await say('2, 6');
-    expect(first[0]).toContain('What should we call you?');
+    expect(first[0]).toContain('What is your name?');
 
     await say('Anitha');
     const summary = await tap('weight:70_plus');
@@ -806,6 +832,325 @@ describe.skipIf(!testUrl)('the conversation', () => {
   });
 
   /* ==================================================================== */
+  /* Qualification, decided from the answers and stored                    */
+  /* ==================================================================== */
+
+  describe('qualification', () => {
+    it('writes the decision onto the donor when they register', async () => {
+      await register();
+
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.qualificationStatus).toBe('qualified');
+      expect(donor?.qualificationReason).toBeNull();
+      // Stamped, so a stale row is visible as one rather than being guessed at.
+      expect(donor?.qualifiedAt).not.toBeNull();
+    });
+
+    it('stores why, in the donor’s own terms, when a threshold stops them', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+      await tap('group:O-');
+      // The band below the threshold. It used to be stored as exactly the
+      // minimum, so this donor passed the check that exists to stop them.
+      await tap('weight:under_45');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap(`loc:district:${DISTRICT_ID}`);
+      await tap(`loc:city:${CITY_ID}`);
+      await tap(`loc:town:${TOWN_ID}`);
+      await tap('donated:never');
+      await tap('sum:confirm');
+
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.weightKg).toBe(0);
+      expect(donor?.qualificationStatus).toBe('not_qualified');
+      expect(donor?.qualificationReason).toContain('45 kg');
+    });
+
+    it('will not match a donor who does not know their group', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+      // "I don't know" is a blank, not an answer.
+      await tap('group:unknown');
+      await tap('weight:50_60');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap(`loc:district:${DISTRICT_ID}`);
+      await tap(`loc:city:${CITY_ID}`);
+      await tap(`loc:town:${TOWN_ID}`);
+      await tap('donated:never');
+      await tap('sum:confirm');
+
+      const [donor] = await db.select().from(bot.donors);
+      /*
+        The column cannot hold a blank, so it holds a default. Recruiting on
+        that would match somebody on a group the system chose for them, which is
+        a different thing entirely from acting on a group they gave us.
+      */
+      expect(donor?.qualificationStatus).toBe('not_qualified');
+      expect(donor?.qualificationReason).toContain('do not know your blood group');
+      // And the way out is named in the same breath (§8).
+      expect(donor?.qualificationReason).toContain('Walk in');
+    });
+
+    it('flags a donor whose health answer needs a person to look', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+      await tap('group:O-');
+      await tap('weight:50_60');
+      // Yes to the first durable question, which is the flagging answer.
+      await tap('durable:yes');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap(`loc:district:${DISTRICT_ID}`);
+      await tap(`loc:city:${CITY_ID}`);
+      await tap(`loc:town:${TOWN_ID}`);
+      await tap('donated:never');
+      await tap('sum:confirm');
+
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.qualificationStatus).toBe('flagged');
+      expect(donor?.durableFlagStatus).toBe('flagged');
+    });
+
+    it('sets the donation window from the last donation they reported', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+      await tap('group:O-');
+      await tap('weight:50_60');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap('durable:no');
+      await tap(`loc:district:${DISTRICT_ID}`);
+      await tap(`loc:city:${CITY_ID}`);
+      await tap(`loc:town:${TOWN_ID}`);
+      // "Within the last 3 months" is read as today, which is the safe
+      // direction: assuming somebody gave more recently than they did only
+      // ever delays their next donation.
+      await tap('donated:recent');
+      await tap('sum:confirm');
+
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.lastDonatedOn).toBe(clock.today());
+      // A female donor waits 120 days, and the qualification says nothing
+      // about it: the window is a fact about the calendar, checked live.
+      expect(donor?.nextEligibleOn).toBe(addDays(clock.today(), 120));
+      expect(donor?.qualificationStatus).toBe('qualified');
+    });
+
+    it('tells a donor inside their window when they can give again', async () => {
+      await register();
+      const soon = addDays(clock.today(), 30);
+      await client`UPDATE bot.donors SET next_eligible_on = ${soon}`;
+
+      const said = await say('what now?');
+      expect(said[0]).toContain('You can give again from');
+    });
+  });
+
+  /* ==================================================================== */
+  /* One answer per question                                               */
+  /* ==================================================================== */
+
+  describe('an answered question', () => {
+    it('marks the answer and makes the other options inert', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+
+      const locked = lastEditChoices();
+      expect(locked.map((c) => c.label)).toEqual(['Female', 'Male', 'Other']);
+
+      // The one they picked is marked, and it keeps its real callback data so
+      // a scroll-back shows what was answered.
+      expect(locked.find((c) => c.data === 'sex:female')?.state).toBe('chosen');
+      // The rest stay visible and stop being answerable.
+      expect(locked.find((c) => c.label === 'Male')?.state).toBe('unavailable');
+      expect(locked.find((c) => c.label === 'Other')?.state).toBe('unavailable');
+    });
+
+    it('edits the buttons of the message they tapped, never its text', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+
+      const edit = edits().at(-1);
+      /*
+        The question is already on their screen and correct. Re-sending the text
+        would reflow the chat, and Telegram refuses an edit that changes
+        nothing, so a lock that touched the text would fail every time.
+      */
+      expect(edit?.editChoicesOnly).toBe(true);
+      expect(edit?.replaces).toBeDefined();
+    });
+
+    it('ignores a tap on an option that has already been answered', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+      await tap('dob:y:1994');
+      await tap('dob:m:03');
+      await tap('dob:d:12');
+      await tap('sex:female');
+
+      const before = channel.sent.length;
+      // What a platform with no way to disable a button actually delivers.
+      const said = await tap('answered');
+
+      // Silence. They tapped something visibly inert, and answering with their
+      // standing situation would be a wall of text they did not ask for.
+      expect(said).toEqual([]);
+      expect(channel.sent.length).toBe(before);
+    });
+
+    it('leaves the buttons live when the answer was refused', async () => {
+      await say('hello');
+      await share('+919876543210');
+      await say('Priya');
+
+      const before = edits().length;
+      // A year outside the offered range: the question stands, so its buttons
+      // must too. Ticking an option that was not accepted would be a lie.
+      await tap('dob:y:1200');
+
+      expect(edits().length).toBe(before);
+    });
+
+    it('re-asks a corrected question with every option live again', async () => {
+      await register();
+      await say('profile');
+
+      // Row 4 is the sex question. The fix flow re-asks the original question.
+      const asked = await say('4');
+      expect(asked.at(-1)).toContain('male or female');
+
+      const offered = lastChoices();
+      expect(offered).toHaveLength(3);
+      // Nothing carried over from the first time it was answered: every option
+      // is answerable again (§5).
+      expect(offered.every((c) => c.state === undefined)).toBe(true);
+
+      // And answering it locks it in exactly the same way.
+      await tap('sex:male');
+      expect(lastEditChoices().find((c) => c.data === 'sex:male')?.state).toBe('chosen');
+      expect(lastEditChoices().find((c) => c.data === 'sex:female')?.state).toBe(
+        'unavailable',
+      );
+    });
+  });
+
+  /* ==================================================================== */
+  /* The menu, and offering to give                                        */
+  /* ==================================================================== */
+
+  describe('the menu', () => {
+    it('puts the same options under every ordinary reply', async () => {
+      await register();
+      await say('hello again');
+
+      const labels = lastChoices().map((c) => c.data);
+      // Every one of these is a word somebody could have typed instead. The
+      // menu is discoverability, not a second way through the system.
+      expect(labels).toContain('needs');
+      expect(labels).toContain('donate');
+      expect(labels).toContain('profile');
+      expect(labels).toContain('help');
+    });
+
+    it('offers "start again" rather than "pause" to a donor who is paused', async () => {
+      await register();
+      await say('pause');
+      const said = await say('hello');
+
+      expect(said.join(' ')).toContain('paused');
+      const labels = lastChoices().map((c) => c.data);
+      expect(labels).toContain('resume');
+      expect(labels).not.toContain('pause');
+    });
+
+    it('tapping a menu button does the same thing as typing the word', async () => {
+      await register();
+      const typed = await say('needs');
+      const tapped = await tap('needs');
+
+      expect(tapped).toEqual(typed);
+    });
+  });
+
+  describe('offering to give', () => {
+    it('thanks somebody who offers, and says what is standing in the way', async () => {
+      await register();
+      /*
+        The reason is the one written when they answered, so the bot repeats what
+        they were already told rather than inventing a second wording for the
+        same fact.
+      */
+      await client`UPDATE bot.donors
+                      SET qualification_status = 'not_qualified',
+                          qualification_reason = 'Donors need to weigh at least 45 kg.'`;
+
+      const said = await say('donate');
+
+      // Thanked first. Somebody who offered has done nothing wrong (§2.7).
+      expect(said[0]).toContain('noted that you would like to give');
+      expect(said[0]).toContain('Donors need to weigh at least 45 kg.');
+    });
+
+    it('tells a qualified donor they are in the pool', async () => {
+      await register();
+
+      const said = await say('donate');
+      expect(said[0]).toContain('You are in the pool');
+    });
+
+    it('records the offer, and creates no journey for it', async () => {
+      await register();
+      await say('donate');
+
+      const events = await db.select().from(bot.eventLog);
+      expect(events.some((row) => row.event === 'donor.interest_declared')).toBe(true);
+
+      /*
+        A journey is a commitment against a specific request. There is no
+        request here, and inventing one would put a name on a counter's roster
+        for a unit nobody asked for.
+      */
+      expect(await db.select().from(bot.donorRequests)).toHaveLength(0);
+    });
+  });
+
+  /* ==================================================================== */
   /* The demand board, and the link that leads to it                       */
   /* ==================================================================== */
 
@@ -908,25 +1253,58 @@ describe.skipIf(!testUrl)('the conversation', () => {
       await register();
       await openRequest('O-', 'need-blocked');
 
-      // A donor whose group has never been typed by staff is not matchable:
-      // §7.7 recruits nobody on a self-declared group.
+      /*
+        The stored judgement, written when they answered. The board says it back
+        in the same words rather than composing a second version of the same
+        fact, which is how a bot ends up telling somebody two different things.
+      */
+      await client`UPDATE bot.donors
+                      SET qualification_status = 'not_qualified',
+                          qualification_reason =
+                            'Blood donation starts at 18. We will be glad to hear from you then.'`;
+
       const said = await say('board');
-      expect(said[0]).toContain('not been confirmed');
-      // The way out, not just the refusal: a donor told only that they cannot
-      // be matched has been given nothing to do (§8).
-      expect(said[0]).toContain('Walk in any time');
+      expect(said[0]).toContain('Blood donation starts at 18');
+      // The way out, not just the refusal (§8).
+      expect(said[0]).toContain('glad to hear from you');
+    });
+
+    it('acts on the group the donor gave, with nobody having typed it', async () => {
+      await register();
+      await openRequest('O-', 'need-declared');
+
+      /*
+        The rule that changed. A self-declared group used to block every match,
+        which meant a donor who had never given could never be asked and so
+        could never be typed. The unit is typed at the counter either way.
+      */
+      const [donor] = await db.select().from(bot.donors);
+      expect(donor?.bloodGroupVerifiedAt).toBeNull();
+
+      await say('board');
+      expect(lastChoices().some((c) => c.data === 'board:need-declared')).toBe(true);
     });
 
     it('offers no tap when the donor cannot give, and one when they can', async () => {
       await register();
       await openRequest('O-', 'need-tap');
 
-      const blocked = channel.sent.at(-1)?.message.choices ?? [];
-      await say('board');
-      expect(blocked).toEqual([]);
+      await client`UPDATE bot.donors
+                      SET qualification_status = 'not_qualified',
+                          qualification_reason = 'Donors need to weigh at least 45 kg.'`;
 
-      // Staff type them at their first donation; now the tap appears.
-      await client`UPDATE bot.donors SET blood_group_verified_at = now()`;
+      /*
+        Read after the board is asked for, not before: the message ahead of it
+        is the standing reply, and that one carries the menu. What this test is
+        about is the tap on a request, so it asserts on that and not on the
+        absence of every button.
+      */
+      await say('board');
+      expect(lastChoices().some((c) => c.data.startsWith('board:'))).toBe(false);
+
+      // Whatever it was is resolved; now the tap appears.
+      await client`UPDATE bot.donors
+                      SET qualification_status = 'qualified', qualification_reason = NULL`;
       await say('board');
       expect(lastChoices().some((c) => c.data === 'board:need-tap')).toBe(true);
     });
@@ -934,8 +1312,6 @@ describe.skipIf(!testUrl)('the conversation', () => {
     it('turns a board tap into the same journey a wave would have made', async () => {
       await register();
       await openRequest('O-', 'need-tapped');
-      await client`UPDATE bot.donors SET blood_group_verified_at = now()`;
-
       await say('board');
       const said = await tap('board:need-tapped');
 
@@ -950,8 +1326,6 @@ describe.skipIf(!testUrl)('the conversation', () => {
     it('does not create a second journey when the same request is tapped twice', async () => {
       await register();
       await openRequest('O-', 'need-twice');
-      await client`UPDATE bot.donors SET blood_group_verified_at = now()`;
-
       await say('board');
       await tap('board:need-twice');
       await tap('board:need-twice');

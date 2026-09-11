@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import type { Actor } from '@blood-connect/platform';
+import { db, findAccountById } from '@blood-connect/platform';
 import { SignOutButton } from './sign-out-button';
 
 /**
@@ -10,7 +11,7 @@ import { SignOutButton } from './sign-out-button';
  * header, different cookie, different port. Somebody who has both accounts
  * should never be in doubt about which system they are typing into.
  */
-export function AppShell({
+export async function AppShell({
   actor,
   title,
   children,
@@ -21,6 +22,10 @@ export function AppShell({
   children: React.ReactNode;
   narrow?: boolean;
 }) {
+  // Who is signed in, by name. This application holds one role, so the label
+  // that matters on a shared machine is the person, not the permission.
+  const account = actor.kind === 'user' ? await findAccountById(db, actor.userId) : undefined;
+
   return (
     <div className="app-page">
       <header className="app-header">
@@ -32,7 +37,13 @@ export function AppShell({
         </div>
 
         {actor.kind === 'user' ? (
-          <div className="app-row">
+          <div className="app-row app-account">
+            <span className="app-account-identity">
+              <span className="ux4g-label-m-strong">{account?.fullName ?? 'Your account'}</span>
+              <span className="ux4g-label-s-default app-account-email">
+                {account?.email ?? 'Administrator'}
+              </span>
+            </span>
             <Link
               href="/doctors"
               className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md app-target"

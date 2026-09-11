@@ -46,6 +46,15 @@ export type DonorStanding = {
   /** Null when they can give today. */
   readonly eligibleFrom: string | null;
   readonly pausedUntil: string | null;
+  /**
+   * What their answers came to, and why, as it was decided and stored.
+   *
+   * Carried here so a donor who is not being messaged can be told which fact is
+   * responsible, rather than shown an empty list that reads as "nobody needs
+   * blood". Null reason means they qualify.
+   */
+  readonly qualification: string;
+  readonly qualificationReason: string | null;
   readonly needs: readonly OpenNeed[];
 };
 
@@ -66,6 +75,8 @@ export async function standingFor(
       bloodGroup: donors.bloodGroup,
       nextEligibleOn: donors.nextEligibleOn,
       snoozeUntil: donors.snoozeUntil,
+      qualificationStatus: donors.qualificationStatus,
+      qualificationReason: donors.qualificationReason,
     })
     .from(donors)
     .where(eq(donors.id, donorId));
@@ -133,6 +144,8 @@ export async function standingFor(
     eligibleFrom: canGiveToday ? null : donor.nextEligibleOn,
     pausedUntil:
       donor.snoozeUntil !== null && donor.snoozeUntil > today ? donor.snoozeUntil : null,
+    qualification: donor.qualificationStatus,
+    qualificationReason: donor.qualificationReason,
     needs: needs.filter((need) => need.unitsOutstanding > 0),
   };
 }

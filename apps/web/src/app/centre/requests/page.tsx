@@ -2,11 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { CentreShell } from '../../centre-shell';
+import { LiveRefresh } from '../../volunteer/live';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { stockByGroup } from '@blood-connect/centre';
-import { findRequestByNumber, listRequestsAwaitingDecision } from '@blood-connect/hospital';
-import { requestDatePart } from '@blood-connect/domain';
-import { RequestLookupForm } from '../../request-lookup-form';
+import { listRequestsAwaitingDecision } from '@blood-connect/hospital';
 import {
   URGENCY_SHORT,
   WORDING,
@@ -32,32 +31,14 @@ export const metadata: Metadata = { title: 'Request queue · Blood Connect' };
  * The patient details are the frozen snapshot (§2.6), not the live record. That
  * is what the doctor told the centre, and it is what the centre answers.
  */
-export default async function QueuePage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function QueuePage() {
   const actor = await requireAccess('/centre/requests');
   const ctx = await useCaseContext(actor);
-  const query = await searchParams;
 
   const [queue, stock] = await Promise.all([
     listRequestsAwaitingDecision(ctx),
     stockByGroup(ctx),
   ]);
-
-  /**
-   * The bystander read out an ID and the counter typed it (ADR 0010).
-   *
-   * A GET rather than an action, so the result is a URL somebody can keep open
-   * on a second monitor while they work through the request.
-   */
-  const one = (key: string): string =>
-    typeof query[key] === 'string' ? query[key].trim() : '';
-  // Two fields, one identifier: the date is prefilled and the sequence is what
-  // gets typed, so they arrive apart and are joined here.
-  const typed = one('n') === '' ? '' : `${one('d')}-${one('n')}`;
-  const found = typed === '' ? undefined : await findRequestByNumber(ctx, typed);
 
   const today = ctx.clock.today();
   const now = ctx.clock.now();
@@ -67,6 +48,14 @@ export default async function QueuePage({
 
   return (
     <CentreShell actor={actor} title="Blood requests" current="requests">
+      {/*
+        The queue answers itself while somebody watches it. `router.refresh()`
+        re-runs this page and swaps the rows in place, so a counter reading the
+        list does not lose their place and a request raised on a ward appears
+        without anybody pressing anything.
+      */}
+      <LiveRefresh everySeconds={30} />
+
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">Requests awaiting an answer</h1>
         <p className="ux4g-body-m-default">
@@ -79,57 +68,6 @@ export default async function QueuePage({
           the exact component asked for. Open a request to see that.
         </p>
       </div>
-
-      <section className="ux4g-card ux4g-card-outline" aria-labelledby="lookup">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title" id="lookup">
-            Somebody is here with an ID
-          </h2>
-          <p className="ux4g-card-sub-title">
-            {/*
-              The date is prefilled because almost every request brought to the
-              counter was raised today, leaving five digits to type (ADR 0010).
-            */}
-            Type the five digits they read out. Today&rsquo;s date is filled in.
-          </p>
-        </div>
-        <div className="ux4g-card-body app-stack-tight">
-          <RequestLookupForm datePart={requestDatePart(today)} defaultValue={typed} />
-
-          {typed !== '' && !found ? (
-            <div className="ux4g-alert ux4g-alert-warning" role="status">
-              <div className="ux4g-alert-content">
-                <p className="ux4g-alert-message">
-                  {/*
-                    No guessing at a near miss: a wrong digit is a different
-                    request, not this one. There is a person standing there who
-                    can read it again.
-                  */}
-                  No request with that ID. Ask them to read it again, every
-                  digit matters.
-                </p>
-              </div>
-            </div>
-          ) : null}
-
-          {found ? (
-            <div className="ux4g-alert ux4g-alert-info" role="status">
-              <div className="ux4g-alert-content">
-                <p className="ux4g-alert-message app-figure">
-                  {found.requestId}: {found.units} × {productLabel(found.product)}{' '}
-                  {bloodGroupLabel(found.bloodGroup)}
-                </p>
-                <Link
-                  className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target"
-                  href={`/centre/requests/${found.id}`}
-                >
-                  {found.awaitingPatient ? 'Take their details' : 'Open it'}
-                </Link>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </section>
 
       {needPatient > 0 ? (
         <div className="ux4g-alert ux4g-alert-warning" role="status">

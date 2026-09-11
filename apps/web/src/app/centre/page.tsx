@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { CentreShell } from '../centre-shell';
+import { LiveRefresh } from '../volunteer/live';
 import { RecruitButton } from '../centre-forms';
 import { StockChart } from '../stock-chart';
 import { CompletedDonations, UpcomingDonations } from '../donations-tables';
@@ -55,6 +56,15 @@ export default async function CentrePage() {
 
   return (
     <CentreShell actor={actor} title="Blood centre" current="dashboard">
+      {/*
+        Live, and without taking the page away from whoever is reading it.
+        `router.refresh()` re-runs this server component and swaps the data in
+        place: no navigation, no lost scroll position, no form on the page
+        reset under somebody's hands. Thirty seconds, because the number that
+        moves fastest here is the count of requests waiting to be answered.
+      */}
+      <LiveRefresh everySeconds={30} />
+
       <div className="app-row-split">
         <div className="app-stack-tight">
           <h1 className="ux4g-heading-l-strong">Overview</h1>

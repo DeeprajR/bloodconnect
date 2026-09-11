@@ -13,7 +13,7 @@
  * skipped breakfast once; asking a durable question at every request would tell
  * a donor with a heart condition, eleven times, that we were not listening.
  *
- * Two rules of wording, from §2.7:
+ * Three rules of wording, from §2.7:
  *
  *  1. **An answer is never a verdict.** What stops a donation today is a
  *     *deferral*, phrased as "not today". "Rejected", "eliminated" and "banned"
@@ -22,6 +22,12 @@
  *     and does not claim to be. The pre-donation check happens on site and is
  *     the one that decides (§12.6); this only avoids asking somebody to make a
  *     trip that will obviously end in a deferral.
+ *  3. **One line, answerable at a glance.** These arrive on a phone, often from
+ *     somebody standing up. A question that has to be read twice gets the wrong
+ *     answer, and a wrong answer here either sends somebody on a wasted trip or
+ *     keeps a willing donor out of the pool for a year. The long clinical
+ *     phrasing these started with listed four conditions in one sentence; the
+ *     short form asks the same thing and can be answered without re-reading.
  */
 
 import type { Sex } from '@blood-connect/domain';
@@ -55,18 +61,14 @@ export type ScreeningQuestion = {
 export const DURABLE_QUESTIONS: readonly ScreeningQuestion[] = [
   {
     key: 'long_term_condition',
-    text:
-      'Do you have a long-term illness, a heart condition, uncontrolled diabetes, ' +
-      'epilepsy, or take regular medication for one?',
+    text: 'Do you have a long-term illness, or take regular medicine for one?',
     proceedOn: 'no',
     scope: 'durable',
-    summary: 'No long-term illness or medication',
+    summary: 'No long-term illness or medicine',
   },
   {
     key: 'transmissible_infection',
-    text:
-      'Have you ever been told you have hepatitis B or C, HIV, or another infection that ' +
-      'can pass through blood?',
+    text: 'Have you ever been told you have an infection that can pass through blood?',
     proceedOn: 'no',
     scope: 'durable',
     summary: 'No infection that passes through blood',
@@ -78,18 +80,18 @@ export const DURABLE_QUESTIONS: readonly ScreeningQuestion[] = [
      * display.
      */
     key: 'pregnant_or_breastfeeding',
-    text: 'Are you currently pregnant, or breastfeeding?',
+    text: 'Are you pregnant or breastfeeding at the moment?',
     proceedOn: 'no',
     scope: 'durable',
-    summary: 'Not currently pregnant or breastfeeding',
+    summary: 'Not pregnant or breastfeeding',
     appliesTo: ['female'],
   },
   {
     key: 'advised_not_to_donate',
-    text: 'Has a doctor or a blood centre ever advised you not to donate?',
+    text: 'Has a doctor ever told you not to give blood?',
     proceedOn: 'no',
     scope: 'durable',
-    summary: 'Never been advised not to donate',
+    summary: 'Never been told not to give blood',
   },
 ];
 
@@ -112,7 +114,7 @@ export const durableQuestionsFor = (sex: Sex): readonly ScreeningQuestion[] =>
 export const VISIT_QUESTIONS: readonly ScreeningQuestion[] = [
   {
     key: 'well_today',
-    text: 'Are you feeling well today, no fever, cold or infection?',
+    text: 'Are you feeling well today?',
     proceedOn: 'yes',
     scope: 'visit',
   },
@@ -124,13 +126,13 @@ export const VISIT_QUESTIONS: readonly ScreeningQuestion[] = [
   },
   {
     key: 'medication_or_antibiotics',
-    text: 'Are you taking antibiotics, or have you finished a course in the last week?',
+    text: 'Have you taken antibiotics in the last week?',
     proceedOn: 'no',
     scope: 'visit',
   },
   {
     key: 'recent_surgery_or_transfusion',
-    text: 'Have you had surgery, a transfusion, or a tattoo or piercing in the last six months?',
+    text: 'In the last six months, have you had surgery, a tattoo or a piercing?',
     proceedOn: 'no',
     scope: 'visit',
   },

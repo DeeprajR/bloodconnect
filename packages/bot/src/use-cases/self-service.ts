@@ -47,6 +47,41 @@ export async function snoozeDonor(
 }
 
 /**
+ * Records that somebody offered to give, unprompted (§5).
+ *
+ * "Not everyone waits to be asked." This is that person, and until now the bot
+ * had nowhere to put them: every path into the roster starts from a request,
+ * and there may not be one open for their group tonight.
+ *
+ * So it writes an event and nothing else. Deliberately:
+ *
+ *  - **No journey.** A journey row is a commitment against a specific request
+ *    (§7.7), and inventing one for a request nobody raised would put a name on
+ *    a counter's roster for a unit nobody asked for.
+ *  - **No walk-in row.** A walk-in is what the counter records when somebody
+ *    actually arrives and gives, and `app_bot` holds no INSERT on the centre's
+ *    tables (§5.1). An intention is not a donation and must not be counted as
+ *    one.
+ *
+ * What it buys is a record an operator can read: how many people offered, and
+ * how many of those the pool could not use because nobody had typed their
+ * group. That number is the argument for doing something about it.
+ */
+export async function noteInterest(ctx: BotContext, donorId: string): Promise<void> {
+  const now = ctx.clock.now();
+
+  await ctx.db.transaction(async (tx) => {
+    const event = createEventWriter(tx, ctx.correlationId, now);
+    await event({
+      event: 'donor.interest_declared',
+      subjectType: 'donor',
+      subjectId: donorId,
+      metadata: { at: now.toISOString() },
+    });
+  });
+}
+
+/**
  * Undoes a pause or an opt-out (§5).
  *
  * Clearing `opted_out_at` also restores consent currency, which is what the wave

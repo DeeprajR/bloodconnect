@@ -8,6 +8,7 @@ import {
   hasIntervalElapsed,
   isWithinAgeBounds,
   nextEligibleOn,
+  qualifyDonor,
   weightKgFromBand,
   type DonationIntervals,
 } from './donor.js';
@@ -93,5 +94,62 @@ describe('inter-donation interval (§5)', () => {
 
   it('crosses a year end', () => {
     expect(nextEligibleOn(day('2026-11-15'), 'female', INTERVALS)).toBe('2027-03-15');
+  });
+});
+
+describe('qualifying a donor from their answers (§5)', () => {
+  const THRESHOLDS = { minAge: 18, maxAge: 65, minWeightKg: 45 };
+  const TODAY = day('2026-09-10');
+  const at = (dob: string, weightKg = 60, flagged = false) =>
+    qualifyDonor({ dob: day(dob), weightKg, flagged }, TODAY, THRESHOLDS);
+
+  it('qualifies somebody whose answers raise nothing', () => {
+    expect(at('1995-01-01')).toEqual({ status: 'qualified', reason: null });
+  });
+
+  it('is inclusive at both age bounds', () => {
+    // Exactly 18 today, and exactly 65 today. Both qualify.
+    expect(at('2008-09-10').status).toBe('qualified');
+    expect(at('1961-09-10').status).toBe('qualified');
+    // One day either side of each.
+    expect(at('2008-09-11').status).toBe('not_qualified');
+    expect(at('1960-09-10').status).toBe('not_qualified');
+  });
+
+  it('is inclusive at the weight threshold', () => {
+    expect(at('1995-01-01', 45).status).toBe('qualified');
+    expect(at('1995-01-01', 44).status).toBe('not_qualified');
+  });
+
+  it('puts a flagged health answer ahead of every threshold', () => {
+    // Somebody who is both flagged and underweight hears about the flag, which
+    // is the one a person can resolve today by looking at it.
+    const result = at('1995-01-01', 40, true);
+    expect(result.status).toBe('flagged');
+    expect(result.reason).toContain('health');
+  });
+
+  it('tells somebody too young when to come back, not that they are rejected', () => {
+    const result = at('2015-01-01');
+    expect(result.reason).toContain('18');
+    // §2.7 forbids the verdict words outright.
+    for (const word of ['reject', 'ineligible', 'banned', 'eliminated']) {
+      expect(result.reason?.toLowerCase()).not.toContain(word);
+    }
+  });
+
+  it('names the threshold rather than judging the person', () => {
+    const result = at('1995-01-01', 40);
+    expect(result.reason).toContain('45 kg');
+    expect(result.reason).toContain('safe for you');
+  });
+
+  it('says nothing about the donation window, which is a fact about today', () => {
+    /*
+      The window is deliberately absent: a stored judgement that included it
+      would be written in June and wrong by September. `hasIntervalElapsed`
+      answers that question live, every time a wave runs.
+    */
+    expect(at('1995-01-01').status).toBe('qualified');
   });
 });

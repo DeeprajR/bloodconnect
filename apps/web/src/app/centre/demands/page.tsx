@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { CentreShell } from '../../centre-shell';
+import { LiveRefresh } from '../../volunteer/live';
 import { CancelDemandForm } from '../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { countUnmarked, listDemands } from '@blood-connect/centre';
@@ -26,11 +27,23 @@ export default async function DemandsPage() {
   const closed = demands.filter((row) => !open.includes(row));
 
   // How many confirmed donors are still waiting to be marked at the counter.
-  // It is the number that decides whether anybody needs to open the roster.
+  // It is the number that decides whether anybody needs to open the donor list.
   const unmarked = new Map(
     await Promise.all(
       open.map(async (demand) => [demand.id, await countUnmarked(ctx, demand.id)] as const),
     ),
+  );
+
+  /**
+   * Picked up by the bot, and nobody contacted.
+   *
+   * The one recruitment failure that looks exactly like success from here: the
+   * demand is open, the bot imported it, the counter waits, and no phone ever
+   * rings. It means the pool holds nobody who can answer this group today, and
+   * saying so beats leaving somebody to conclude the bot is broken.
+   */
+  const silent = open.filter(
+    (row) => row.botPublicId !== null && row.donorsNotified === 0,
   );
 
   const day = new Intl.DateTimeFormat('en-IN', {
@@ -41,6 +54,9 @@ export default async function DemandsPage() {
 
   return (
     <CentreShell actor={actor} title="Demand">
+      {/* The counters here are written back by the bot, so they move on their own. */}
+      <LiveRefresh everySeconds={30} />
+
       <div className="app-stack-tight">
         <h1 className="ux4g-heading-l-strong">{WORDING.donorDemand}</h1>
         <p className="ux4g-body-m-default">
@@ -53,6 +69,29 @@ export default async function DemandsPage() {
           and nobody has been contacted for it.
         </p>
       </div>
+
+      {silent.length > 0 ? (
+        <div className="ux4g-alert ux4g-alert-warning" role="status">
+          <div className="ux4g-alert-content">
+            <p className="ux4g-alert-message">
+              {silent.length}{' '}
+              {silent.length === 1 ? 'demand has' : 'demands have'} been picked up by
+              the donor bot with nobody contacted yet.
+            </p>
+            <p className="ux4g-body-s-default">
+              {/*
+                Said on the screen rather than left in the specification, because
+                this is where somebody stands wondering why the phones are quiet.
+                Every reason listed is one the counter can act on or plan around.
+              */}
+              Nobody in the donor pool can answer this group today. Either no
+              registered donor has a matching group nearby, or the ones who do gave
+              recently and are still inside the gap between donations. It is not a
+              fault: the list refills as people become due again.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <section className="ux4g-card ux4g-card-outline" aria-labelledby="open">
         <div className="ux4g-card-header">
@@ -117,7 +156,7 @@ export default async function DemandsPage() {
                         className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
                         href={`/centre/demands/${demand.id}`}
                       >
-                        Roster
+                        Donors
                         {(unmarked.get(demand.id) ?? 0) > 0 ? (
                           <span className="app-figure"> ({unmarked.get(demand.id)})</span>
                         ) : null}
@@ -175,8 +214,8 @@ export default async function DemandsPage() {
           Donor names live one click away, not on this list (§2.10). The counter
           needs them; a page showing every demand ever raised does not.
         */}
-        Donor names and numbers are on each roster, where somebody is calling a name
-        at a desk, not on this list.
+        Donor names and numbers sit behind the Donors button on each row, where
+        somebody is calling a name at a desk, not on this list.
       </p>
 
       <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">

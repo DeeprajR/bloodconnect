@@ -60,10 +60,14 @@ export const donors = botSchema.table(
     sex: text('sex').notNull(),
     bloodGroup: text('blood_group').notNull(),
     /**
-     * A self-declared group is not a verified one. The wave query requires this
-     * to be set, because recruiting on an unverified group sends the wrong
-     * person to the counter. The pre-transfusion test would catch it, but the
-     * donor made the trip for nothing.
+     * Set when the centre types the group off a unit the donor actually gave.
+     *
+     * It is a **record, not a gate**. Recruitment runs on the group the donor
+     * told us, because a donor who is never contacted never donates and so is
+     * never typed, and that circle keeps a new pool permanently silent. What
+     * this column still buys is the correction: when the counter types a group
+     * that disagrees with what the donor believed, the typed one wins and the
+     * disagreement is recorded as an event.
      */
     bloodGroupVerifiedAt: timestamp('blood_group_verified_at', { withTimezone: true }),
 
@@ -94,6 +98,32 @@ export const donors = botSchema.table(
     nextEligibleOn: date('next_eligible_on'),
 
     durableFlagStatus: text('durable_flag_status').notNull().default('clear'),
+
+    /* --- what their answers came to, worked out once and kept --- */
+    /**
+     * The donor's qualification, decided from what they told us and stored.
+     *
+     * Everything in it comes from the interview: their age, their weight, and
+     * the durable health questions. It is written when they register, rewritten
+     * when they edit their profile, and rewritten again when a donation changes
+     * what is true about them. Nothing recomputes it behind their back.
+     *
+     * **It deliberately excludes the donation window.** How long since somebody
+     * last gave is a fact about today's date, not about their answers, and a
+     * boolean written in June is wrong in September. The window is checked live,
+     * against `next_eligible_on`, everywhere it matters (§7.7). Keeping the two
+     * apart is what stops a stored judgement quietly going stale.
+     *
+     * `qualified` means their answers raise nothing that would stop them.
+     * `not_qualified` means one of the thresholds does. `flagged` means an
+     * answer needs a person to look before they are asked for anything.
+     */
+    qualificationStatus: text('qualification_status').notNull().default('qualified'),
+    /** Why, in the donor's own terms. Null when they qualify. */
+    qualificationReason: text('qualification_reason'),
+    /** When it was last worked out, so a stale row is visible as one. */
+    qualifiedAt: timestamp('qualified_at', { withTimezone: true }),
+
     snoozeUntil: date('snooze_until'),
     optedOutAt: timestamp('opted_out_at', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -113,6 +143,17 @@ export const donors = botSchema.table(
      * equality filter, then the eligibility day, which is the range.
      */
     index('donors_wave_idx').on(table.bloodGroup, table.nextEligibleOn),
+    /**
+     * The qualification filter, which now sits in front of every wave.
+     *
+     * Group first for the equality, then the stored judgement, then the day the
+     * window opens. That is the order the wave query asks them in.
+     */
+    index('donors_qualified_idx').on(
+      table.bloodGroup,
+      table.qualificationStatus,
+      table.nextEligibleOn,
+    ),
     index('donors_locality_idx').on(table.localityId),
     index('donors_district_idx').on(table.districtId),
     check('donors_sex_check', sql`sex IN ('female', 'male', 'other')`),
@@ -125,6 +166,10 @@ export const donors = botSchema.table(
       sql`weight_band IN ('under_45', '45_50', '50_60', '60_70', '70_plus')`,
     ),
     check('donors_flag_check', sql`durable_flag_status IN ('clear', 'flagged')`),
+    check(
+      'donors_qualification_check',
+      sql`qualification_status IN ('qualified', 'not_qualified', 'flagged')`,
+    ),
     check('donors_weight_check', sql`weight_kg >= 0`),
   ],
 );

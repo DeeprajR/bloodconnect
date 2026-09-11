@@ -30,11 +30,11 @@ export default async function DonationsPage() {
         <p className="ux4g-body-m-default">
           {/*
             The counter is the authority on who gave blood (§4), so nothing here
-            is marked from this screen. It is marked on the roster, where the
-            donor's phone number sits beside their name.
+            is marked from this screen. It is marked on the demand's own donor
+            list, where the phone number sits beside the name.
           */}
           Donors who have agreed to come, and the donations already recorded. Marking
-          somebody off happens on that demand&rsquo;s roster.
+          somebody off happens on that demand&rsquo;s donor list.
         </p>
       </div>
 
@@ -63,8 +63,8 @@ export default async function DonationsPage() {
             Already given
           </h2>
           <p className="ux4g-card-sub-title">
-            Roster donations and walk-ins together, newest first. A walk-in is somebody
-            who gave without ever being asked by the bot.
+            Donors we asked and people who simply came in, together, newest first.
+            A walk-in is somebody who gave without ever being asked by the bot.
           </p>
         </div>
         <div className="ux4g-card-body">
