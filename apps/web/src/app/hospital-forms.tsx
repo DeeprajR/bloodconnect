@@ -3,6 +3,13 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
+import {
+  Button,
+  FormField,
+  TextArea,
+  TextInput,
+} from '@blood-connect/ui';
+
 import { WORDING } from '@blood-connect/domain';
 
 import {
@@ -14,7 +21,11 @@ import {
 
 const initial: FormState = { error: null };
 
-function Submit({ label, busy }: { label: string; busy: string }) {
+/* -------------------------------------------------------------------------- */
+/* UX4G helpers, kept for `AdmissionForm` below until its host page is ported */
+/* -------------------------------------------------------------------------- */
+
+function Ux4gSubmit({ label, busy }: { label: string; busy: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -28,7 +39,7 @@ function Submit({ label, busy }: { label: string; busy: string }) {
   );
 }
 
-function Problem({ message }: { message: string | null }) {
+function Ux4gProblem({ message }: { message: string | null }) {
   if (!message) return null;
   return (
     <div className="ux4g-alert ux4g-alert-error" role="alert">
@@ -39,7 +50,7 @@ function Problem({ message }: { message: string | null }) {
   );
 }
 
-function Field({
+function Ux4gField({
   id,
   label,
   type = 'text',
@@ -84,17 +95,6 @@ function Field({
   );
 }
 
-/*
- * `PatientForm` moved to `patients/new/form.tsx` in PR-04 of the UX4G-
- * replacement track (ADR 0015). It is the only form here whose page has
- * been ported to the kit, and colocating it with that page keeps the kit-
- * styled version isolated from the UX4G-styled forms below.
- *
- * The shared helpers above (`Submit`, `Problem`, `Field`) still power the
- * three remaining UX4G forms below and will lose their UX4G classes when
- * those forms' pages are ported one at a time.
- */
-
 export function AdmissionForm({ patientId }: { patientId: string }) {
   const [state, action] = useActionState(
     createAdmissionAction.bind(null, patientId),
@@ -103,32 +103,49 @@ export function AdmissionForm({ patientId }: { patientId: string }) {
 
   return (
     <form action={action} className="app-stack" noValidate>
-      <Problem message={state.error} />
-      <Field
+      <Ux4gProblem message={state.error} />
+      <Ux4gField
         id="ipNo"
         label={WORDING.ipNumber}
         required
         hint="The admission’s identity on the ward. It cannot be changed afterwards."
       />
-      <Field id="ward" label={WORDING.ward} required />
-      <Field
+      <Ux4gField id="ward" label={WORDING.ward} required />
+      <Ux4gField
         id="admittedAt"
         label={WORDING.admittedAt}
         type="datetime-local"
         hint="Leave blank for now."
       />
-      <Submit label="Create admission" busy="Creating…" />
+      <Ux4gSubmit label="Create admission" busy="Creating…" />
     </form>
   );
 }
 
-/*
- * `DraftForm` and `SubmitForm` lived here.
- *
- * A request is four fields on one screen now (`RaiseRequestForm`), so
- * there is no draft to edit and no review step to confirm. The review was
- * four fields shown back to somebody who had just typed them (ADR 0010).
- */
+/* -------------------------------------------------------------------------- */
+/* Kit-native forms (ADR 0015). Used by pages restyled in PR-05 onwards.       */
+/* -------------------------------------------------------------------------- */
+
+function KitSubmit({ label, busy }: { label: string; busy: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" loading={pending}>
+      {pending ? busy : label}
+    </Button>
+  );
+}
+
+function KitProblem({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p
+      role="alert"
+      className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {message}
+    </p>
+  );
+}
 
 /**
  * Cancelling a submitted request (§3).
@@ -157,76 +174,64 @@ export function CancelRequestForm({
 
   if (state.done === true) {
     return (
-      <div className="ux4g-alert ux4g-alert-success" role="status">
-        <div className="ux4g-alert-content">
-          <p className="ux4g-alert-message">
-            Cancelled. The centre has been told
-            {hasDecision ? ', any units held for it are back on the shelf,' : ''} and
-            every donor who had agreed to come is being stood down.
-          </p>
-        </div>
-      </div>
+      <p
+        role="status"
+        className="rounded-control border border-success/30 bg-success-soft px-3 py-2 text-sm text-ink"
+      >
+        Cancelled. The centre has been told
+        {hasDecision ? ', any units held for it are back on the shelf,' : ''}{' '}
+        and every donor who had agreed to come is being stood down.
+      </p>
     );
   }
 
   if (!open) {
     return (
-      <button
+      <Button
         type="button"
-        className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
+        variant="danger"
+        size="sm"
         onClick={() => {
           setOpen(true);
         }}
       >
         Cancel this request
-      </button>
+      </Button>
     );
   }
 
   return (
-    <form action={action} className="app-stack" noValidate>
-      <Problem message={state.error} />
+    <form action={action} className="space-y-4" noValidate>
+      <KitProblem message={state.error} />
 
-      <div className="ux4g-alert ux4g-alert-warning" role="status">
-        <div className="ux4g-alert-content">
-          <p className="ux4g-alert-message">
-            {hasDecision
-              ? 'Any units the centre is holding go back on the shelf, and every donor who agreed to give for this patient is told not to travel.'
-              : 'The centre stops working on this, and every donor who agreed to give for this patient is told not to travel.'}
-          </p>
-        </div>
-      </div>
+      <p
+        role="status"
+        className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+      >
+        {hasDecision
+          ? 'Any units the centre is holding go back on the shelf, and every donor who agreed to give for this patient is told not to travel.'
+          : 'The centre stops working on this, and every donor who agreed to give for this patient is told not to travel.'}
+      </p>
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="reason">
-          Why is it being cancelled?
-        </label>
-        <textarea
-          className="ux4g-input ux4g-input-lg"
-          id="reason"
-          name="reason"
-          rows={2}
-          required
-          aria-describedby="reason-hint"
-        />
-        <p className="ux4g-label-m-default" id="reason-hint">
-          {/* The centre reads this, so "n/a" costs somebody a phone call. */}
-          The blood centre sees this. The patient improved, died, was referred,
-          or it was raised in error.
-        </p>
-      </div>
+      <FormField
+        label="Why is it being cancelled?"
+        hint="The blood centre sees this. The patient improved, died, was referred, or it was raised in error."
+        required
+      >
+        {(props) => <TextArea {...props} name="reason" rows={2} required />}
+      </FormField>
 
-      <div className="app-row">
-        <Submit label="Cancel the request" busy="Cancelling…" />
-        <button
+      <div className="flex flex-wrap gap-2">
+        <KitSubmit label="Cancel the request" busy="Cancelling…" />
+        <Button
           type="button"
-          className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md app-target"
+          variant="ghost"
           onClick={() => {
             setOpen(false);
           }}
         >
           Keep it
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -249,27 +254,33 @@ export function SampleForm({ requestUuid }: { requestUuid: string }) {
   return (
     <form
       action={action}
-      className="app-stack"
+      className="space-y-4"
       noValidate
       key={state.done ? 'done' : 'new'}
     >
-      <Problem message={state.error} />
+      <KitProblem message={state.error} />
 
-      <Field
-        id="sampleIdentifier"
+      <FormField
         label="Sample identifier"
-        required
         hint="Exactly as printed on the tube. It is unique across the whole hospital."
-      />
-      <Field
-        id="collectedAt"
-        label="Collected at"
-        type="datetime-local"
-        hint="Leave blank for now."
-      />
-      <Field id="note" label="Note" />
+        required
+      >
+        {(props) => (
+          <TextInput {...props} name="sampleIdentifier" type="text" required />
+        )}
+      </FormField>
 
-      <Submit label="Record the sample" busy="Recording…" />
+      <FormField label="Collected at" hint="Leave blank for now.">
+        {(props) => (
+          <TextInput {...props} name="collectedAt" type="datetime-local" />
+        )}
+      </FormField>
+
+      <FormField label="Note">
+        {(props) => <TextInput {...props} name="note" type="text" />}
+      </FormField>
+
+      <KitSubmit label="Record the sample" busy="Recording…" />
     </form>
   );
 }

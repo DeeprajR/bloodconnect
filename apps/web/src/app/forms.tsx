@@ -3,9 +3,16 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
+import { Button, FormField, TextInput } from '@blood-connect/ui';
+
 import type { FormState } from './actions';
 
 const initial: FormState = { error: null };
+
+/* -------------------------------------------------------------------------- */
+/* UX4G helpers, exported for the reset flow pages that still ship UX4G       */
+/* chrome. Ported one page at a time (ADR 0015).                              */
+/* -------------------------------------------------------------------------- */
 
 export function SubmitButton({ label, busy }: { label: string; busy: string }) {
   const { pending } = useFormStatus();
@@ -93,8 +100,8 @@ export function Field({
 /**
  * The one place a password is chosen or re-chosen.
  *
- * The minimum is stated up front rather than only on rejection: a rule a person
- * discovers by failing is a rule that wastes their time.
+ * The minimum is stated up front rather than only on rejection: a rule a
+ * person discovers by failing is a rule that wastes their time.
  */
 export function ChoosePasswordForm({
   action,
@@ -115,7 +122,7 @@ export function ChoosePasswordForm({
         label="New password"
         type="password"
         autoComplete="new-password"
-        hint={`At least ${minimumLength} characters. A phrase you can remember beats a short, complicated one.`}
+        hint={`At least ${String(minimumLength)} characters. A phrase you can remember beats a short, complicated one.`}
       />
       <SubmitButton label={label} busy="Working…" />
     </form>
@@ -181,10 +188,46 @@ export function CompleteResetForm({
         label="New password"
         type="password"
         autoComplete="new-password"
-        hint={`At least ${minimumLength} characters.`}
+        hint={`At least ${String(minimumLength)} characters.`}
       />
       <SubmitButton label="Set the new password" busy="Working…" />
     </form>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Kit-native form (ADR 0015). Used by /profile which was ported in PR-05.    */
+/* -------------------------------------------------------------------------- */
+
+function KitSubmit({ label, busy }: { label: string; busy: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" loading={pending}>
+      {pending ? busy : label}
+    </Button>
+  );
+}
+
+function KitProblem({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p
+      role="alert"
+      className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {message}
+    </p>
+  );
+}
+
+function KitConfirmation({ message }: { message: string }) {
+  return (
+    <p
+      role="status"
+      className="rounded-control border border-success/30 bg-success-soft px-3 py-2 text-sm text-ink"
+    >
+      {message}
+    </p>
   );
 }
 
@@ -199,21 +242,31 @@ export function RequestEmailChangeForm({
 
   if (state.done) {
     return (
-      <Confirmation message="Check the new address for a confirmation link. Your account keeps its current address until you open it." />
+      <KitConfirmation message="Check the new address for a confirmation link. Your account keeps its current address until you open it." />
     );
   }
 
   return (
-    <form action={formAction} className="app-stack" noValidate>
-      <Problem message={state.error} />
-      <Field
-        id="email"
+    <form action={formAction} className="space-y-4" noValidate>
+      <KitProblem message={state.error} />
+      <FormField
         label="New email address"
-        type="email"
-        inputMode="email"
         hint={`Currently ${currentEmail}. We will send a link to the new address, and tell the old one.`}
-      />
-      <SubmitButton label="Send the confirmation" busy="Sending…" />
+        required
+      >
+        {(props) => (
+          <TextInput
+            {...props}
+            name="email"
+            type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+          />
+        )}
+      </FormField>
+      <KitSubmit label="Send the confirmation" busy="Sending…" />
     </form>
   );
 }

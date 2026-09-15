@@ -1,9 +1,16 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { useFormStatus } from 'react-dom';
+
+import {
+  Button,
+  FormField,
+  TextArea,
+  TextInput,
+} from '@blood-connect/ui';
 
 import type { FormState } from './actions';
-import { Confirmation, Problem, SubmitButton } from './forms';
 
 const initial: FormState = { error: null };
 
@@ -12,12 +19,34 @@ const FIELDS = [
   { value: 'provisional_reg', label: 'Registration number' },
 ] as const;
 
+function KitSubmit({ label, busy }: { label: string; busy: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" loading={pending}>
+      {pending ? busy : label}
+    </Button>
+  );
+}
+
+function KitProblem({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p
+      role="alert"
+      className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {message}
+    </p>
+  );
+}
+
 /**
  * Asking for the two fields a doctor cannot change themselves (§3).
  *
- * The current value is prefilled into the box, because almost every request
- * here is a correction, a missing initial, a transposed digit, and retyping a
- * long registration number from memory is how a second mistake gets in.
+ * The current value is prefilled into the box, because almost every
+ * request here is a correction, a missing initial, a transposed digit,
+ * and retyping a long registration number from memory is how a second
+ * mistake gets in.
  */
 export function RequestUpdateForm({
   action,
@@ -33,21 +62,32 @@ export function RequestUpdateForm({
 
   if (state.done) {
     return (
-      <Confirmation message="Sent to your administrator. You will see it here until it is decided." />
+      <p
+        role="status"
+        className="rounded-control border border-success/30 bg-success-soft px-3 py-2 text-sm text-ink"
+      >
+        Sent to your administrator. You will see it here until it is decided.
+      </p>
     );
   }
 
   const current = field === 'full_name' ? currentName : currentReg;
 
   return (
-    <form action={formAction} className="app-stack" noValidate>
-      <Problem message={state.error} />
+    <form action={formAction} className="space-y-4" noValidate>
+      <KitProblem message={state.error} />
 
-      <fieldset className="ux4g-form-group app-stack-tight">
-        <legend className="ux4g-label-l-strong">What needs changing</legend>
-        <div className="app-row">
+      <fieldset className="space-y-2">
+        <legend className="block text-sm font-semibold text-ink">
+          What needs changing
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-2">
           {FIELDS.map((option) => (
-            <label className="app-choice" key={option.value} htmlFor={`field-${option.value}`}>
+            <label
+              key={option.value}
+              className="flex h-11 cursor-pointer items-center justify-center rounded-control border border-border-strong bg-surface px-3 text-sm font-medium text-ink transition-colors hover:bg-surface-muted focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 has-[input:checked]:border-primary has-[input:checked]:bg-primary-soft has-[input:checked]:text-primary"
+              htmlFor={`field-${option.value}`}
+            >
               <input
                 type="radio"
                 id={`field-${option.value}`}
@@ -57,53 +97,55 @@ export function RequestUpdateForm({
                 onChange={() => {
                   setField(option.value);
                 }}
+                className="sr-only"
               />
-              <span className="ux4g-body-m-default">{option.label}</span>
+              <span>{option.label}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="proposedValue">
-          What it should say
-        </label>
-        <input
-          className="ux4g-input ux4g-input-lg"
-          id="proposedValue"
-          name="proposedValue"
-          // Keyed on the field so switching between the two reloads the box
-          // with the right current value instead of keeping the other one.
-          key={field}
-          defaultValue={current}
-          maxLength={200}
-          required
-          aria-describedby="proposedValue-hint"
-        />
-        <p className="ux4g-label-m-default" id="proposedValue-hint">
-          {current ? `Currently ${current}.` : 'Nothing is recorded at the moment.'}
-        </p>
-      </div>
+      <FormField
+        label="What it should say"
+        hint={
+          current
+            ? `Currently ${current}.`
+            : 'Nothing is recorded at the moment.'
+        }
+        required
+      >
+        {(props) => (
+          <TextInput
+            {...props}
+            name="proposedValue"
+            // Keyed on the field so switching between the two reloads the
+            // box with the right current value instead of keeping the
+            // other one.
+            key={field}
+            defaultValue={current}
+            maxLength={200}
+            required
+          />
+        )}
+      </FormField>
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="reason">
-          Why
-        </label>
-        <textarea
-          className="ux4g-input"
-          id="reason"
-          name="reason"
-          rows={3}
-          maxLength={500}
-          required
-          aria-describedby="reason-hint"
-        />
-        <p className="ux4g-label-m-default" id="reason-hint">
-          An administrator decides on this, so give them something to decide on.
-        </p>
-      </div>
+      <FormField
+        label="Why"
+        hint="An administrator decides on this, so give them something to decide on."
+        required
+      >
+        {(props) => (
+          <TextArea
+            {...props}
+            name="reason"
+            rows={3}
+            maxLength={500}
+            required
+          />
+        )}
+      </FormField>
 
-      <SubmitButton label="Send the request" busy="Sending…" />
+      <KitSubmit label="Send the request" busy="Sending…" />
     </form>
   );
 }

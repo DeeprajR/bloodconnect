@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../shell';
+import { Button, Card, DescList, PageHeader } from '@blood-connect/ui';
+
+import { KitShell } from '../kit-shell';
 import { RequestEmailChangeForm } from '../forms';
 import { RequestUpdateForm } from '../request-update-form';
 import {
@@ -21,6 +23,18 @@ import { emailChangeRequests } from '@blood-connect/db';
 import { and, eq, isNull } from 'drizzle-orm';
 
 export const metadata: Metadata = { title: 'Your profile · Blood Connect' };
+
+/**
+ * The link-button chrome for the "Change password" card. Uses the kit's
+ * secondary-Button classes inline because a `<Link>` cannot render a
+ * `<button>`, and adding a LinkButton primitive for one caller would be
+ * more layers than the caller.
+ */
+const LINK_SECONDARY =
+  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
+  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink ' +
+  'transition-colors hover:bg-surface-muted focus-visible:outline ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2';
 
 export default async function ProfilePage() {
   const actor = await requireAccess('/profile');
@@ -50,114 +64,94 @@ export default async function ProfilePage() {
   );
 
   return (
-    <AppShell actor={actor} title="Your profile">
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">Your profile</h1>
-        <p className="ux4g-body-m-default">
-          Your name and registration number appear on every request you raise, so an
-          administrator agrees to a change before it applies. Your address and your
-          password are yours to change.
+    <KitShell role={actor.role} currentPath="/profile" currentTitle="Your profile">
+      <PageHeader
+        title="Your profile"
+        description="Your name and registration number appear on every request you raise, so an administrator agrees to a change before it applies. Your address and your password are yours to change."
+      />
+
+      <Card title="Your details">
+        <DescList
+          items={[
+            { term: 'Name', value: account?.fullName ?? '—' },
+            { term: 'Email', value: account?.email ?? '—' },
+            {
+              term: 'Registration',
+              value: (
+                <span className="tabular-nums">
+                  {account?.provisionalReg ?? 'Not recorded'}
+                </span>
+              ),
+            },
+          ]}
+        />
+      </Card>
+
+      <Card title="Change your email address">
+        <p className="mb-4 text-xs text-ink-subtle">
+          You confirm it yourself, from the new address. Nobody else approves
+          it.
         </p>
-      </div>
+        {pending ? (
+          <div className="space-y-3">
+            {/*
+              A change in flight is shown with a way out. The third ending
+              of this flow is withdrawing it, and a request that can only
+              be completed or abandoned silently is the dead end §8
+              forbids.
+            */}
+            <p
+              role="status"
+              className="rounded-control border border-info/30 bg-info-soft px-3 py-2 text-sm text-ink"
+            >
+              Waiting for{' '}
+              <span className="font-medium">{pending.newEmail}</span> to
+              confirm. Your account keeps its current address until then.
+            </p>
+            <form action={cancelEmailChangeAction}>
+              <Button type="submit" variant="danger" size="sm">
+                Cancel this change
+              </Button>
+            </form>
+          </div>
+        ) : (
+          <RequestEmailChangeForm
+            action={requestEmailChangeAction}
+            currentEmail={account?.email ?? ''}
+          />
+        )}
+      </Card>
 
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">Your details</h2>
-        </div>
-        <div className="ux4g-card-body">
-          <dl className="app-stack-tight">
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Name</dt>
-              <dd className="ux4g-body-s-default">{account?.fullName ?? '-'}</dd>
-            </div>
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Email</dt>
-              <dd className="ux4g-body-s-default">{account?.email ?? '-'}</dd>
-            </div>
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Registration</dt>
-              <dd className="ux4g-body-s-default app-figure">
-                {account?.provisionalReg ?? 'Not recorded'}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </section>
-
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">Change your email address</h2>
-          <p className="ux4g-card-sub-title">
-            You confirm it yourself, from the new address. Nobody else approves it.
-          </p>
-        </div>
-        <div className="ux4g-card-body">
-          {pending ? (
-            <div className="app-stack">
-              {/*
-                A change in flight is shown with a way out. The third ending of
-                this flow is withdrawing it, and a request that can only be
-                completed or abandoned silently is the dead end §8 forbids.
-              */}
-              <div className="ux4g-alert ux4g-alert-info" role="status">
-                <div className="ux4g-alert-content">
-                  <p className="ux4g-alert-message">
-                    Waiting for {pending.newEmail} to confirm. Your account keeps its
-                    current address until then.
-                  </p>
-                </div>
-              </div>
-              <form action={cancelEmailChangeAction}>
-                <button
-                  type="submit"
-                  className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
-                >
-                  Cancel this change
-                </button>
-              </form>
-            </div>
-          ) : (
-            <RequestEmailChangeForm
-              action={requestEmailChangeAction}
-              currentEmail={account?.email ?? ''}
-            />
-          )}
-        </div>
-      </section>
-
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">Ask to change your name or registration</h2>
-          <p className="ux4g-card-sub-title">
-            An administrator decides, and the change is applied for you.
-          </p>
-        </div>
-        <div className="ux4g-card-body app-stack">
+      <Card title="Ask to change your name or registration">
+        <p className="mb-4 text-xs text-ink-subtle">
+          An administrator decides, and the change is applied for you.
+        </p>
+        <div className="space-y-4">
           {waiting.length > 0 && (
-            <ul className="app-stack-tight app-plain-list">
+            <ul className="space-y-3">
               {waiting.map((row) => (
-                <li key={row.id}>
-                  <div className="ux4g-alert ux4g-alert-info" role="status">
-                    <div className="ux4g-alert-content">
-                      <p className="ux4g-alert-message">
-                        Waiting on your administrator: {UPDATE_REQUEST_LABELS[row.field]} to
-                        read {row.proposedValue}.
-                      </p>
-                    </div>
-                  </div>
+                <li key={row.id} className="space-y-2">
+                  <p
+                    role="status"
+                    className="rounded-control border border-info/30 bg-info-soft px-3 py-2 text-sm text-ink"
+                  >
+                    Waiting on your administrator:{' '}
+                    <span className="font-medium">
+                      {UPDATE_REQUEST_LABELS[row.field]}
+                    </span>{' '}
+                    to read{' '}
+                    <span className="font-medium">{row.proposedValue}</span>.
+                  </p>
                   {/*
-                    Every request in flight has a way out. A request that can
-                    only be decided by somebody else, with nothing the person
-                    can do, is the dead end §8 forbids.
+                    Every request in flight has a way out. A request that
+                    can only be decided by somebody else, with nothing the
+                    person can do, is the dead end §8 forbids.
                   */}
                   <form action={withdrawAccountUpdateAction}>
                     <input type="hidden" name="requestId" value={row.id} />
-                    <button
-                      type="submit"
-                      className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
-                    >
+                    <Button type="submit" variant="danger" size="sm">
                       Withdraw it
-                    </button>
+                    </Button>
                   </form>
                 </li>
               ))}
@@ -165,25 +159,21 @@ export default async function ProfilePage() {
           )}
 
           {decided.length > 0 && (
-            <ul className="app-stack-tight app-plain-list">
+            <ul className="space-y-2">
               {decided.map((row) => (
                 <li key={row.id}>
-                  <div
+                  <p
+                    role="status"
                     className={
                       row.status === 'approved'
-                        ? 'ux4g-alert ux4g-alert-success'
-                        : 'ux4g-alert ux4g-alert-warning'
+                        ? 'rounded-control border border-success/30 bg-success-soft px-3 py-2 text-sm text-ink'
+                        : 'rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink'
                     }
-                    role="status"
                   >
-                    <div className="ux4g-alert-content">
-                      <p className="ux4g-alert-message">
-                        {row.status === 'approved'
-                          ? `${UPDATE_REQUEST_LABELS[row.field]} now reads ${row.proposedValue}.`
-                          : `${UPDATE_REQUEST_LABELS[row.field]} was not changed. ${row.adminNote ?? ''}`}
-                      </p>
-                    </div>
-                  </div>
+                    {row.status === 'approved'
+                      ? `${UPDATE_REQUEST_LABELS[row.field]} now reads ${row.proposedValue}.`
+                      : `${UPDATE_REQUEST_LABELS[row.field]} was not changed. ${row.adminNote ?? ''}`}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -195,21 +185,16 @@ export default async function ProfilePage() {
             currentReg={account?.provisionalReg ?? ''}
           />
         </div>
-      </section>
+      </Card>
 
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">Change your password</h2>
-          <p className="ux4g-card-sub-title">
-            Uses the same six-digit code as a reset, sent to your address.
-          </p>
-        </div>
-        <div className="ux4g-card-footer">
-          <Link className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target" href="/reset">
-            Change password
-          </Link>
-        </div>
-      </section>
-    </AppShell>
+      <Card title="Change your password">
+        <p className="mb-4 text-xs text-ink-subtle">
+          Uses the same six-digit code as a reset, sent to your address.
+        </p>
+        <Link href="/reset" className={LINK_SECONDARY}>
+          Change password
+        </Link>
+      </Card>
+    </KitShell>
   );
 }
