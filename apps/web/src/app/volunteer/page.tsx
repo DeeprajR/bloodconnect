@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../shell';
+import { Card, PageHeader } from '@blood-connect/ui';
+
+import { KitShell } from '../kit-shell';
 import { LiveRefresh } from './live';
 import { PressureLegend, PressureTiles } from './pressure-tiles';
 import { ShareMessage } from './share-message';
@@ -31,7 +33,8 @@ const boardUrl = (): string =>
   `${process.env['STAFF_APP_URL']?.replace(/\/+$/, '') ?? 'http://localhost:3000'}/board`;
 
 /** A stored `YYYY-MM-DD` read as a day in Kerala, not in the server's zone. */
-const asDay = (value: string): string => dayFormat.format(new Date(`${value}T00:00:00+05:30`));
+const asDay = (value: string): string =>
+  dayFormat.format(new Date(`${value}T00:00:00+05:30`));
 
 export default async function VolunteerPage({
   searchParams,
@@ -39,13 +42,15 @@ export default async function VolunteerPage({
   searchParams: Promise<{ group?: string }>;
 }) {
   const actor = await requireAccess('/volunteer');
+  if (actor.kind !== 'user') return null;
+
   const ctx = await useCaseContext(actor);
   const scope = scopeFor(actor);
 
   const tiles = await groupPressure(ctx, scope);
 
-  // Guarded rather than trusted: a group arrives from a URL, and an unchecked
-  // one would make the tile link into a probe against the query.
+  // Guarded rather than trusted: a group arrives from a URL, and an
+  // unchecked one would make the tile link into a probe against the query.
   const { group: requested } = await searchParams;
   const group = asBloodGroup(requested);
 
@@ -68,81 +73,107 @@ export default async function VolunteerPage({
     : null;
 
   return (
-    <AppShell actor={actor} title="Volunteer">
+    <KitShell role={actor.role} currentPath="/volunteer" currentTitle="Volunteer">
       <LiveRefresh />
 
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">Where blood is needed</h1>
-        <p className="ux4g-body-m-default">
-          Counts and hospitals. No patient, no doctor and no donor appears on this
-          screen.
-          {scope.districtId ? ' Showing your district only.' : null}
-        </p>
-      </div>
+      <PageHeader
+        title="Where blood is needed"
+        description={`Counts and hospitals. No patient, no doctor and no donor appears on this screen.${
+          scope.districtId ? ' Showing your district only.' : ''
+        }`}
+      />
 
-      <section className="app-stack-tight" aria-label="Pressure by blood group">
+      <section aria-label="Pressure by blood group" className="space-y-3">
         <PressureTiles tiles={tiles} selected={group} />
         <PressureLegend levels={PRESSURE_LEVELS} />
       </section>
 
       {group === null ? (
-        <div className="ux4g-alert ux4g-alert-info" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              Choose a group above to see what is open behind it, and the message to
-              forward.
-            </p>
-          </div>
-        </div>
+        <p
+          role="status"
+          className="rounded-control border border-info/30 bg-info-soft px-3 py-2 text-sm text-ink"
+        >
+          Choose a group above to see what is open behind it, and the message
+          to forward.
+        </p>
       ) : (
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <div className="app-row-split">
-              <h2 className="ux4g-card-title">
-                Open for <span className="app-figure">{group}</span>
-              </h2>
-              <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md app-target" href="/volunteer">
-                Clear
-              </Link>
-            </div>
-          </div>
-
-          <div className="ux4g-card-body app-stack">
+        <Card
+          title={`Open for ${group}`}
+          actions={
+            <Link
+              href="/volunteer"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Clear
+            </Link>
+          }
+        >
+          <div className="space-y-4">
             {demands.length === 0 ? (
-              <p className="ux4g-body-m-default">
-                Nothing open for {group} right now. Thank you. Please keep the group
-                ready.
+              <p className="text-sm text-ink-muted">
+                Nothing open for {group} right now. Thank you. Please keep
+                the group ready.
               </p>
             ) : (
-              <div className="app-scroll-x">
-                <table className="ux4g-table">
-                  <caption className="app-sr-only">
+              <div className="overflow-x-auto rounded-card border border-border">
+                <table className="w-full border-collapse text-sm">
+                  <caption className="sr-only">
                     {`Open demand for ${group}, soonest first`}
                   </caption>
                   <thead>
-                    <tr>
-                      <th scope="col">Hospital</th>
-                      <th scope="col">Town</th>
-                      <th scope="col">Still needed</th>
-                      <th scope="col">Confirmed</th>
-                      <th scope="col">Messaged</th>
-                      <th scope="col">Needed by</th>
+                    <tr className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-ink-subtle">
+                      <th scope="col" className="px-4 py-2 text-left font-semibold">
+                        Hospital
+                      </th>
+                      <th scope="col" className="px-4 py-2 text-left font-semibold">
+                        Town
+                      </th>
+                      <th scope="col" className="px-4 py-2 text-right font-semibold">
+                        Still needed
+                      </th>
+                      <th scope="col" className="px-4 py-2 text-right font-semibold">
+                        Confirmed
+                      </th>
+                      <th scope="col" className="px-4 py-2 text-right font-semibold">
+                        Messaged
+                      </th>
+                      <th scope="col" className="px-4 py-2 text-right font-semibold">
+                        Needed by
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {demands.map((line) => (
-                      <tr key={line.id}>
-                        <th scope="row">
+                      <tr
+                        key={line.id}
+                        className="border-b border-border last:border-0"
+                      >
+                        <th
+                          scope="row"
+                          className="px-4 py-2.5 text-left align-middle font-medium text-ink"
+                        >
                           {line.hospitalName}
                           {line.forStockFloor ? (
-                            <span className="ux4g-label-s-default"> · shelf below floor</span>
+                            <span className="ml-1 text-xs font-normal text-ink-subtle">
+                              · shelf below floor
+                            </span>
                           ) : null}
                         </th>
-                        <td>{line.town ?? '-'}</td>
-                        <td className="app-figure">{line.unitsOutstanding}</td>
-                        <td className="app-figure">{line.unitsConfirmed}</td>
-                        <td className="app-figure">{line.donorsNotified}</td>
-                        <td className="app-figure">{asDay(line.neededBy)}</td>
+                        <td className="px-4 py-2.5 align-middle text-ink">
+                          {line.town ?? '—'}
+                        </td>
+                        <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                          {line.unitsOutstanding}
+                        </td>
+                        <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                          {line.unitsConfirmed}
+                        </td>
+                        <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                          {line.donorsNotified}
+                        </td>
+                        <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                          {asDay(line.neededBy)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -151,13 +182,13 @@ export default async function VolunteerPage({
             )}
 
             {message ? <ShareMessage message={message} /> : null}
-          </div>
 
-          <div className="ux4g-card-footer">
-            <TrendStrip points={history} group={group} />
+            <div className="border-t border-border pt-4">
+              <TrendStrip points={history} group={group} />
+            </div>
           </div>
-        </section>
+        </Card>
       )}
-    </AppShell>
+    </KitShell>
   );
 }
