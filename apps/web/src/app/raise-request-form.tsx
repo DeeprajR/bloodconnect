@@ -3,6 +3,8 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
+import { Button } from '@blood-connect/ui';
+
 import {
   BLOOD_GROUPS,
   PRODUCTS,
@@ -18,8 +20,8 @@ import { raiseRequestAction, type FormState } from './hospital-actions';
 /**
  * The doctor's whole job, on one screen (§3, ADR 0010).
  *
- * **Four inputs, and speed is the requirement.** This is filled at a bedside by
- * somebody handling several patients, often standing up, sometimes with a
+ * **Four inputs, and speed is the requirement.** This is filled at a bedside
+ * by somebody handling several patients, often standing up, sometimes with a
  * bleeding patient in front of them. So the four are big, tappable and above
  * the fold, and everything else is behind one disclosure that starts closed.
  *
@@ -28,13 +30,14 @@ import { raiseRequestAction, type FormState } from './hospital-actions';
  *  1. **Buttons, not dropdowns**, for group, product and urgency. A native
  *     select is two taps and a scroll; a radio grid is one tap and needs no
  *     aim. It costs vertical space, which is the right thing to spend here.
- *  2. **The collapsed section is a native `<details>`.** No JavaScript decides
- *     whether it opens, so it works before hydration and on a bad hospital
- *     connection, and the fields inside are still in the form, so a doctor who
- *     opened it, filled it, and collapsed it again does not lose the answers.
- *  3. **Nothing inside it is required.** Opening it must never be able to stop
- *     the request going through; the centre fills in what is missing when the
- *     bystander arrives with the ID.
+ *  2. **The collapsed section is a native `<details>`.** No JavaScript
+ *     decides whether it opens, so it works before hydration and on a bad
+ *     hospital connection, and the fields inside are still in the form, so
+ *     a doctor who opened it, filled it, and collapsed it again does not
+ *     lose the answers.
+ *  3. **Nothing inside it is required.** Opening it must never be able to
+ *     stop the request going through; the centre fills in what is missing
+ *     when the bystander arrives with the ID.
  */
 
 const initial: FormState = { error: null };
@@ -42,25 +45,25 @@ const initial: FormState = { error: null };
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button
+    <Button
       type="submit"
-      className="ux4g-btn ux4g-btn-primary ux4g-btn-lg app-target app-raise-submit"
-      disabled={pending}
-      aria-disabled={pending}
+      loading={pending}
+      className="h-12 w-full text-base"
     >
       {pending ? 'Sending…' : 'Send to the blood centre'}
-    </button>
+    </Button>
   );
 }
 
 function Problem({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="ux4g-alert ux4g-alert-error" role="alert">
-      <div className="ux4g-alert-content">
-        <p className="ux4g-alert-message">{message}</p>
-      </div>
-    </div>
+    <p
+      role="alert"
+      className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {message}
+    </p>
   );
 }
 
@@ -68,16 +71,19 @@ function Problem({ message }: { message: string | null }) {
  * A row of tappable options, as radios.
  *
  * Radios rather than buttons with state: the browser handles selection,
- * keyboard and screen-reader semantics, and the form submits without a single
- * line of JavaScript. The visible control is the label; the input itself is
- * hidden from sight but not from assistive technology.
+ * keyboard and screen-reader semantics, and the form submits without a
+ * single line of JavaScript. The visible control is the label; the input
+ * itself is visually hidden but not hidden from assistive technology.
+ *
+ * The `has-[input:checked]` variant reads the checked state from the input
+ * inside the label and styles the label itself; no useState involved.
  */
 function ChoiceRow({
   name,
   legend,
   options,
   defaultValue,
-  columns,
+  columns = 3,
 }: {
   name: string;
   legend: string;
@@ -86,20 +92,24 @@ function ChoiceRow({
   columns?: number;
 }) {
   return (
-    <fieldset className="ux4g-form-group app-stack-tight">
-      <legend className="ux4g-label-l-strong">{legend}</legend>
+    <fieldset className="space-y-2">
+      <legend className="block text-sm font-semibold text-ink">{legend}</legend>
       <div
-        className="app-choices"
-        style={columns ? { gridTemplateColumns: `repeat(${String(columns)}, 1fr)` } : undefined}
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${String(columns)}, minmax(0, 1fr))` }}
       >
         {options.map((option) => (
-          <label className="app-choice" key={option.value}>
+          <label
+            key={option.value}
+            className="flex h-12 cursor-pointer items-center justify-center rounded-control border border-border-strong bg-surface px-2 text-center text-sm font-medium text-ink transition-colors hover:bg-surface-muted focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 has-[input:checked]:border-primary has-[input:checked]:bg-primary-soft has-[input:checked]:text-primary"
+          >
             <input
               type="radio"
               name={name}
               value={option.value}
               defaultChecked={option.value === defaultValue}
               required
+              className="sr-only"
             />
             <span>{option.label}</span>
           </label>
@@ -125,21 +135,21 @@ function Field({
   inputMode?: 'text' | 'numeric' | 'tel';
 }) {
   return (
-    <div className="ux4g-form-group app-stack-tight">
-      <label className="ux4g-label-m-strong" htmlFor={id}>
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-sm font-medium text-ink">
         {label}
       </label>
       <input
-        className="ux4g-input ux4g-input-md"
+        className="h-10 w-full rounded-control border border-border-strong bg-surface px-3 text-sm text-ink placeholder:text-ink-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         id={id}
         name={id}
         type={type}
-        inputMode={inputMode}
-        defaultValue={defaultValue}
+        {...(inputMode !== undefined ? { inputMode } : {})}
+        {...(defaultValue !== undefined ? { defaultValue } : {})}
         aria-describedby={hint ? `${id}-hint` : undefined}
       />
       {hint ? (
-        <p className="ux4g-label-m-default" id={`${id}-hint`}>
+        <p id={`${id}-hint`} className="text-xs text-ink-subtle">
           {hint}
         </p>
       ) : null}
@@ -164,7 +174,7 @@ export function RaiseRequestForm({
   const [moreUnits, setMoreUnits] = useState(false);
 
   return (
-    <form action={action} className="app-stack" noValidate>
+    <form action={action} className="space-y-5" noValidate>
       <Problem message={state.error} />
 
       {/* ---------------------------------------------------- the four --- */}
@@ -183,11 +193,13 @@ export function RaiseRequestForm({
         defaultValue="prbc"
       />
 
-      <fieldset className="ux4g-form-group app-stack-tight">
-        <legend className="ux4g-label-l-strong">{WORDING.units}</legend>
+      <fieldset className="space-y-2">
+        <legend className="block text-sm font-semibold text-ink">
+          {WORDING.units}
+        </legend>
         {moreUnits ? (
           <input
-            className="ux4g-input ux4g-input-lg"
+            className="h-12 w-full rounded-control border border-border-strong bg-surface px-3 text-lg font-medium text-ink tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             name="units"
             type="number"
             inputMode="numeric"
@@ -198,23 +210,35 @@ export function RaiseRequestForm({
             aria-label={WORDING.units}
           />
         ) : (
-          <div className="app-choices" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}
+          >
             {unitOptions.map((option) => (
-              <label className="app-choice" key={option.value}>
-                <input type="radio" name="units" value={option.value} required />
+              <label
+                key={option.value}
+                className="flex h-12 cursor-pointer items-center justify-center rounded-control border border-border-strong bg-surface text-sm font-medium text-ink transition-colors hover:bg-surface-muted focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 has-[input:checked]:border-primary has-[input:checked]:bg-primary-soft has-[input:checked]:text-primary"
+              >
+                <input
+                  type="radio"
+                  name="units"
+                  value={option.value}
+                  required
+                  className="sr-only"
+                />
                 <span>{option.label}</span>
               </label>
             ))}
             {/*
-              Four buttons covers almost every request; the fifth swaps in a
+              Four buttons cover almost every request; the fifth swaps in a
               number field rather than putting twenty buttons on the screen.
             */}
             <button
               type="button"
-              className="app-choice app-choice-more"
               onClick={() => {
                 setMoreUnits(true);
               }}
+              className="flex h-12 items-center justify-center rounded-control border border-dashed border-border-strong bg-surface text-sm font-medium text-ink-muted transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               5+
             </button>
@@ -229,27 +253,30 @@ export function RaiseRequestForm({
       {/* ------------------------------------------------ the rest ------- */}
       {/*
         Closed by default, and open when the doctor arrived from an admitted
-        patient, the one case where they already have the answers in front of
-        them and retyping would be the slow path.
+        patient, the one case where they already have the answers in front
+        of them and retyping would be the slow path.
       */}
-      <details className="app-more" open={admissionId !== undefined}>
-        <summary className="app-more-summary">
-          <span className="app-stack-tight">
-            <span>Patient and clinical details</span>
-            <span className="ux4g-label-m-default">
+      <details
+        className="group rounded-card border border-border bg-surface"
+        open={admissionId !== undefined}
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-ink">
+              Patient and clinical details
+            </p>
+            <p className="text-xs text-ink-subtle">
               Optional, the blood centre fills these in
-            </span>
-          </span>
+            </p>
+          </div>
           {/*
-            The affordance. `display: flex` on a `<summary>` removes the
-            browser's own marker, so the chevron is drawn here where it can be
-            placed and rotated. Hidden from assistive technology: the
-            open/closed state is already on the `<details>` element itself.
+            `display: flex` on a `<summary>` removes the browser's own
+            marker, so the chevron is drawn here where it can be placed
+            and rotated on open. Hidden from assistive technology: the
+            open/closed state is already on the `<details>` element.
           */}
           <svg
-            className="app-more-chevron"
-            width="20"
-            height="20"
+            className="size-5 shrink-0 text-ink-subtle transition-transform group-open:rotate-180"
             viewBox="0 0 20 20"
             fill="none"
             aria-hidden="true"
@@ -265,15 +292,15 @@ export function RaiseRequestForm({
           </svg>
         </summary>
 
-        <div className="app-stack app-more-body">
-          <p className="ux4g-label-m-default">
+        <div className="space-y-4 border-t border-border px-4 py-4">
+          <p className="text-xs text-ink-subtle">
             {/*
-              Said plainly, because a doctor who does not know this will fill in
-              twenty fields they did not need to (ADR 0010).
+              Said plainly, because a doctor who does not know this will
+              fill in twenty fields they did not need to (ADR 0010).
             */}
             Leave all of this to the blood centre. They collect it from the
-            patient&rsquo;s bystander at the counter, using the ID you are about to
-            get. Fill it in only if you already have it to hand.
+            patient&rsquo;s bystander at the counter, using the ID you are
+            about to get. Fill it in only if you already have it to hand.
           </p>
 
           {admissionId === undefined ? null : (
@@ -281,8 +308,8 @@ export function RaiseRequestForm({
           )}
 
           {patientName === undefined ? null : (
-            <p className="ux4g-body-s-default">
-              Patient: <strong>{patientName}</strong>
+            <p className="text-sm text-ink">
+              Patient: <strong className="font-semibold">{patientName}</strong>
             </p>
           )}
 
@@ -298,12 +325,15 @@ export function RaiseRequestForm({
               />
               <Field id="ward" label={WORDING.ward} />
 
-              <div className="ux4g-form-group app-stack-tight">
-                <label className="ux4g-label-m-strong" htmlFor="patientBloodGroup">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="patientBloodGroup"
+                  className="block text-sm font-medium text-ink"
+                >
                   Patient’s own blood group
                 </label>
                 <select
-                  className="ux4g-form-select ux4g-form-select-md"
+                  className="h-10 w-full rounded-control border border-border-strong bg-surface px-3 pr-8 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   id="patientBloodGroup"
                   name="patientBloodGroup"
                   defaultValue=""
@@ -315,7 +345,7 @@ export function RaiseRequestForm({
                     </option>
                   ))}
                 </select>
-                <p className="ux4g-label-m-default">
+                <p className="text-xs text-ink-subtle">
                   {/*
                     Not the same claim as the group being requested: an
                     emergency is often answered with O− whatever the patient
@@ -325,14 +355,22 @@ export function RaiseRequestForm({
                 </p>
               </div>
 
-              <div className="app-row">
-                <Field id="age" label={WORDING.age} type="number" inputMode="numeric" />
-                <div className="ux4g-form-group app-stack-tight">
-                  <label className="ux4g-label-m-strong" htmlFor="ageUnit">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field
+                  id="age"
+                  label={WORDING.age}
+                  type="number"
+                  inputMode="numeric"
+                />
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="ageUnit"
+                    className="block text-sm font-medium text-ink"
+                  >
                     Age unit
                   </label>
                   <select
-                    className="ux4g-form-select ux4g-form-select-md"
+                    className="h-10 w-full rounded-control border border-border-strong bg-surface px-3 pr-8 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                     id="ageUnit"
                     name="ageUnit"
                     defaultValue="years"
@@ -344,12 +382,15 @@ export function RaiseRequestForm({
                 </div>
               </div>
 
-              <div className="ux4g-form-group app-stack-tight">
-                <label className="ux4g-label-m-strong" htmlFor="sex">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sex"
+                  className="block text-sm font-medium text-ink"
+                >
                   {WORDING.sex}
                 </label>
                 <select
-                  className="ux4g-form-select ux4g-form-select-md"
+                  className="h-10 w-full rounded-control border border-border-strong bg-surface px-3 pr-8 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   id="sex"
                   name="sex"
                   defaultValue=""

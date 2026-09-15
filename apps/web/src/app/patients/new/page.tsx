@@ -1,33 +1,48 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
-import { PatientForm } from '../../hospital-forms';
+import { Card } from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
+import { PatientForm } from './form';
 import { requireAccess } from '@/lib/guards';
 
 export const metadata: Metadata = { title: 'New patient · Blood Connect' };
 
 export default async function NewPatientPage() {
   const actor = await requireAccess('/patients/new');
+  if (actor.kind !== 'user') return null;
 
   return (
-    <AppShell actor={actor} title="New patient" narrow>
-      <div className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h1 className="ux4g-card-title">Record a patient</h1>
-          <p className="ux4g-card-sub-title">
-            Then create the admission. A request is always made against an admission.
+    <KitShell
+      role={actor.role}
+      currentPath="/patients/new"
+      currentTitle="New patient"
+    >
+      <div className="mx-auto w-full max-w-2xl space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">
+            Record a patient
+          </h1>
+          <p className="text-sm text-ink-muted">
+            Then create the admission. A request is always made against an
+            admission.
           </p>
         </div>
-        <div className="ux4g-card-body">
+
+        <Card>
           <PatientForm />
-        </div>
-        <div className="ux4g-card-footer">
-          <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/dashboard">
-            Back to the dashboard
+        </Card>
+
+        <div>
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+          >
+            ← Back to the dashboard
           </Link>
         </div>
       </div>
-    </AppShell>
+    </KitShell>
   );
 }

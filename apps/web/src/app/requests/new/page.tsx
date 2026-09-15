@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { Card } from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
 import { RaiseRequestForm } from '../../raise-request-form';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { listAdmissions } from '@blood-connect/hospital';
@@ -21,6 +23,8 @@ export default async function NewRequestPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const actor = await requireAccess('/requests/new');
+  if (actor.kind !== 'user') return null;
+
   const query = await searchParams;
 
   const raw = query['admission'];
@@ -41,19 +45,37 @@ export default async function NewRequestPage({
   }
 
   return (
-    <AppShell actor={actor} title="New request" narrow>
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">New blood request</h1>
-        <p className="ux4g-body-m-default">
-          Four answers, then an ID to give the patient&rsquo;s bystander.
-        </p>
+    <KitShell
+      role={actor.role}
+      currentPath="/requests/new"
+      currentTitle="New request"
+    >
+      <div className="mx-auto w-full max-w-2xl space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">
+            New blood request
+          </h1>
+          <p className="text-sm text-ink-muted">
+            Four answers, then an ID to give the patient&rsquo;s bystander.
+          </p>
+        </div>
+
+        <Card>
+          <RaiseRequestForm
+            {...(admissionId !== undefined ? { admissionId } : {})}
+            {...(patientName !== undefined ? { patientName } : {})}
+          />
+        </Card>
+
+        <div>
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+          >
+            ← Cancel and go back
+          </Link>
+        </div>
       </div>
-
-      <RaiseRequestForm admissionId={admissionId} patientName={patientName} />
-
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/dashboard">
-        Cancel
-      </Link>
-    </AppShell>
+    </KitShell>
   );
 }
