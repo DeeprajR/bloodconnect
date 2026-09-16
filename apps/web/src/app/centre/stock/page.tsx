@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { Card, PageHeader, StatusBadge } from '@blood-connect/ui';
+
 import { CentreShell } from '../../centre-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { listBags } from '@blood-connect/centre';
@@ -28,12 +30,23 @@ const STATUSES = [
   'lost',
 ] as const;
 
+const LINK_PRIMARY =
+  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
+  'border border-transparent bg-primary px-4 text-sm font-medium text-white ' +
+  'transition-colors hover:bg-primary-hover focus-visible:outline ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2';
+
+const CONTROL =
+  'h-10 w-full rounded-control border border-border-strong bg-surface px-3 ' +
+  'text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+
 export default async function StockPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const actor = await requireAccess('/centre/stock');
+  if (actor.kind !== 'user') return null;
   const ctx = await useCaseContext(actor);
   const query = await searchParams;
 
@@ -52,124 +65,135 @@ export default async function StockPage({
   const today = ctx.clock.today();
 
   return (
-    <CentreShell actor={actor} title="Register">
-      <div className="app-row-split">
-        <div className="app-stack-tight">
-          <h1 className="ux4g-heading-l-strong">The register</h1>
-          <p className="ux4g-body-m-default">
-            One row per physical bag, shortest-dated first, which is the order units
-            are issued in.
-          </p>
-        </div>
-        <Link
-          className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target"
-          href="/centre/stock/new"
-        >
-          Register a bag
-        </Link>
-      </div>
+    <CentreShell actor={actor} title="Register" currentPath="/centre/stock">
+      <PageHeader
+        title="The register"
+        description="One row per physical bag, shortest-dated first, which is the order units are issued in."
+        actions={
+          <Link href="/centre/stock/new" className={LINK_PRIMARY}>
+            Register a bag
+          </Link>
+        }
+      />
 
       {one('flagged') ? (
-        <div className="ux4g-alert ux4g-alert-warning" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              {/*
-                The label won and the bag was registered. Flagged, not blocked
-                (§4). The operator has the unit in their hand, the system does
-                not.
-              */}
-              That bag was registered with the expiry printed on its label, which
-              did not match the date derived from its collection. Check the unit
-              against the label.
-            </p>
-          </div>
-        </div>
+        <p
+          role="alert"
+          className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+        >
+          {/*
+            The label won and the bag was registered. Flagged, not
+            blocked (§4). The operator has the unit in their hand, the
+            system does not.
+          */}
+          <span className="font-medium text-warning">Expiry mismatch.</span>{' '}
+          That bag was registered with the expiry printed on its label, which
+          did not match the date derived from its collection. Check the unit
+          against the label.
+        </p>
       ) : null}
 
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <form className="app-row" method="get">
-            <div className="ux4g-form-group app-stack-tight">
-              <label className="ux4g-label-m-strong" htmlFor="group">
-                Group
-              </label>
-              <select
-                className="ux4g-form-select ux4g-form-select-md"
-                id="group"
-                name="group"
-                defaultValue={filter.bloodGroup ?? ''}
-              >
-                <option value="">All</option>
-                {BLOOD_GROUPS.map((group) => (
-                  <option key={group} value={group}>
-                    {bloodGroupLabel(group)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="ux4g-form-group app-stack-tight">
-              <label className="ux4g-label-m-strong" htmlFor="product">
-                {WORDING.product}
-              </label>
-              <select
-                className="ux4g-form-select ux4g-form-select-md"
-                id="product"
-                name="product"
-                defaultValue={filter.product ?? ''}
-              >
-                <option value="">All</option>
-                {PRODUCTS.map((product) => (
-                  <option key={product} value={product}>
-                    {productLabel(product)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="ux4g-form-group app-stack-tight">
-              <label className="ux4g-label-m-strong" htmlFor="status">
-                Status
-              </label>
-              <select
-                className="ux4g-form-select ux4g-form-select-md"
-                id="status"
-                name="status"
-                defaultValue={filter.status}
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
+      <Card>
+        <form
+          method="get"
+          className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end"
+        >
+          <div className="space-y-1.5">
+            <label htmlFor="group" className="block text-sm font-medium text-ink">
+              Group
+            </label>
+            <select
+              id="group"
+              name="group"
+              defaultValue={filter.bloodGroup ?? ''}
+              className={CONTROL}
             >
-              Filter
-            </button>
-          </form>
-        </div>
+              <option value="">All</option>
+              {BLOOD_GROUPS.map((group) => (
+                <option key={group} value={group}>
+                  {bloodGroupLabel(group)}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="ux4g-card-body app-scroll-x">
-          {bags.length === 0 ? (
-            <p className="ux4g-body-s-default">Nothing matches that filter.</p>
-          ) : (
-            <table className="ux4g-table">
+          <div className="space-y-1.5">
+            <label htmlFor="product" className="block text-sm font-medium text-ink">
+              {WORDING.product}
+            </label>
+            <select
+              id="product"
+              name="product"
+              defaultValue={filter.product ?? ''}
+              className={CONTROL}
+            >
+              <option value="">All</option>
+              {PRODUCTS.map((product) => (
+                <option key={product} value={product}>
+                  {productLabel(product)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="status" className="block text-sm font-medium text-ink">
+              Status
+            </label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={filter.status}
+              className={CONTROL}
+            >
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="inline-flex h-10 items-center justify-center rounded-control border border-border-strong bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted"
+          >
+            Filter
+          </button>
+        </form>
+
+        {bags.length === 0 ? (
+          <p className="rounded-card border border-dashed border-border-strong bg-surface p-8 text-center text-sm text-ink-muted">
+            Nothing matches that filter.
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-card border border-border">
+            <table className="w-full border-collapse text-sm">
               <thead>
-                <tr>
-                  <th scope="col">{WORDING.unitNumber}</th>
-                  <th scope="col">Group</th>
-                  <th scope="col">{WORDING.product}</th>
-                  <th scope="col">{WORDING.collectedOn}</th>
-                  <th scope="col">{WORDING.expiresOn}</th>
-                  <th scope="col">Days left</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">
-                    <span className="app-sr-only">Action</span>
+                <tr className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-ink-subtle">
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    {WORDING.unitNumber}
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    Group
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    {WORDING.product}
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    {WORDING.collectedOn}
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    {WORDING.expiresOn}
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Days left
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    <span className="sr-only">Action</span>
                   </th>
                 </tr>
               </thead>
@@ -178,36 +202,49 @@ export default async function StockPage({
                   const expiry = parseCalendarDay(bag.expiresAt);
                   const left = expiry ? daysUntilExpiry(expiry, today) : null;
                   return (
-                    <tr key={bag.id}>
-                      <td className="app-figure">{bag.unitNumber}</td>
-                      <td className="app-figure">
+                    <tr
+                      key={bag.id}
+                      className="border-b border-border last:border-0"
+                    >
+                      <td className="px-4 py-2.5 align-middle font-mono tabular-nums text-ink">
+                        {bag.unitNumber}
+                      </td>
+                      <td className="px-4 py-2.5 align-middle font-medium tabular-nums text-ink">
                         {bloodGroupLabel(bag.bloodGroup as never)}
                       </td>
-                      <td>{productLabel(bag.product as never)}</td>
-                      <td className="app-figure">{bag.collectedAt}</td>
-                      <td className="app-figure">
+                      <td className="px-4 py-2.5 align-middle text-ink">
+                        {productLabel(bag.product as never)}
+                      </td>
+                      <td className="px-4 py-2.5 align-middle tabular-nums text-ink">
+                        {bag.collectedAt}
+                      </td>
+                      <td className="px-4 py-2.5 align-middle tabular-nums text-ink">
                         {bag.expiresAt}
                         {bag.expirySource === 'label' ? (
-                          <span className="ux4g-label-m-default"> (label)</span>
+                          <span className="ml-1 text-xs font-normal text-ink-subtle">
+                            (label)
+                          </span>
                         ) : null}
                       </td>
-                      <td className="app-figure">
+                      <td className="px-4 py-2.5 text-right align-middle">
                         {left === null ? (
-                          '-'
+                          <span className="text-ink-muted">—</span>
                         ) : left < 0 ? (
-                          <span className="ux4g-badge-digit-danger">expired</span>
+                          <StatusBadge label="expired" tone="danger" />
                         ) : left <= 7 ? (
-                          <span className="ux4g-badge-digit-danger">{left}</span>
+                          <StatusBadge label={String(left)} tone="danger" />
                         ) : (
-                          left
+                          <span className="tabular-nums text-ink">{left}</span>
                         )}
                       </td>
-                      <td>{bag.status}</td>
-                      <td>
+                      <td className="px-4 py-2.5 align-middle text-ink">
+                        {bag.status}
+                      </td>
+                      <td className="px-4 py-2.5 text-right align-middle">
                         {/*
-                          Offered only where it is a legal move (§12.1). A bag
-                          that is issued or already discarded gets no button,
-                          rather than a button that fails.
+                          Offered only where it is a legal move (§12.1).
+                          A bag that is issued or already discarded gets
+                          no button, rather than a button that fails.
                         */}
                         {bag.status === 'available' ||
                         bag.status === 'quarantined' ||
@@ -221,25 +258,29 @@ export default async function StockPage({
                 })}
               </tbody>
             </table>
-          )}
-        </div>
-        <div className="ux4g-card-footer">
-          <p className="ux4g-label-m-default">
-            {/*
-              A discard is not a status change, it is a physical event with a
-              route (§12.1). Returns start at the tag, because that is where the
-              unit is in somebody's hand.
-            */}
-            A returned unit is recorded by scanning its tag. A discard always asks where
-            the unit physically went. The fridge camera that counts what is actually on
-            the shelf arrives in a later phase.
-          </p>
-        </div>
-      </section>
+          </div>
+        )}
 
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
-        Back to the overview
-      </Link>
+        <p className="mt-4 text-xs text-ink-subtle">
+          {/*
+            A discard is not a status change, it is a physical event with
+            a route (§12.1). Returns start at the tag, because that is
+            where the unit is in somebody's hand.
+          */}
+          A returned unit is recorded by scanning its tag. A discard always
+          asks where the unit physically went. The fridge camera that counts
+          what is actually on the shelf arrives in a later phase.
+        </p>
+      </Card>
+
+      <div>
+        <Link
+          href="/centre"
+          className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+        >
+          ← Back to the overview
+        </Link>
+      </div>
     </CentreShell>
   );
 }

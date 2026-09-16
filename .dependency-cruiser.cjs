@@ -41,10 +41,16 @@ module.exports = {
       name: 'no-deep-package-imports-from-apps',
       comment:
         'The same rule for everything outside packages/: apps and db import a package by name ' +
-        '(§11.2).',
+        '(§11.2). The one exception is packages/ui/src/tokens/*.css: those files are the kit’s ' +
+        'published CSS subpath entry points, listed in its package.json exports map — the ' +
+        'resolver walks through the exports and lands here, so the deep-looking path is in fact ' +
+        'the contract (ADR 0015).',
       severity: 'error',
       from: { pathNot: '^packages/' },
-      to: { path: '^packages/[^/]+/src/.+' },
+      to: {
+        path: '^packages/[^/]+/src/.+',
+        pathNot: '^packages/ui/src/tokens/[^/]+\\.css$',
+      },
     },
     {
       name: 'contract-is-shared-only',

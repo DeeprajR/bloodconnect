@@ -12,9 +12,15 @@
  * `user`, and renders whatever sign-out control fits the app —
  * typically a `<form action={signOutAction}>` on Bloodconnect —
  * through the `signOutSlot` prop.
+ *
+ * Uses plain `<a href>` rather than `next/link` on purpose: the kit
+ * has no Next dependency of its own so it can be built in isolation
+ * (its `tsc -b` needs no framework install) and can be dropped into
+ * any React-serving surface later. Sidebar clicks do a full-page load,
+ * which is fine here: this rail has under a dozen links and each one
+ * is a route change anyway.
  */
 
-import Link from 'next/link';
 import { type ReactNode } from 'react';
 import { cn } from '../primitives/cn.js';
 
@@ -78,7 +84,7 @@ export function SidebarContent({
 
       <nav className="flex-1 space-y-0.5 px-3 py-2" aria-label="Primary">
         {primaryNav.map((item) => (
-          <Link
+          <a
             key={item.href}
             href={item.href}
             onClick={onNavigate}
@@ -91,7 +97,7 @@ export function SidebarContent({
             )}
           >
             {item.label}
-          </Link>
+          </a>
         ))}
       </nav>
 
@@ -103,7 +109,7 @@ export function SidebarContent({
                 Settings
               </p>
               {secondaryNav.map((item) => (
-                <Link
+                <a
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
@@ -116,7 +122,7 @@ export function SidebarContent({
                   )}
                 >
                   {item.label}
-                </Link>
+                </a>
               ))}
             </>
           )}

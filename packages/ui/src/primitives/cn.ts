@@ -6,6 +6,6 @@
  * `clsx` or `classnames`: the whole kit is presentation and any
  * dependency here reaches into every consuming app.
  */
-export function cn(...parts: Array<string | false | null | undefined>): string {
+export function cn(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ');
 }

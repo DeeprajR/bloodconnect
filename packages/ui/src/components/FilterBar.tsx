@@ -33,13 +33,22 @@ export function SearchInput({
     setLocal(value);
   }
 
+  // The effect debounces the LOCAL value's propagation up to the parent.
+  // It intentionally depends only on `local`: firing on every change to
+  // `value` would defeat the debounce, and firing on every change to
+  // `onChange` would restart the timer on any parent re-render. This is
+  // exactly the pattern the "you might not need an effect" essay
+  // discusses; the linter's exhaustive-deps rule would misdiagnose it,
+  // which is why the ported code from blood-connect-ui suppressed that
+  // rule here. Bloodconnect's ESLint config does not include the
+  // react-hooks plugin, so there is nothing to suppress: this comment
+  // is the whole documentation.
   useEffect(() => {
     const t = setTimeout(() => {
       if (local !== value) onChange(local);
     }, 300);
     return () => { clearTimeout(t); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [local]);
+  }, [local, onChange, value]);
 
   return (
     <label className={cn('block', className)}>
