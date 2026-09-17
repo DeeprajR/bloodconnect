@@ -1,16 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { linkButtonClasses } from '@blood-connect/ui';
 import { useCaseContext } from '@/lib/guards';
 import { anonymousActor, confirmEmailChange } from '@blood-connect/platform';
 
 export const metadata: Metadata = { title: 'Confirm your address · Blood Connect' };
 
-const LINK_PRIMARY =
-  'inline-flex h-11 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-5 text-sm font-medium text-white no-underline ' +
-  'transition-colors hover:bg-primary-hover focus-visible:outline ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2';
+const LINK_PRIMARY = linkButtonClasses({ variant: 'primary', size: 'lg' });
 
 /**
  * The address-change confirmation (§3).

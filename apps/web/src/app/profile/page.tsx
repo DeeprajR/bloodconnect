@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Button, Card, DescList, PageHeader } from '@blood-connect/ui';
+import { Button, Card, DescList, PageHeader, linkButtonClasses } from '@blood-connect/ui';
 
 import { KitShell } from '../kit-shell';
 import { RequestEmailChangeForm } from '../forms';
@@ -24,17 +24,10 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 export const metadata: Metadata = { title: 'Your profile · Blood Connect' };
 
-/**
- * The link-button chrome for the "Change password" card. Uses the kit's
- * secondary-Button classes inline because a `<Link>` cannot render a
- * `<button>`, and adding a LinkButton primitive for one caller would be
- * more layers than the caller.
- */
-const LINK_SECONDARY =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink no-underline ' +
-  'transition-colors hover:bg-surface-muted focus-visible:outline ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2';
+// The link-button chrome for the "Change password" card. A <Link> can't
+// render a <button>, so `linkButtonClasses` (PR-11a) gives it <Button>'s
+// `variant="secondary"` shape instead.
+const LINK_SECONDARY = linkButtonClasses({ variant: 'secondary' });
 
 export default async function ProfilePage() {
   const actor = await requireAccess('/profile');

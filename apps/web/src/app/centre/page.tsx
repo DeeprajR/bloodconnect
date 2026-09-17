@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Card, PageHeader, StatusBadge } from '@blood-connect/ui';
+import { Card, PageHeader, StatusBadge, linkButtonClasses } from '@blood-connect/ui';
 
 import { CentreShell } from '../centre-shell';
 import { RecruitButton } from '../centre-forms';
@@ -23,25 +23,14 @@ import { STOCK_DISPLAY_ORDER, WORDING, bloodGroupLabel } from '@blood-connect/do
 
 export const metadata: Metadata = { title: 'Blood centre · Blood Connect' };
 
-/**
- * Small link-styled-as-button classes for the header CTA and the
- * secondary links in the "register" card. Adding a LinkButton primitive
- * for a handful of callers is more layers than the callers; the kit's
- * tokens (`bg-primary`, `border-border-strong`, `rounded-control`) are
- * available here directly.
- */
-const LINK_PRIMARY =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-4 text-sm font-medium text-white no-underline ' +
-  'transition-colors hover:bg-primary-hover focus-visible:outline ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2';
-const LINK_SECONDARY =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink no-underline ' +
-  'transition-colors hover:bg-surface-muted focus-visible:outline ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2';
-const LINK_GHOST =
-  'text-sm font-medium text-primary hover:underline';
+// The header CTA and the "register" card's secondary links are <Link>s
+// styled as <Button>; `linkButtonClasses` (PR-11a) is the shared shape
+// for that pattern (see the ui-kit-migration handoff doc). LINK_GHOST is
+// a plain colored text link, not a button shape, so it isn't part of
+// that helper.
+const LINK_PRIMARY = linkButtonClasses({ variant: 'primary' });
+const LINK_SECONDARY = linkButtonClasses({ variant: 'secondary' });
+const LINK_GHOST = 'text-sm font-medium text-primary hover:underline';
 
 export default async function CentrePage() {
   const actor = await requireAccess('/centre');

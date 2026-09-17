@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Card, PageHeader, StatusBadge } from '@blood-connect/ui';
+import { Card, PageHeader, StatusBadge, linkButtonClasses } from '@blood-connect/ui';
 
 import { CentreShell } from '../../centre-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
@@ -30,11 +30,7 @@ const STATUSES = [
   'lost',
 ] as const;
 
-const LINK_PRIMARY =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-4 text-sm font-medium text-white no-underline ' +
-  'transition-colors hover:bg-primary-hover focus-visible:outline ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2';
+const LINK_PRIMARY = linkButtonClasses({ variant: 'primary' });
 
 const CONTROL =
   'h-10 w-full rounded-control border border-border-strong bg-surface px-3 ' +

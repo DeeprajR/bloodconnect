@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { linkButtonClasses } from '@blood-connect/ui';
 import { currentActor } from '@/lib/session';
 import { landingFor } from '@blood-connect/platform';
 
@@ -21,20 +22,19 @@ export const metadata: Metadata = { title: 'Blood Connect' };
 export default async function LandingPage() {
   const actor = await currentActor();
 
-  // `no-underline` is not the same as `hover:no-underline`: an `<a>` styled
-  // to look like a button still inherits the browser's default anchor
-  // underline unless it is stripped explicitly. Kit's `<Button>` renders a
-  // `<button>` and does not need this; a `<Link>` shaped like a button does.
-  const linkPrimary =
-    'inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-control ' +
-    'border border-transparent bg-primary px-5 text-sm font-medium text-white no-underline ' +
-    'transition-colors hover:bg-primary-hover focus-visible:outline ' +
-    'focus-visible:outline-2 focus-visible:outline-offset-2';
-  const linkSecondary =
-    'inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-control ' +
-    'border border-border-strong bg-surface px-5 text-sm font-medium text-ink no-underline ' +
-    'transition-colors hover:bg-surface-muted focus-visible:outline ' +
-    'focus-visible:outline-2 focus-visible:outline-offset-2';
+  // `whitespace-nowrap` is page-specific (these two sit side by side in a
+  // flex row and must not wrap), so it's passed as extra className rather
+  // than baked into the shared `linkButtonClasses` (PR-11a) shape.
+  const linkPrimary = linkButtonClasses({
+    variant: 'primary',
+    size: 'lg',
+    className: 'whitespace-nowrap',
+  });
+  const linkSecondary = linkButtonClasses({
+    variant: 'secondary',
+    size: 'lg',
+    className: 'whitespace-nowrap',
+  });
 
   return (
     <div

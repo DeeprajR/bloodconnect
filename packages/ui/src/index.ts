@@ -12,6 +12,12 @@
 
 export { cn } from './primitives/cn.js';
 export { TONES, type Tone } from './primitives/types.js';
+export {
+  linkButtonClasses,
+  type LinkButtonClassesOptions,
+  type LinkButtonVariant,
+  type LinkButtonSize,
+} from './primitives/linkButton.js';
 
 export { Button } from './components/Button.js';
 export { StatusBadge } from './components/StatusBadge.js';

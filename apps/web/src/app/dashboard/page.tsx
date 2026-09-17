@@ -7,6 +7,7 @@ import {
   EmptyState,
   PageHeader,
   StatusBadge,
+  linkButtonClasses,
   type Column,
 } from '@blood-connect/ui';
 
@@ -39,17 +40,10 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   cancelled: 'Cancelled',
 };
 
-/**
- * The kit's `Button` renders a `<button>`, but the primary action here
- * is navigation. Rather than adding a `LinkButton` primitive to the kit
- * for one caller, the classes match `Button` `variant="primary"` /
- * `size="md"` — the kit's Tailwind utilities are available here.
- */
-const LINK_BUTTON =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-4 text-sm font-medium text-white no-underline ' +
-  'transition-colors hover:bg-primary-hover ' +
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+// The kit's `Button` renders a `<button>`, but the primary action here
+// is navigation; `linkButtonClasses` (PR-11a) gives a <Link> the same
+// `variant="primary"` / `size="md"` shape.
+const LINK_BUTTON = linkButtonClasses({ variant: 'primary' });
 
 type LiveRequest = Awaited<
   ReturnType<typeof listRequestsForDoctor>
