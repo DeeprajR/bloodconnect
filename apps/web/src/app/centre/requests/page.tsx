@@ -182,7 +182,7 @@ export default async function QueuePage({
       cell: (r) => (
         <Link
           href={`/centre/requests/${r.id}`}
-          className="inline-flex h-8 items-center rounded-control border border-primary/50 bg-surface px-3 text-xs font-medium text-primary hover:bg-primary-soft"
+          className="inline-flex h-8 items-center rounded-control border border-primary/50 bg-surface px-3 text-xs font-medium text-primary hover:bg-primary-soft no-underline"
         >
           {r.awaitingPatient ? 'Take details' : 'Answer'}
         </Link>

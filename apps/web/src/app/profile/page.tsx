@@ -32,7 +32,7 @@ export const metadata: Metadata = { title: 'Your profile · Blood Connect' };
  */
 const LINK_SECONDARY =
   'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink ' +
+  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink no-underline ' +
   'transition-colors hover:bg-surface-muted focus-visible:outline ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2';
 

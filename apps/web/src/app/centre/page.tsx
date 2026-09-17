@@ -32,12 +32,12 @@ export const metadata: Metadata = { title: 'Blood centre · Blood Connect' };
  */
 const LINK_PRIMARY =
   'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-4 text-sm font-medium text-white ' +
+  'border border-transparent bg-primary px-4 text-sm font-medium text-white no-underline ' +
   'transition-colors hover:bg-primary-hover focus-visible:outline ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2';
 const LINK_SECONDARY =
   'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink ' +
+  'border border-border-strong bg-surface px-4 text-sm font-medium text-ink no-underline ' +
   'transition-colors hover:bg-surface-muted focus-visible:outline ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2';
 const LINK_GHOST =

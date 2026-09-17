@@ -32,7 +32,7 @@ const STATUSES = [
 
 const LINK_PRIMARY =
   'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-4 text-sm font-medium text-white ' +
+  'border border-transparent bg-primary px-4 text-sm font-medium text-white no-underline ' +
   'transition-colors hover:bg-primary-hover focus-visible:outline ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2';
 
@@ -156,7 +156,7 @@ export default async function StockPage({
 
           <button
             type="submit"
-            className="inline-flex h-10 items-center justify-center rounded-control border border-border-strong bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted"
+            className="inline-flex h-10 items-center justify-center rounded-control border border-border-strong bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted no-underline"
           >
             Filter
           </button>

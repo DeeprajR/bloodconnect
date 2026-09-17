@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Confirm your address · Blood Connec
 
 const LINK_PRIMARY =
   'inline-flex h-11 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-5 text-sm font-medium text-white ' +
+  'border border-transparent bg-primary px-5 text-sm font-medium text-white no-underline ' +
   'transition-colors hover:bg-primary-hover focus-visible:outline ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2';
 

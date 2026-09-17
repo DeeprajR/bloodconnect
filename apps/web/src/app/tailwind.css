@@ -12,7 +12,22 @@
  * relative to this file: from `apps/web/src/app/tailwind.css` four
  * levels up reaches the workspace root, then `packages/ui/src` is the
  * kit source tree.
+ *
+ * The kit's token files are `@import`ed here rather than imported
+ * from `layout.tsx` on purpose. Turbopack treats a CSS file imported
+ * from a `.tsx` module as a standalone CSS module and does not run it
+ * through the app's PostCSS pipeline; the `@theme` blocks inside
+ * `tokens/base.css` and `tokens/accent-medical.css` therefore never
+ * reach `@tailwindcss/postcss`, and Tailwind emits neither the
+ * `--color-*` custom properties nor the `bg-canvas` / `text-ink` /
+ * `bg-primary` utilities. Importing them here, from the one CSS
+ * entrypoint the app already sends through Tailwind, is what makes
+ * `@theme` work in the first place (ADR 0015).
  */
 
 @import 'tailwindcss';
 @source '../../../../packages/ui/src';
+
+@import '../../../../packages/ui/src/tokens/base.css';
+@import '../../../../packages/ui/src/tokens/accent-medical.css';
+@import '../../../../packages/ui/src/tokens/typography.css';

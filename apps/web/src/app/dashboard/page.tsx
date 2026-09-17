@@ -47,7 +47,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
  */
 const LINK_BUTTON =
   'inline-flex h-10 items-center justify-center gap-2 rounded-control ' +
-  'border border-transparent bg-primary px-4 text-sm font-medium text-white ' +
+  'border border-transparent bg-primary px-4 text-sm font-medium text-white no-underline ' +
   'transition-colors hover:bg-primary-hover ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
 

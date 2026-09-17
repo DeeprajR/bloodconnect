@@ -2,12 +2,20 @@ import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 
-import 'ux4g-web-components/styles.css';
-import './theme.css';
+// UX4G's stylesheet and the leftover theme overrides are unlayered legacy
+// CSS; `legacy-styles.css` re-imports both inside an explicit `layer(legacy)`
+// so Tailwind's utilities (which are all in named layers) win over them
+// instead of silently losing to them — see the comment in that file for why
+// this matters. It must load before `tailwind.css` so the `legacy` layer
+// registers first and ranks lowest.
+import './legacy-styles.css';
+// `tailwind.css` `@import`s the kit token files (base, accent-medical,
+// typography) so their `@theme` blocks pass through Tailwind's PostCSS
+// pipeline. Importing them here as separate `.tsx` CSS side-effect
+// imports would bypass that pipeline — Turbopack treats each one as a
+// standalone CSS module — and Tailwind would emit neither the custom
+// properties nor the `bg-canvas` / `text-ink` / `bg-primary` utilities.
 import './tailwind.css';
-import '@blood-connect/ui/tokens/base.css';
-import '@blood-connect/ui/tokens/accent-medical.css';
-import '@blood-connect/ui/tokens/typography.css';
 
 import { Ux4gRuntime } from './ux4g-runtime';
 import { ServiceWorker } from './service-worker';
@@ -66,7 +74,17 @@ export default function RootLayout({
       data-theme="light"
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
-      <body>
+      {/*
+       * `bg-canvas text-ink` on the body is what pins the page to the kit's
+       * clinical light palette. Without it the browser paints the body with
+       * its own default canvas, and a browser set to prefer dark shows the
+       * kit's dark ink on that dark canvas. `color-scheme: light` in the
+       * viewport handles native form controls; this handles the surface
+       * they sit on. Kept until the last UX4G screen is gone and the kit's
+       * `preflight.css` (which sets the same three things globally) can be
+       * imported without conflict.
+       */}
+      <body className="bg-canvas text-ink">
         <a className="app-skip-link" href="#main">
           Skip to main content
         </a>

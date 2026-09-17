@@ -21,14 +21,18 @@ export const metadata: Metadata = { title: 'Blood Connect' };
 export default async function LandingPage() {
   const actor = await currentActor();
 
+  // `no-underline` is not the same as `hover:no-underline`: an `<a>` styled
+  // to look like a button still inherits the browser's default anchor
+  // underline unless it is stripped explicitly. Kit's `<Button>` renders a
+  // `<button>` and does not need this; a `<Link>` shaped like a button does.
   const linkPrimary =
-    'inline-flex h-11 items-center justify-center gap-2 rounded-control ' +
-    'border border-transparent bg-primary px-5 text-sm font-medium text-white ' +
+    'inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-control ' +
+    'border border-transparent bg-primary px-5 text-sm font-medium text-white no-underline ' +
     'transition-colors hover:bg-primary-hover focus-visible:outline ' +
     'focus-visible:outline-2 focus-visible:outline-offset-2';
   const linkSecondary =
-    'inline-flex h-11 items-center justify-center gap-2 rounded-control ' +
-    'border border-border-strong bg-surface px-5 text-sm font-medium text-ink ' +
+    'inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-control ' +
+    'border border-border-strong bg-surface px-5 text-sm font-medium text-ink no-underline ' +
     'transition-colors hover:bg-surface-muted focus-visible:outline ' +
     'focus-visible:outline-2 focus-visible:outline-offset-2';
 
