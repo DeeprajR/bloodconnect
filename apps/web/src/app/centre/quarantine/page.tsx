@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { Card, EmptyState, PageHeader, StatusBadge } from '@blood-connect/ui';
+
 import { CentreShell } from '../../centre-shell';
 import { QuarantineForm } from '../../centre-collision-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
@@ -25,71 +27,78 @@ export default async function QuarantinePage() {
   const overdue = rows.filter((row) => row.overdue);
 
   return (
-    <CentreShell actor={actor} title={WORDING.quarantine}>
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">{WORDING.quarantine}</h1>
-        <p className="ux4g-body-m-default">
-          A waiting room, not a destination. Every unit here is out of issue and out of
-          the stock floor until a named person decides one of two things.
-        </p>
-      </div>
+    <CentreShell
+      actor={actor}
+      title={WORDING.quarantine}
+      currentPath="/centre/quarantine"
+    >
+      <PageHeader
+        title={WORDING.quarantine}
+        description="A waiting room, not a destination. Every unit here is out of issue and out of the stock floor until a named person decides one of two things."
+      />
 
       {overdue.length > 0 ? (
-        <div className="ux4g-alert ux4g-alert-error" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              {overdue.length} {overdue.length === 1 ? 'unit has' : 'units have'} been
-              waiting longer than {ctx.config.ageing.quarantineDays} days. Nothing should
-              sit here indefinitely.
-            </p>
-          </div>
-        </div>
+        <p
+          role="alert"
+          className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {overdue.length} {overdue.length === 1 ? 'unit has' : 'units have'}{' '}
+          been waiting longer than{' '}
+          <span className="tabular-nums">{ctx.config.ageing.quarantineDays}</span>{' '}
+          days. Nothing should sit here indefinitely.
+        </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-body">
-            <p className="ux4g-body-s-default">Nothing in quarantine.</p>
-          </div>
-        </section>
+        <EmptyState title="Nothing in quarantine." />
       ) : (
-        <div className="app-stack">
+        <div className="space-y-4">
           {rows.map((row) => (
-            <section key={row.id} className="ux4g-card ux4g-card-outline">
-              <div className="ux4g-card-header">
-                <h2 className="ux4g-card-title app-figure">{row.unitNumber}</h2>
-                <p className="ux4g-card-sub-title app-figure">
+            <Card
+              key={row.id}
+              title={row.unitNumber}
+              actions={
+                row.overdue ? (
+                  <StatusBadge tone="danger" label="Overdue" />
+                ) : undefined
+              }
+            >
+              <div className="space-y-3">
+                <p className="text-sm text-ink-muted">
                   {bloodGroupLabel(row.bloodGroup as never)} ·{' '}
-                  {productLabel(row.product as never)} · {WORDING.expiresOn} {row.expiresAt}
+                  {productLabel(row.product as never)} · {WORDING.expiresOn}{' '}
+                  <span className="tabular-nums">{row.expiresAt}</span>
                 </p>
-              </div>
-              <div className="ux4g-card-body app-stack">
-                <p className="ux4g-body-m-default">
+                <p className="text-sm text-ink">
                   {row.reason}. Waiting{' '}
-                  <span className="app-figure">
-                    {row.daysWaiting === 0 ? 'since today' : `${String(row.daysWaiting)} days`}
+                  <span className="tabular-nums">
+                    {row.daysWaiting === 0
+                      ? 'since today'
+                      : `${String(row.daysWaiting)} days`}
                   </span>
-                  {row.overdue ? (
-                    <span className="ux4g-badge-digit-danger"> Overdue</span>
-                  ) : null}
                   .
                 </p>
                 <QuarantineForm quarantineId={row.id} />
               </div>
-            </section>
+            </Card>
           ))}
         </div>
       )}
 
-      <p className="ux4g-label-m-default">
+      <p className="text-xs text-ink-subtle">
         {/* The single automatic exit §4 grants. */}
-        A unit that reaches its expiry while waiting here is discarded automatically, with
-        that recorded as the reason.
+        A unit that reaches its expiry while waiting here is discarded
+        automatically, with that recorded as the reason.
       </p>
 
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre">
-        Back to the overview
-      </Link>
+      <div>
+        <Link
+          href="/centre"
+          className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+        >
+          ← Back to the overview
+        </Link>
+      </div>
     </CentreShell>
   );
 }
