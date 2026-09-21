@@ -16,7 +16,7 @@
  */
 
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { count, eq, sql as raw } from 'drizzle-orm';
+import { count, eq, inArray, sql as raw } from 'drizzle-orm';
 import postgres from 'postgres';
 
 import { CONTRACT_VERSION, CONTRACT_VERSION_CONFIG_KEY } from '@blood-connect/contract';
@@ -31,6 +31,7 @@ import {
 } from '../seeds/locations.js';
 import { buildStockSeed } from '../seeds/stock.js';
 import { buildDonorSeed, type PlaceSeed } from '../seeds/donors.js';
+import { buildAdmissionSeed, buildPatientSeed } from '../seeds/patients.js';
 import {
   donorChannels,
   donorConsents,
@@ -38,12 +39,14 @@ import {
   donors as donorTable,
 } from './schema-bot/index.js';
 import {
+  admissions,
   appConfig,
   bloodBags,
   centreSettings,
   locationAliases,
   locationDatasetVersions,
   locationNodes,
+  patients,
   users,
 } from './schema/index.js';
 
@@ -202,14 +205,97 @@ async function seedStock(db: Database): Promise<void> {
 }
 
 /**
+ * Synthetic patients, admitted, so a demo walkthrough (build plan P13) has
+ * somewhere to raise a request from without typing one in first.
+ *
+ * Idempotent through the unique UHID and IP number, not the freshly
+ * generated ids: re-running matches the existing rows and adds nothing,
+ * the same pattern `seedStock` uses for unit numbers.
+ */
+async function seedPatients(db: Database): Promise<void> {
+  const [doctor] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, 'doctor'))
+    .limit(1);
+
+  const patientSeeds = buildPatientSeed();
+  const admissionSeeds = buildAdmissionSeed();
+
+  await db
+    .insert(patients)
+    .values(
+      patientSeeds.map((patient) => ({
+        id: patient.id,
+        uhid: patient.uhid,
+        name: patient.name,
+        dob: patient.dob,
+        age: patient.age,
+        ageUnit: patient.ageUnit,
+        sex: patient.sex,
+        bloodGroup: patient.bloodGroup,
+        attenderName: patient.attenderName,
+        attenderPhone: patient.attenderPhone,
+        diagnosis: patient.diagnosis,
+        previousTransfusion: patient.previousTransfusion,
+        previousReaction: patient.previousReaction,
+        createdBy: doctor?.id ?? null,
+      })),
+    )
+    .onConflictDoNothing();
+
+  const uhids = patientSeeds.map((patient) => patient.uhid);
+  const rows = await db
+    .select({ id: patients.id, uhid: patients.uhid })
+    .from(patients)
+    .where(inArray(patients.uhid, uhids));
+  const idByUhid = new Map(rows.map((row) => [row.uhid, row.id]));
+
+  await db
+    .insert(admissions)
+    .values(
+      admissionSeeds.flatMap((admission) => {
+        const patientId = idByUhid.get(admission.patientUhid);
+        if (!patientId) return [];
+        return [
+          {
+            id: admission.id,
+            ipNo: admission.ipNo,
+            patientId,
+            ward: admission.ward,
+            admittedAt: admission.admittedAt,
+            status: 'admitted' as const,
+            createdBy: doctor?.id ?? null,
+          },
+        ];
+      }),
+    )
+    .onConflictDoNothing();
+
+  process.stdout.write(
+    `  patients:  ${rows.length} synthetic, admitted (SYN-PT- / SYN-IP- prefixed)\n`,
+  );
+}
+
+/**
  * The synthetic donor pool.
  *
  * Placed across the real seeded hierarchy so the wave ordering of §7.7 is
  * visible on the first demand raised. The nearest locality first, then the
  * town, then the taluk. A pool that all sits in one place shows none of that.
  *
- * Idempotent through the unique `(channel, channel_user_id)` index: re-running
- * adds nobody, and a donor who has since given blood keeps their interval.
+ * Idempotent through the unique `(channel, channel_user_id)` index — but that
+ * index lives on `donor_channels`, not on `donors` itself, which has no
+ * business key at all besides its freshly-generated primary key. Inserting
+ * into `donors` first and relying on the *later* `donor_channels` insert to
+ * catch the conflict leaves an orphan donor row behind every time: the first
+ * insert never conflicts (nothing on `donors` can), so `onConflictDoNothing()`
+ * there is a no-op, and only the channel/phone rows that follow are actually
+ * skipped. A `pnpm db:seed` re-run silently added a fresh unlinked copy of
+ * the whole pool every time, found by running the seed twice while testing
+ * P13's "one-command bring-up" and watching the donor count jump. Filtering
+ * the pool against `donor_channels` **before** inserting anything is what
+ * actually keeps this idempotent.
  */
 async function seedDonors(db: Database): Promise<void> {
   const nodes = await db
@@ -249,42 +335,48 @@ async function seedDonors(db: Database): Promise<void> {
   const pool = buildDonorSeed(places);
   const now = new Date();
 
-  for (const donor of pool) {
-    const inserted = await db
-      .insert(donorTable)
-      .values({
-        id: donor.id,
-        name: donor.name,
-        dob: donor.dob,
-        sex: donor.sex,
-        bloodGroup: donor.bloodGroup,
-        // Verified, because an unverified donor is never selected into a wave
-        // (§7.7) and a demo pool nobody can be recruited from shows nothing.
-        bloodGroupVerifiedAt: now,
-        weightBand: donor.weightBand,
-        weightKg: donor.weightKg,
-        districtId: donor.districtId,
-        cityId: donor.cityId,
-        townId: donor.townId,
-        localityId: donor.localityId,
-        lastDonatedOn: donor.lastDonatedOn,
-        nextEligibleOn: donor.nextEligibleOn,
-        durableFlagStatus: 'clear',
-        consentCurrentAt: now,
-      })
-      .onConflictDoNothing()
-      .returning({ id: donorTable.id });
+  // The real dedup check: which of this pool's channel identities already
+  // exist. Filtering here, before any insert, is what makes a re-run add
+  // nobody, since `donors` itself has no business key to conflict on.
+  const existing = await db
+    .select({ channelUserId: donorChannels.channelUserId })
+    .from(donorChannels)
+    .where(
+      inArray(
+        donorChannels.channelUserId,
+        pool.map((donor) => donor.channelUserId),
+      ),
+    );
+  const already = new Set(existing.map((row) => row.channelUserId));
+  const fresh = pool.filter((donor) => !already.has(donor.channelUserId));
 
-    if (inserted.length === 0) continue;
+  for (const donor of fresh) {
+    await db.insert(donorTable).values({
+      id: donor.id,
+      name: donor.name,
+      dob: donor.dob,
+      sex: donor.sex,
+      bloodGroup: donor.bloodGroup,
+      // Verified, because an unverified donor is never selected into a wave
+      // (§7.7) and a demo pool nobody can be recruited from shows nothing.
+      bloodGroupVerifiedAt: now,
+      weightBand: donor.weightBand,
+      weightKg: donor.weightKg,
+      districtId: donor.districtId,
+      cityId: donor.cityId,
+      townId: donor.townId,
+      localityId: donor.localityId,
+      lastDonatedOn: donor.lastDonatedOn,
+      nextEligibleOn: donor.nextEligibleOn,
+      durableFlagStatus: 'clear',
+      consentCurrentAt: now,
+    });
 
-    await db
-      .insert(donorChannels)
-      .values({
-        donorId: donor.id,
-        channel: 'memory',
-        channelUserId: donor.channelUserId,
-      })
-      .onConflictDoNothing();
+    await db.insert(donorChannels).values({
+      donorId: donor.id,
+      channel: 'memory',
+      channelUserId: donor.channelUserId,
+    });
 
     await db
       .insert(donorPhones)
@@ -349,6 +441,7 @@ async function main(): Promise<void> {
     await seedAccounts(db);
     await seedCentreSettings(db);
     await seedStock(db);
+    await seedPatients(db);
     await seedDonors(db);
     await seedConfig(db);
     process.stdout.write('seed complete\n');

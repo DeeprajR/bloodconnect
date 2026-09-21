@@ -230,6 +230,9 @@ importers:
       '@blood-connect/ids':
         specifier: workspace:*
         version: link:../../packages/ids
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
 
   apps/web:
     dependencies:

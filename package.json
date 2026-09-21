@@ -1,6 +1,7 @@
 {
   "name": "blood-connect",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@12.3.4",
   "engines": {
@@ -31,6 +32,7 @@
     "db:migrate:bot": "pnpm --filter @blood-connect/db migrate:bot",
     "check:bot-migrations": "node scripts/check-bot-migrations.mjs",
     "bot": "pnpm --filter @blood-connect/bot-app dev",
+    "bot:diag": "pnpm --filter @blood-connect/bot-app diagnose",
     "check:gates": "node scripts/check-gates.mjs"
   },
   "devDependencies": {
