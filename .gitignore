@@ -16,3 +16,6 @@ Thumbs.db
 Blood Connect Backend Plan_files/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# Local Claude Code config/tooling, not project source
+.claude/
