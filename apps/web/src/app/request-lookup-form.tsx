@@ -1,3 +1,5 @@
+'use client';
+
 import { Button, FormField, TextInput } from '@blood-connect/ui';
 import { WORDING } from '@blood-connect/domain';
 
