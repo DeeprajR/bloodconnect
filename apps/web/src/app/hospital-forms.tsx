@@ -21,111 +21,6 @@ import {
 
 const initial: FormState = { error: null };
 
-/* -------------------------------------------------------------------------- */
-/* UX4G helpers, kept for `AdmissionForm` below until its host page is ported */
-/* -------------------------------------------------------------------------- */
-
-function Ux4gSubmit({ label, busy }: { label: string; busy: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      className="ux4g-btn ux4g-btn-primary ux4g-btn-lg app-target"
-      disabled={pending}
-      aria-disabled={pending}
-    >
-      {pending ? busy : label}
-    </button>
-  );
-}
-
-function Ux4gProblem({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <div className="ux4g-alert ux4g-alert-error" role="alert">
-      <div className="ux4g-alert-content">
-        <p className="ux4g-alert-message">{message}</p>
-      </div>
-    </div>
-  );
-}
-
-function Ux4gField({
-  id,
-  label,
-  type = 'text',
-  hint,
-  defaultValue,
-  required = false,
-  inputMode,
-  min,
-}: {
-  id: string;
-  label: string;
-  type?: string;
-  hint?: string;
-  defaultValue?: string;
-  required?: boolean;
-  inputMode?: 'text' | 'numeric' | 'tel';
-  min?: string;
-}) {
-  return (
-    <div className="ux4g-form-group app-stack-tight">
-      <label className="ux4g-label-l-strong" htmlFor={id}>
-        {label}
-        {required ? '' : <span className="ux4g-label-m-default"> (optional)</span>}
-      </label>
-      <input
-        className="ux4g-input ux4g-input-lg"
-        id={id}
-        name={id}
-        type={type}
-        inputMode={inputMode}
-        defaultValue={defaultValue}
-        required={required}
-        min={min}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-      />
-      {hint ? (
-        <p className="ux4g-label-m-default" id={`${id}-hint`}>
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-export function AdmissionForm({ patientId }: { patientId: string }) {
-  const [state, action] = useActionState(
-    createAdmissionAction.bind(null, patientId),
-    initial,
-  );
-
-  return (
-    <form action={action} className="app-stack" noValidate>
-      <Ux4gProblem message={state.error} />
-      <Ux4gField
-        id="ipNo"
-        label={WORDING.ipNumber}
-        required
-        hint="The admission’s identity on the ward. It cannot be changed afterwards."
-      />
-      <Ux4gField id="ward" label={WORDING.ward} required />
-      <Ux4gField
-        id="admittedAt"
-        label={WORDING.admittedAt}
-        type="datetime-local"
-        hint="Leave blank for now."
-      />
-      <Ux4gSubmit label="Create admission" busy="Creating…" />
-    </form>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Kit-native forms (ADR 0015). Used by pages restyled in PR-05 onwards.       */
-/* -------------------------------------------------------------------------- */
-
 function KitSubmit({ label, busy }: { label: string; busy: string }) {
   const { pending } = useFormStatus();
   return (
@@ -144,6 +39,35 @@ function KitProblem({ message }: { message: string | null }) {
     >
       {message}
     </p>
+  );
+}
+
+export function AdmissionForm({ patientId }: { patientId: string }) {
+  const [state, action] = useActionState(
+    createAdmissionAction.bind(null, patientId),
+    initial,
+  );
+
+  return (
+    <form action={action} className="space-y-4" noValidate>
+      <KitProblem message={state.error} />
+
+      <FormField
+        label={WORDING.ipNumber}
+        hint="The admission’s identity on the ward. It cannot be changed afterwards."
+        required
+      >
+        {(p) => <TextInput {...p} name="ipNo" required />}
+      </FormField>
+      <FormField label={WORDING.ward} required>
+        {(p) => <TextInput {...p} name="ward" required />}
+      </FormField>
+      <FormField label={WORDING.admittedAt} hint="Leave blank for now.">
+        {(p) => <TextInput {...p} name="admittedAt" type="datetime-local" />}
+      </FormField>
+
+      <KitSubmit label="Create admission" busy="Creating…" />
+    </form>
   );
 }
 

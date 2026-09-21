@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./rules/returns": {
+      "types": "./dist/rules/returns.d.ts",
+      "default": "./dist/rules/returns.js"
     }
   },
   "main": "./dist/index.js",
