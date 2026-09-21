@@ -104,8 +104,21 @@ install a Next PostCSS plugin into its consumers.
   state, not an oversight). It also fixed the third bug below, found
   while verifying it.
 
-- **Admin app.** Not started as of 2026-09-21. Entire `apps/admin`
-  is still on UX4G, including its sign-in.
+- **Admin app (A01 through A08, shipped 2026-09-21).** Wired Tailwind
+  v4 into `apps/admin` with the `legacy-styles.css` layer fix applied
+  from the first commit (A01), then restyled every screen: the sign-in
+  page (standalone, no shell, mirroring `apps/web`'s pattern), a new
+  `kit-shell.tsx` + `nav.ts` replacing the old bespoke UX4G `shell.tsx`
+  (deleted once nothing imported it), the doctor forms
+  (`CreateDoctorForm`, `EditDoctorForm`, `ChangeEmailForm`,
+  `SealForm`), the doctors list and detail pages (`DataTable`,
+  `StatusBadge`, `Card`), the control panel's health tiles and alert
+  rows (bespoke `app-health-*`/`app-alert-*` CSS replaced by
+  `StatusBadge` plus a small `border-l-*` tone treatment), the traffic
+  tables (`DataTable`), the deployment view (`DescList` + `DataTable`),
+  the trace screen, and the update-requests queue. `apps/admin` uses
+  `accent-admin.css` (slate-blue), not `apps/web`'s medical red,
+  per the Decision above.
 
 - **Final PR.** Removes `ux4g-runtime.tsx` and the
   `ux4g-web-components` npm dependency from both apps, replaces both
@@ -119,10 +132,11 @@ install a Next PostCSS plugin into its consumers.
 **Shipped**, on `feat/ui-kit`, not yet merged: PR-01/02a/02b, PR-03
 through PR-10 (sign-in through centre/requests), `linkButtonClasses`
 (PR-11a), PR-11 through PR-14 (donations, quarantine, tags, demands +
-roster), and P15 (the forms pass). Commit-by-commit detail lives in
-this branch's session handoff notes, not here.
+roster), P15 (the forms pass), and A01 through A08 (all of
+`apps/admin`). Commit-by-commit detail lives in this branch's session
+handoff notes, not here.
 
-**Three bugs the rollout surfaced, all worth knowing before touching
+**Four bugs the rollout surfaced, all worth knowing before touching
 this kit again:**
 
 1. **Unlayered legacy CSS beat every Tailwind utility, site-wide,
@@ -201,8 +215,42 @@ this kit again:**
    `pnpm build` (or a clean `.next`) to see the real compiler error;
    the manifest error is a downstream symptom of a bundling failure,
    not its cause, and can survive any number of dev-server restarts.
+4. **Bug #2 recurred in `apps/admin`'s own trace screen**, the same
+   shape as before: `panel/trace/page.tsx`, a Server Component, called
+   `<FormField>` with a render-prop `children` function directly.
+   Confirmed live — `pnpm build` compiled it (Turbopack's production
+   build does not enforce the RSC function-prop rule at build time
+   either; only requesting the page does), and opening `/panel/trace`
+   in the browser crashed with "Functions are not valid as a child of
+   Client Components". Fixed the same way apps/web's `request-lookup-form.tsx`
+   was: extracted the one field + submit button into
+   `panel/trace/form.tsx`, marked `'use client'`, and had the page
+   import that instead of calling `FormField` itself. **This means bug
+   #2's rule needs restating more sharply**: it is not enough to fix
+   each call site as found; every Server Component that renders
+   `FormField` (or any future kit component with a function-valued
+   prop) needs to be checked, and neither `pnpm verify` nor `pnpm
+   build` catches it — a browser visit to every restyled route is the
+   only check that does, which is why "browser-verify every affected
+   route" stayed a required step for every PR in this rollout, not an
+   optional nicety.
 
-**Not yet done**: all of `apps/admin`; the final cleanup PR.
+**Also found, out of scope for this session and not fixed**:
+`apps/web` is not actually fully clear of UX4G despite the "Still
+open" note above only naming the three forms files. A grep for
+`ux4g-` in `apps/web/src/app` after the forms pass still turns up
+`admissions/new/page.tsx`, `role-home.tsx`, `shell.tsx` and
+`sign-out-button.tsx` (the last of these is also true of
+`apps/admin`'s `sign-out-button.tsx` before A03 restyled it — a small
+enough control that it is easy to forget it is still UX4G-styled
+inside an otherwise kit-styled shell). `shell.tsx` in `apps/web` may
+already be dead code the way `apps/admin`'s was, but that needs
+confirming, not assuming, before deleting it. The final cleanup PR's
+premise ("all of both apps is on the kit") is not yet true even now
+that `apps/admin` is done, because of this apps/web gap.
+
+**Not yet done**: the four straggling `apps/web` files named above;
+the final cleanup PR.
 
 ## What did NOT come across from blood-connect-ui
 

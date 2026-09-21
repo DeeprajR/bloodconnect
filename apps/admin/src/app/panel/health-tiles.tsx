@@ -1,3 +1,4 @@
+import { StatusBadge } from '@blood-connect/ui';
 import type { Heartbeat, HealthTile } from '@blood-connect/ops';
 
 /**
@@ -26,6 +27,18 @@ const STATUS_WORDS = {
   down: 'Down',
 } as const;
 
+const STATUS_TONES = {
+  ok: 'success',
+  degraded: 'warning',
+  down: 'danger',
+} as const;
+
+const EDGE = {
+  ok: 'border-l-success',
+  degraded: 'border-l-warning',
+  down: 'border-l-danger',
+} as const;
+
 function age(seconds: number | null): string {
   if (seconds === null) return 'never';
   if (seconds < 60) return `${String(seconds)}s ago`;
@@ -42,47 +55,56 @@ export function HealthTiles({
   heartbeats: readonly Heartbeat[];
 }) {
   return (
-    <ul className="app-tiles app-plain-list">
+    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {tiles.map((tile) => (
-        <li key={tile.dependency}>
-          <div className={`app-health app-health-${tile.status}`}>
-            <span className="app-health-label">{tile.label}</span>
-            <span className="app-health-status">{STATUS_WORDS[tile.status]}</span>
-            <span className="app-health-detail">{tile.detail}</span>
-            <span className="app-health-todo">{tile.whatToDo}</span>
-            <span className="app-health-meta app-figure">
-              {timeFormat.format(tile.checkedAt)} · {tile.latencyMs}ms
-            </span>
+        <li
+          key={tile.dependency}
+          className={`flex flex-col gap-1 rounded-card border border-border border-l-4 bg-surface p-4 shadow-card ${EDGE[tile.status]}`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-ink">{tile.label}</span>
+            <StatusBadge label={STATUS_WORDS[tile.status]} tone={STATUS_TONES[tile.status]} />
           </div>
+          <p className="text-sm text-ink-muted">{tile.detail}</p>
+          <p className="text-sm text-ink-muted">{tile.whatToDo}</p>
+          <p className="mt-1 text-xs tabular-nums text-ink-subtle">
+            {timeFormat.format(tile.checkedAt)} · {tile.latencyMs}ms
+          </p>
         </li>
       ))}
 
       {heartbeats.map((beat) => (
-        <li key={beat.process}>
-          <div className={`app-health app-health-${beat.stale ? 'down' : 'ok'}`}>
-            <span className="app-health-label">
+        <li
+          key={beat.process}
+          className={`flex flex-col gap-1 rounded-card border border-border border-l-4 bg-surface p-4 shadow-card ${beat.stale ? EDGE.down : EDGE.ok}`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-ink">
               {beat.process === 'bot' ? 'Donor bot' : 'Web release'}
             </span>
-            <span className="app-health-status">{beat.stale ? 'Silent' : 'Reporting'}</span>
-            <span className="app-health-detail">
-              {/*
-                The age, always. This is the one tile whose usefulness is
-                entirely in its timestamp: a bot that has stopped keeps whatever
-                it last said, and only the age gives that away.
-              */}
-              Last heard {age(beat.ageSeconds)}
-              {beat.contractVersion ? `, on contract ${beat.contractVersion}` : ''}
-              {beat.buildId ? `, build ${beat.buildId}` : ''}
-            </span>
-            <span className="app-health-todo">
-              {beat.stale
-                ? 'Nothing on this page about that process is current. Check its host is running.'
-                : 'Nothing to do.'}
-            </span>
-            <span className="app-health-meta app-figure">
-              {beat.observedAt ? timeFormat.format(beat.observedAt) : 'no heartbeat yet'}
-            </span>
+            <StatusBadge
+              label={beat.stale ? 'Silent' : 'Reporting'}
+              tone={beat.stale ? 'danger' : 'success'}
+            />
           </div>
+          <p className="text-sm text-ink-muted">
+            {/*
+              The age, always. This is the one tile whose usefulness is
+              entirely in its timestamp: a bot that has stopped keeps whatever
+              it last said, and only the age gives that away.
+            */}
+            Last heard {age(beat.ageSeconds)}
+            {beat.contractVersion ? `, on contract ${beat.contractVersion}` : ''}
+            {beat.buildId ? `, build ${beat.buildId}` : ''}
+          </p>
+          <p className="text-sm text-ink-muted">
+            {beat.stale
+              ? 'Nothing on this page about that process is current. Check its host is running.'
+              : 'Nothing to do.'}
+          </p>
+          <p className="mt-1 text-xs tabular-nums text-ink-subtle">
+            {beat.observedAt ? timeFormat.format(beat.observedAt) : 'no heartbeat yet'}
+          </p>
         </li>
       ))}
     </ul>

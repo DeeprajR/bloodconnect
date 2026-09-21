@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-import { AppShell } from '../shell';
+import { Button, Card, EmptyState, PageHeader, StatusBadge } from '@blood-connect/ui';
+
+import { KitShell } from '../kit-shell';
 import { approveUpdateRequestAction, rejectUpdateRequestAction } from '../actions';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { UPDATE_REQUEST_LABELS, listPendingUpdateRequests } from '@blood-connect/platform';
@@ -24,7 +26,7 @@ const dayFormat = new Intl.DateTimeFormat('en-IN', {
 function ageing(days: number): { label: string; urgent: boolean } {
   if (days === 0) return { label: 'Today', urgent: false };
   if (days === 1) return { label: 'Waiting 1 day', urgent: false };
-  return { label: `Waiting ${days} days`, urgent: days >= 7 };
+  return { label: `Waiting ${String(days)} days`, urgent: days >= 7 };
 }
 
 export default async function UpdateRequestsPage({
@@ -38,138 +40,119 @@ export default async function UpdateRequestsPage({
   const { problem } = await searchParams;
 
   return (
-    <AppShell actor={actor} title="Update requests">
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">Update requests</h1>
-        <p className="ux4g-body-m-default">
-          A doctor cannot change their own name or registration number, because both
-          appear on every request they raise. Approving one applies it for them.
-        </p>
-      </div>
+    <KitShell currentPath="/updates" currentTitle="Update requests">
+      <PageHeader
+        title="Update requests"
+        description="A doctor cannot change their own name or registration number, because both appear on every request they raise. Approving one applies it for them."
+      />
 
       {problem ? (
-        <div className="ux4g-alert ux4g-alert-error" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">{problem}</p>
-          </div>
-        </div>
+        <p
+          role="alert"
+          className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {problem}
+        </p>
       ) : null}
 
       {queue.length === 0 ? (
-        <div className="ux4g-alert ux4g-alert-info" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">Nothing is waiting.</p>
-          </div>
-        </div>
+        <EmptyState title="Nothing is waiting." />
       ) : (
-        <ul className="app-stack app-plain-list">
+        <div className="space-y-4">
           {queue.map((row) => {
             const age = ageing(row.ageDays);
             const isOwn = actor.kind === 'user' && actor.userId === row.userId;
 
             return (
-              <li key={row.id}>
-                <section className="ux4g-card ux4g-card-outline">
-                  <div className="ux4g-card-header">
-                    <div className="app-row-split">
-                      <h2 className="ux4g-card-title">
-                        {row.requesterName} · {UPDATE_REQUEST_LABELS[row.field]}
-                      </h2>
-                      <span
-                        className={
-                          age.urgent
-                            ? 'ux4g-badge-digit-danger app-figure'
-                            : 'ux4g-label-m-strong app-figure'
-                        }
-                      >
-                        {age.label}
-                      </span>
+              <Card
+                key={row.id}
+                title={`${row.requesterName} · ${UPDATE_REQUEST_LABELS[row.field]}`}
+                actions={
+                  <StatusBadge
+                    label={age.label}
+                    tone={age.urgent ? 'danger' : 'neutral'}
+                  />
+                }
+              >
+                <div className="space-y-4">
+                  <p className="text-sm text-ink-muted">
+                    {row.requesterEmail} · raised {dayFormat.format(row.createdAt)}
+                  </p>
+
+                  <dl className="space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <dt className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide text-ink-subtle">
+                        Currently
+                      </dt>
+                      <dd className="text-sm text-ink-muted">
+                        {row.currentValue ?? 'Not recorded'}
+                      </dd>
                     </div>
-                    <p className="ux4g-card-sub-title">
-                      {row.requesterEmail} · raised {dayFormat.format(row.createdAt)}
+                    <div className="flex items-baseline gap-2">
+                      <dt className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide text-ink-subtle">
+                        Proposed
+                      </dt>
+                      <dd className="text-sm font-medium text-ink">{row.proposedValue}</dd>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <dt className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide text-ink-subtle">
+                        Reason given
+                      </dt>
+                      <dd className="text-sm text-ink-muted">{row.reason}</dd>
+                    </div>
+                  </dl>
+
+                  {isOwn ? (
+                    /*
+                      §3: nobody decides their own. Hidden here as well as
+                      refused in the use case. An administrator offered a
+                      button that always fails has been told nothing about
+                      why, and the rule is worth stating rather than
+                      discovering.
+                    */
+                    <p
+                      role="status"
+                      className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+                    >
+                      This is your own request. Another administrator has to
+                      decide it.
                     </p>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
+                      <form action={approveUpdateRequestAction}>
+                        <input type="hidden" name="requestId" value={row.id} />
+                        <Button type="submit">Approve and apply</Button>
+                      </form>
 
-                  <div className="ux4g-card-body app-stack-tight">
-                    <dl className="app-stack-tight">
-                      <div className="app-row">
-                        <dt className="ux4g-label-m-strong">Currently</dt>
-                        <dd className="ux4g-body-s-default">
-                          {row.currentValue ?? 'Not recorded'}
-                        </dd>
-                      </div>
-                      <div className="app-row">
-                        <dt className="ux4g-label-m-strong">Proposed</dt>
-                        <dd className="ux4g-body-s-strong">{row.proposedValue}</dd>
-                      </div>
-                      <div className="app-row">
-                        <dt className="ux4g-label-m-strong">Reason given</dt>
-                        <dd className="ux4g-body-s-default">{row.reason}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div className="ux4g-card-footer app-stack-tight">
-                    {isOwn ? (
-                      /*
-                        §3: nobody decides their own. Hidden here as well as
-                        refused in the use case. An administrator offered a
-                        button that always fails has been told nothing about
-                        why, and the rule is worth stating rather than
-                        discovering.
-                      */
-                      <div className="ux4g-alert ux4g-alert-warning" role="status">
-                        <div className="ux4g-alert-content">
-                          <p className="ux4g-alert-message">
-                            This is your own request. Another administrator has to
-                            decide it.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <form action={approveUpdateRequestAction}>
-                          <input type="hidden" name="requestId" value={row.id} />
-                          <button
-                            type="submit"
-                            className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target"
-                          >
-                            Approve and apply
-                          </button>
-                        </form>
-
-                        <form action={rejectUpdateRequestAction} className="app-stack-tight">
-                          <input type="hidden" name="requestId" value={row.id} />
-                          <label
-                            className="ux4g-label-m-strong"
-                            htmlFor={`note-${row.id}`}
-                          >
-                            Or reject it, with a reason they can act on
-                          </label>
+                      <form action={rejectUpdateRequestAction} className="flex-1 space-y-1.5 sm:max-w-sm">
+                        <label
+                          className="block text-sm font-medium text-ink"
+                          htmlFor={`note-${row.id}`}
+                        >
+                          Or reject it, with a reason they can act on
+                        </label>
+                        <div className="flex gap-2">
                           <textarea
-                            className="ux4g-input"
+                            className="w-full rounded-control border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                             id={`note-${row.id}`}
                             name="adminNote"
                             rows={2}
                             maxLength={500}
                             required
                           />
-                          <button
-                            type="submit"
-                            className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
-                          >
+                          <Button type="submit" variant="danger">
                             Reject
-                          </button>
-                        </form>
-                      </>
-                    )}
-                  </div>
-                </section>
-              </li>
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              </Card>
             );
           })}
-        </ul>
+        </div>
       )}
-    </AppShell>
+    </KitShell>
   );
 }

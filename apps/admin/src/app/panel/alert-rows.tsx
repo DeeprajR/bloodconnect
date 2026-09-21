@@ -1,3 +1,4 @@
+import { EmptyState, StatusBadge } from '@blood-connect/ui';
 import type { Alert } from '@blood-connect/domain';
 
 /**
@@ -23,6 +24,18 @@ const LEVEL_WORDS = {
   info: 'For information',
 } as const;
 
+const LEVEL_TONES = {
+  critical: 'danger',
+  warning: 'warning',
+  info: 'info',
+} as const;
+
+const EDGE = {
+  critical: 'border-l-danger',
+  warning: 'border-l-warning',
+  info: 'border-l-info',
+} as const;
+
 function age(seconds: number | null): string {
   if (seconds === null) return '';
   if (seconds < 3600) return `oldest ${String(Math.floor(seconds / 60))} minutes`;
@@ -38,26 +51,21 @@ export function AlertRows({
   gaps: readonly string[];
 }) {
   return (
-    <div className="app-stack-tight">
+    <div className="space-y-3">
       {gaps.map((gap) => (
-        <div className="ux4g-alert ux4g-alert-warning" role="status" key={gap}>
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">{gap}</p>
-          </div>
-        </div>
+        <p
+          key={gap}
+          role="status"
+          className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+        >
+          {gap}
+        </p>
       ))}
 
       {alerts.length === 0 ? (
-        <div className="ux4g-alert ux4g-alert-success" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              Nothing is waiting on anybody. Every queue is empty and every hold is
-              inside its window.
-            </p>
-          </div>
-        </div>
+        <EmptyState title="Nothing is waiting on anybody." description="Every queue is empty and every hold is inside its window." />
       ) : (
-        <ul className="app-stack-tight app-plain-list">
+        <ul className="space-y-3">
           {alerts.map((alert) => {
             const href =
               alert.href === undefined
@@ -67,23 +75,29 @@ export function AlertRows({
                   : alert.href;
 
             return (
-              <li key={alert.kind}>
-                <div className={`app-alert app-alert-${alert.level}`}>
-                  <div className="app-row-split">
-                    <span className="app-alert-title">{alert.title}</span>
-                    <span className="app-alert-count app-figure">{alert.count}</span>
-                  </div>
-                  <p className="app-alert-meta">
-                    {LEVEL_WORDS[alert.level]}
-                    {alert.oldestAgeSeconds === null ? '' : ` · ${age(alert.oldestAgeSeconds)}`}
-                  </p>
-                  <p className="app-alert-todo">{alert.whatToDo}</p>
-                  {href ? (
-                    <a className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target" href={href}>
-                      {alert.app === 'staff' ? 'Open in the staff app' : 'Open'}
-                    </a>
-                  ) : null}
+              <li
+                key={alert.kind}
+                className={`rounded-card border border-border border-l-4 bg-surface p-4 shadow-card ${EDGE[alert.level]}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-sm font-semibold text-ink">{alert.title}</span>
+                  <span className="text-xl font-semibold tabular-nums text-ink">
+                    {alert.count}
+                  </span>
                 </div>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-subtle">
+                  <StatusBadge label={LEVEL_WORDS[alert.level]} tone={LEVEL_TONES[alert.level]} />
+                  {alert.oldestAgeSeconds === null ? '' : age(alert.oldestAgeSeconds)}
+                </p>
+                <p className="mt-2 text-sm text-ink-muted">{alert.whatToDo}</p>
+                {href ? (
+                  <a
+                    href={href}
+                    className="mt-3 inline-flex items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-xs font-medium text-ink no-underline hover:bg-surface-muted"
+                  >
+                    {alert.app === 'staff' ? 'Open in the staff app' : 'Open'}
+                  </a>
+                ) : null}
               </li>
             );
           })}

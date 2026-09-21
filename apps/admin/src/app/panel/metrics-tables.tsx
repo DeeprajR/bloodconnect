@@ -1,3 +1,4 @@
+import { DataTable, EmptyState, StatusBadge, type Column } from '@blood-connect/ui';
 import type { RouteMetric, SurfaceMetric } from '@blood-connect/ops';
 
 /**
@@ -33,99 +34,93 @@ export function MetricsTables({
 }) {
   if (surfaces.length === 0) {
     return (
-      <div className="ux4g-alert ux4g-alert-info" role="status">
-        <div className="ux4g-alert-content">
-          <p className="ux4g-alert-message">
-            Nothing served in the window yet. Rows appear as the applications are used.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        title="Nothing served in the window yet."
+        description="Rows appear as the applications are used."
+      />
     );
   }
 
+  const surfaceColumns: Column<SurfaceMetric>[] = [
+    {
+      key: 'surface',
+      header: 'Surface',
+      cell: (r) => SURFACE_WORDS[r.surface] ?? r.surface,
+    },
+    { key: 'requests', header: 'Requests', align: 'right', cell: (r) => <span className="tabular-nums">{r.requests}</span> },
+    { key: 'errors', header: 'Errors', align: 'right', cell: (r) => <span className="tabular-nums">{r.errors}</span> },
+    {
+      key: 'errorRate',
+      header: 'Error rate',
+      align: 'right',
+      cell: (r) =>
+        r.errors > 0 ? (
+          <StatusBadge label={percent(r.errorRate)} tone="danger" />
+        ) : (
+          <span className="tabular-nums">{percent(r.errorRate)}</span>
+        ),
+    },
+    { key: 'p50', header: 'p50', align: 'right', cell: (r) => <span className="tabular-nums">{r.p50Ms}ms</span> },
+    { key: 'p95', header: 'p95', align: 'right', cell: (r) => <span className="tabular-nums">{r.p95Ms}ms</span> },
+  ];
+
+  const routeColumns: Column<RouteMetric>[] = [
+    {
+      key: 'route',
+      header: 'Route',
+      cell: (r) => <span className="font-mono text-xs">{r.route}</span>,
+    },
+    {
+      key: 'surface',
+      header: 'Surface',
+      cell: (r) => SURFACE_WORDS[r.surface] ?? r.surface,
+      hideOnMobile: true,
+    },
+    { key: 'requests', header: 'Requests', align: 'right', cell: (r) => <span className="tabular-nums">{r.requests}</span> },
+    {
+      key: 'errors',
+      header: 'Errors',
+      align: 'right',
+      cell: (r) =>
+        r.errors > 0 ? (
+          <StatusBadge label={String(r.errors)} tone="danger" />
+        ) : (
+          <span className="tabular-nums">{r.errors}</span>
+        ),
+    },
+    { key: 'p50', header: 'p50', align: 'right', cell: (r) => <span className="tabular-nums">{r.p50Ms}ms</span> },
+    { key: 'p95', header: 'p95', align: 'right', cell: (r) => <span className="tabular-nums">{r.p95Ms}ms</span> },
+    { key: 'max', header: 'Slowest', align: 'right', cell: (r) => <span className="tabular-nums">{r.maxMs}ms</span> },
+  ];
+
   return (
-    <div className="app-stack-tight">
-      <p className="ux4g-body-s-default">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
         {statuses.map((entry) => (
-          <span className="app-board-chip app-figure" key={entry.statusClass}>
-            {entry.statusClass} {entry.count}
+          <span
+            key={entry.statusClass}
+            className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface-muted px-2.5 py-1 text-xs font-semibold text-ink"
+          >
+            <span className="tabular-nums">
+              {entry.statusClass} {entry.count}
+            </span>
           </span>
         ))}
-      </p>
-
-      <div className="app-scroll-x">
-        <table className="ux4g-table">
-          <caption className="app-sr-only">Traffic per surface, last 24 hours</caption>
-          <thead>
-            <tr>
-              <th scope="col">Surface</th>
-              <th scope="col">Requests</th>
-              <th scope="col">Errors</th>
-              <th scope="col">Error rate</th>
-              <th scope="col">p50</th>
-              <th scope="col">p95</th>
-            </tr>
-          </thead>
-          <tbody>
-            {surfaces.map((row) => (
-              <tr key={row.surface}>
-                <th scope="row">{SURFACE_WORDS[row.surface] ?? row.surface}</th>
-                <td className="app-figure">{row.requests}</td>
-                <td className="app-figure">{row.errors}</td>
-                <td className="app-figure">
-                  {row.errors > 0 ? (
-                    <span className="ux4g-badge-digit-danger">{percent(row.errorRate)}</span>
-                  ) : (
-                    percent(row.errorRate)
-                  )}
-                </td>
-                <td className="app-figure">{row.p50Ms}ms</td>
-                <td className="app-figure">{row.p95Ms}ms</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
-      <div className="app-scroll-x">
-        <table className="ux4g-table">
-          <caption className="app-sr-only">
-            Traffic per route, busiest first, last 24 hours
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Route</th>
-              <th scope="col">Surface</th>
-              <th scope="col">Requests</th>
-              <th scope="col">Errors</th>
-              <th scope="col">p50</th>
-              <th scope="col">p95</th>
-              <th scope="col">Slowest</th>
-            </tr>
-          </thead>
-          <tbody>
-            {routes.map((row) => (
-              <tr key={`${row.surface}-${row.route}`}>
-                <th scope="row" className="app-figure">
-                  {row.route}
-                </th>
-                <td>{SURFACE_WORDS[row.surface] ?? row.surface}</td>
-                <td className="app-figure">{row.requests}</td>
-                <td className="app-figure">
-                  {row.errors > 0 ? (
-                    <span className="ux4g-badge-digit-danger">{row.errors}</span>
-                  ) : (
-                    row.errors
-                  )}
-                </td>
-                <td className="app-figure">{row.p50Ms}ms</td>
-                <td className="app-figure">{row.p95Ms}ms</td>
-                <td className="app-figure">{row.maxMs}ms</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={surfaceColumns}
+        rows={[...surfaces]}
+        getRowKey={(r) => r.surface}
+        caption="Traffic per surface, last 24 hours"
+      />
+
+      <DataTable
+        columns={routeColumns}
+        rows={[...routes]}
+        getRowKey={(r) => `${r.surface}-${r.route}`}
+        caption="Traffic per route, busiest first, last 24 hours"
+      />
     </div>
   );
 }

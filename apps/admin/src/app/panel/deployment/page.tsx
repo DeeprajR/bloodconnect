@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { Card, DataTable, DescList, PageHeader, type Column } from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
 import { notePage } from '@/lib/metrics';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { readDeployment } from '@blood-connect/ops';
@@ -21,6 +23,8 @@ const stampFormat = new Intl.DateTimeFormat('en-IN', {
 
 const show = (value: unknown): string =>
   typeof value === 'string' ? value : JSON.stringify(value);
+
+type ConfigRow = Awaited<ReturnType<typeof readDeployment>>['config'][number];
 
 /**
  * Which configuration is this deployment actually running (§12).
@@ -47,72 +51,68 @@ export default async function DeploymentPage() {
     deployment.storedContractVersion !== null &&
     deployment.storedContractVersion !== deployment.compiledContractVersion;
 
+  const columns: Column<ConfigRow>[] = [
+    { key: 'key', header: 'Key', cell: (r) => <span className="font-mono text-xs">{r.key}</span> },
+    { key: 'value', header: 'In force', cell: (r) => <span className="tabular-nums">{show(r.value)}</span> },
+    { key: 'default', header: 'Default', cell: (r) => <span className="tabular-nums">{show(r.defaultValue)}</span> },
+    {
+      key: 'source',
+      header: 'Source',
+      cell: (r) =>
+        r.isDefault ? (
+          'compiled default'
+        ) : (
+          <span className="font-medium text-ink">
+            this database
+            {r.effectiveFrom ? `, from ${stampFormat.format(r.effectiveFrom)}` : ''}
+          </span>
+        ),
+    },
+  ];
+
   return (
-    <AppShell actor={actor} title="This deployment">
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">This deployment</h1>
-        <p className="ux4g-body-m-default">
-          Read-only. Changing a threshold is a clinical decision, and it happens on its
-          own audited screen.
-        </p>
-      </div>
+    <KitShell currentPath="/panel" currentTitle="This deployment">
+      <PageHeader
+        title="This deployment"
+        description="Read-only. Changing a threshold is a clinical decision, and it happens on its own audited screen."
+      />
 
       {mismatched ? (
-        <div className="ux4g-alert ux4g-alert-error" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              This build compiled against contract {deployment.compiledContractVersion}, and
-              the database says {deployment.storedContractVersion}. Ship both releases
-              together, or roll the newer one back.
-            </p>
-          </div>
-        </div>
+        <p
+          role="alert"
+          className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          This build compiled against contract {deployment.compiledContractVersion}, and
+          the database says {deployment.storedContractVersion}. Ship both releases
+          together, or roll the newer one back.
+        </p>
       ) : null}
 
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">Versions</h2>
-        </div>
-        <div className="ux4g-card-body">
-          <dl className="app-stack-tight">
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Contract, compiled</dt>
-              <dd className="ux4g-body-s-default app-figure">
-                {deployment.compiledContractVersion}
-              </dd>
-            </div>
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Contract, stored</dt>
-              <dd className="ux4g-body-s-default app-figure">
-                {deployment.storedContractVersion ?? 'not seeded'}
-              </dd>
-            </div>
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Build</dt>
-              <dd className="ux4g-body-s-default app-figure">
-                {deployment.buildId ?? 'not stamped'}
-              </dd>
-            </div>
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Node</dt>
-              <dd className="ux4g-body-s-default app-figure">{deployment.nodeVersion}</dd>
-            </div>
-            <div className="app-row">
-              <dt className="ux4g-label-m-strong">Migrations applied</dt>
-              <dd className="ux4g-body-s-default app-figure">
-                {deployment.migrationsApplied}
-                {deployment.lastMigrationAt
+      <Card title="Versions">
+        <DescList
+          items={[
+            { term: 'Contract, compiled', value: deployment.compiledContractVersion },
+            {
+              term: 'Contract, stored',
+              value: deployment.storedContractVersion ?? 'not seeded',
+            },
+            { term: 'Build', value: deployment.buildId ?? 'not stamped' },
+            { term: 'Node', value: deployment.nodeVersion },
+            {
+              term: 'Migrations applied',
+              value: `${String(deployment.migrationsApplied)}${
+                deployment.lastMigrationAt
                   ? `, last ${stampFormat.format(deployment.lastMigrationAt)}`
-                  : ''}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </section>
+                  : ''
+              }`,
+            },
+          ]}
+        />
+      </Card>
 
-      <section className="app-stack-tight">
-        <h2 className="ux4g-heading-s-strong">Configuration</h2>
-        <p className="ux4g-body-s-default">
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-ink">Configuration</h2>
+        <p className="text-sm text-ink-muted">
           {/*
             Every key, not only the overridden ones. A screen listing three rows
             because three are overridden invites the wrong conclusion: that the
@@ -123,51 +123,22 @@ export default async function DeploymentPage() {
           database. The rest are the compiled defaults.
         </p>
 
-        <div className="app-scroll-x">
-          <table className="ux4g-table">
-            <caption className="app-sr-only">
-              Resolved configuration, overridden values first
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Key</th>
-                <th scope="col">In force</th>
-                <th scope="col">Default</th>
-                <th scope="col">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...deployment.config]
-                .sort((a, b) => Number(a.isDefault) - Number(b.isDefault) || a.key.localeCompare(b.key))
-                .map((row) => (
-                  <tr key={row.key}>
-                    <th scope="row" className="app-figure">
-                      {row.key}
-                    </th>
-                    <td className="app-figure">{show(row.value)}</td>
-                    <td className="app-figure">{show(row.defaultValue)}</td>
-                    <td>
-                      {row.isDefault ? (
-                        'compiled default'
-                      ) : (
-                        <span className="ux4g-label-m-strong">
-                          this database
-                          {row.effectiveFrom
-                            ? `, from ${stampFormat.format(row.effectiveFrom)}`
-                            : ''}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          rows={[...deployment.config].sort(
+            (a, b) => Number(a.isDefault) - Number(b.isDefault) || a.key.localeCompare(b.key),
+          )}
+          getRowKey={(r) => r.key}
+          caption="Resolved configuration, overridden values first"
+        />
       </section>
 
-      <p className="ux4g-body-s-default">
-        <Link href="/panel">Back to the panel</Link>
-      </p>
-    </AppShell>
+      <Link
+        href="/panel"
+        className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+      >
+        ← Back to the panel
+      </Link>
+    </KitShell>
   );
 }

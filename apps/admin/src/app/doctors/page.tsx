@@ -1,9 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../shell';
+import {
+  DataTable,
+  StatusBadge,
+  linkButtonClasses,
+  type Column,
+} from '@blood-connect/ui';
+
+import { KitShell } from '../kit-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
-import { listDoctors } from '@blood-connect/platform';
+import { listDoctors, type DoctorSummary } from '@blood-connect/platform';
 
 export const metadata: Metadata = { title: 'Doctors · Administration' };
 
@@ -11,6 +18,12 @@ const STATUS_LABELS = {
   active: 'Active',
   pending_activation: 'Invited, not yet activated',
   deactivated: 'Deactivated',
+} as const;
+
+const STATUS_TONES = {
+  active: 'success',
+  pending_activation: 'warning',
+  deactivated: 'neutral',
 } as const;
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', {
@@ -30,77 +43,74 @@ export default async function DoctorsPage() {
   const doctors = await listDoctors(ctx);
   const now = new Date();
 
+  const columns: Column<DoctorSummary>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      cell: (d) => (
+        <Link href={`/doctors/${d.id}`} className="font-medium text-primary hover:underline">
+          {d.fullName}
+        </Link>
+      ),
+    },
+    { key: 'email', header: 'Email', cell: (d) => d.email },
+    {
+      key: 'reg',
+      header: 'Registration',
+      cell: (d) => <span className="tabular-nums">{d.provisionalReg ?? '–'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (d) => {
+        const waiting =
+          d.status === 'pending_activation' ? daysSince(d.createdAt, now) : null;
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <StatusBadge label={STATUS_LABELS[d.status]} tone={STATUS_TONES[d.status]} />
+            {/*
+              An invite that was never used ages visibly rather than rotting
+              silently (§8).
+            */}
+            {waiting !== null && waiting > 0 ? (
+              <span className="text-xs text-ink-subtle">{waiting}d</span>
+            ) : null}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'seal',
+      header: 'Seal',
+      cell: (d) => (d.hasSeal ? 'Yes' : '–'),
+    },
+    {
+      key: 'added',
+      header: 'Added',
+      cell: (d) => <span className="tabular-nums">{dayFormat.format(d.createdAt)}</span>,
+    },
+  ];
+
   return (
-    <AppShell actor={actor} title="Doctors">
-      <div className="app-row-split">
-        <div className="app-stack-tight">
-          <h1 className="ux4g-heading-l-strong">Doctors</h1>
-          <p className="ux4g-body-m-default app-figure">
+    <KitShell currentPath="/doctors" currentTitle="Doctors">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-ink">Doctors</h1>
+          <p className="mt-1 text-sm text-ink-muted">
             {doctors.length} record{doctors.length === 1 ? '' : 's'}
           </p>
         </div>
-        <Link
-          className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target"
-          href="/doctors/new"
-        >
+        <Link href="/doctors/new" className={linkButtonClasses()}>
           Add a doctor
         </Link>
       </div>
 
-      {doctors.length === 0 ? (
-        <div className="ux4g-alert ux4g-alert-info" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              No doctors yet. Adding one sends them an invite to set a password.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="app-scroll-x">
-          <table className="ux4g-table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Email</th>
-                <th scope="col">Registration</th>
-                <th scope="col">Status</th>
-                <th scope="col">Seal</th>
-                <th scope="col">Added</th>
-              </tr>
-            </thead>
-            <tbody>
-              {doctors.map((doctor) => {
-                const waiting =
-                  doctor.status === 'pending_activation'
-                    ? daysSince(doctor.createdAt, now)
-                    : null;
-
-                return (
-                  <tr key={doctor.id}>
-                    <td>
-                      <Link href={`/doctors/${doctor.id}`}>{doctor.fullName}</Link>
-                    </td>
-                    <td>{doctor.email}</td>
-                    <td className="app-figure">{doctor.provisionalReg ?? '-'}</td>
-                    <td>
-                      {STATUS_LABELS[doctor.status]}
-                      {/*
-                        An invite that was never used ages visibly rather than
-                        rotting silently (§8).
-                      */}
-                      {waiting !== null && waiting > 0 ? (
-                        <span className="ux4g-label-m-default"> · {waiting}d</span>
-                      ) : null}
-                    </td>
-                    <td>{doctor.hasSeal ? 'Yes' : '-'}</td>
-                    <td className="app-figure">{dayFormat.format(doctor.createdAt)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </AppShell>
+      <DataTable
+        columns={columns}
+        rows={doctors}
+        getRowKey={(d) => d.id}
+        emptyLabel="No doctors yet. Adding one sends them an invite to set a password."
+      />
+    </KitShell>
   );
 }
