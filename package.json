@@ -27,6 +27,7 @@
     "up": "docker compose up -d",
     "down": "docker compose down",
     "clean": "tsc -b --clean",
+    "clean:next": "node scripts/clean-next.mjs",
     "verify": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm boundaries:prove && pnpm check:bot-migrations && pnpm check:gates && pnpm test",
     "db:generate:bot": "pnpm --filter @blood-connect/db generate:bot",
     "db:migrate:bot": "pnpm --filter @blood-connect/db migrate:bot",

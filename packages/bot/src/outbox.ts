@@ -149,7 +149,20 @@ export async function drainOutbox(
     })
     .from(messageOutbox)
     .where(and(eq(messageOutbox.status, 'pending'), lte(messageOutbox.nextAttemptAt, now)))
-    .orderBy(messageOutbox.createdAt)
+    /**
+     * By time, then by id, and the second half is load-bearing (§7.6).
+     *
+     * Every message queued in one `enqueue` call is stamped from the same
+     * `now`, so `created_at` alone leaves their order entirely to the planner.
+     * That is not a test-only concern: "you are confirmed" arriving after "you
+     * are no longer needed" is the exact reordering §7.6 exists to prevent, and
+     * a reply whose two halves arrive backwards reads as a system arguing with
+     * itself.
+     *
+     * The ids are UUIDv7, minted in array order and monotonic within a
+     * millisecond, so sorting by id is sorting by the order they were written.
+     */
+    .orderBy(messageOutbox.createdAt, messageOutbox.id)
     .limit(limit);
 
   for (const row of due) {

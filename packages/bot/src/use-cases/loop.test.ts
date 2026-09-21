@@ -120,6 +120,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       consent: boolean;
       optedOut: boolean;
       flagged: boolean;
+      qualification: 'qualified' | 'not_qualified' | 'flagged';
       snoozeUntil: string | null;
       districtId: string | null;
       lastDonatedOn: string | null;
@@ -144,6 +145,11 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       lastDonatedOn: overrides.lastDonatedOn ?? null,
       nextEligibleOn: overrides.nextEligibleOn ?? null,
       durableFlagStatus: overrides.flagged ? 'flagged' : 'clear',
+      // What the interview would have written. A flagged answer produces a
+      // flagged qualification, which is what the real flow does.
+      qualificationStatus:
+        overrides.qualification ?? (overrides.flagged ? 'flagged' : 'qualified'),
+      qualifiedAt: clock.now(),
       snoozeUntil: overrides.snoozeUntil ?? null,
       optedOutAt: overrides.optedOut ? clock.now() : null,
       consentCurrentAt: overrides.consent === false ? null : clock.now(),
@@ -698,7 +704,14 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
         { label: 'eligible today', nextEligibleOn: today },
         { label: 'eligible tomorrow', nextEligibleOn: addDays(today, 1) },
         { label: 'eligible yesterday', nextEligibleOn: subtractDays(today, 1) },
-        { label: 'unverified group', verified: false },
+        /*
+          A group nobody has typed yet is still a group we act on. It used to be
+          excluded, which meant a pool of donors who had never given could never
+          be asked and so could never be typed.
+        */
+        { label: 'group never typed by staff', verified: false },
+        // The stored judgement, which is what age and weight now live behind.
+        { label: 'not qualified by their answers', qualification: 'not_qualified' },
         { label: 'no current consent', consent: false },
         { label: 'opted out', optedOut: true },
         { label: 'durably flagged', flagged: true },
@@ -733,7 +746,6 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
             isEligible(
               {
                 bloodGroup: row.bloodGroup,
-                bloodGroupVerifiedAt: row.bloodGroupVerifiedAt,
                 dob: row.dob,
                 weightKg: row.weightKg,
                 nextEligibleOn: row.nextEligibleOn,
@@ -742,6 +754,7 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
                 optedOutAt: row.optedOutAt,
                 deletedAt: row.deletedAt,
                 consentCurrentAt: row.consentCurrentAt,
+                qualificationStatus: row.qualificationStatus,
               },
               'O+',
               today,
@@ -759,6 +772,17 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       expect(disagreements.map((d) => d.label)).toEqual([]);
       expect(bySql.size).toBe(byTypeScript.size);
       expect(bySql.size).toBeGreaterThan(0);
+
+      const idOf = (label: string): string =>
+        made.find((each) => each.label === label)?.donorId ?? '';
+
+      // The rule that changed: a self-declared group is acted on.
+      expect(bySql.has(idOf('group never typed by staff'))).toBe(true);
+      // The rule that replaced it, and the one the window depends on.
+      expect(bySql.has(idOf('not qualified by their answers'))).toBe(false);
+      // The donation window: somebody inside their interval is not asked.
+      expect(bySql.has(idOf('eligible tomorrow'))).toBe(false);
+      expect(bySql.has(idOf('eligible today'))).toBe(true);
     });
 
     it('asks a donor once per request, however many waves run', async () => {
@@ -864,25 +888,21 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
       expect(thanks?.text).toContain(readableDay(row?.nextEligibleOn ?? ''));
     });
 
-    it('verifies the donor’s group from the one the counter typed (contract 1.1.0)', async () => {
+    it('confirms the donor’s group from the one the counter typed (contract 1.1.0)', async () => {
       const demandId = await openDemand(1);
       const [imported] = await importOpenDemands(context());
       if (!imported) throw new Error('nothing imported');
       const donor = await makeDonor({ verified: false });
       await client`UPDATE bot.donors SET blood_group_verified_at = NULL
                     WHERE id = ${donor.donorId}`;
-      await sendWave(context(), imported.botRequestId);
 
-      // Unverified donors are not selected into a wave (§7.7), so the journey
-      // is opened directly, which is the situation this column exists for.
-      await db.insert(bot.donorRequests).values({
-        id: newId(),
-        botRequestId: imported.botRequestId,
-        donorId: donor.donorId,
-        status: 'NOTIFIED',
-        waveNo: 1,
-        notifiedAt: clock.now(),
-      });
+      /*
+        The wave picks them up on the group they declared. That is the whole
+        change: this test used to have to open the journey by hand, because a
+        donor nobody had typed could never be selected, and so could never be
+        typed. The circle is gone.
+      */
+      await sendWave(context(), imported.botRequestId);
       await passScreening(await journeyFor(imported.botRequestId, donor.donorId));
 
       await client`UPDATE hospital.donor_demand_confirmations
@@ -897,11 +917,12 @@ describe.skipIf(!testUrl)('the bot loop (§7.3, §7.4, §7.6, §7.7)', () => {
         .from(bot.donors)
         .where(eq(bot.donors.id, donor.donorId));
 
-      // Before this column existed there was no path here at all: §7.7 excludes
-      // an unverified donor, and `app_web` holds no grant on the bot's schema.
+      // The counter typed them, so the group is now confirmed rather than
+      // self-declared. It is a record of what a unit tested as, not a gate.
       expect(row?.bloodGroupVerifiedAt).not.toBeNull();
       // And the typed group wins over what they believed. That disagreement is
-      // exactly the case verification exists for.
+      // exactly the case this column exists for: they are recruited on the
+      // corrected group from here on.
       expect(row?.bloodGroup).toBe('B+');
     });
 

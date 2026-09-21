@@ -15,7 +15,8 @@ export type PasswordProblem =
  *
  * No character-class rules on purpose. They push people towards `Passw0rd!`,
  * which is short and guessable, and away from a long passphrase, which is
- * neither. §15 asks for a minimum of 12 and this enforces exactly that.
+ * neither. The minimum arrives as a parameter and is a configuration row, so
+ * whatever a deployment sets is what this enforces.
  *
  * The upper bound is a denial-of-service guard, not a password rule: Argon2id
  * hashes whatever it is given, and a megabyte of input costs a megabyte of

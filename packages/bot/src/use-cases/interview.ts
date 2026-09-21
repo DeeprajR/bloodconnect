@@ -445,8 +445,8 @@ export async function summaryRows(
           ...base,
           value:
             draft.groupUnknown === true || draft.bloodGroup === undefined
-              ? 'Not known yet. Staff will type you at your first donation'
-              : `${bloodGroupLabel(draft.bloodGroup as BloodGroup)}  (to be confirmed by staff at your first donation)`,
+              ? 'Not known yet. The centre will check it at your first donation'
+              : bloodGroupLabel(draft.bloodGroup as BloodGroup),
         };
       case 'weight':
         return { ...base, value: draft.weightBand ? weightBandLabel(draft.weightBand) : '-' };

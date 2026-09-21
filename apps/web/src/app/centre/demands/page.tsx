@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Card, DataTable, PageHeader, linkButtonClasses, type Column } from '@blood-connect/ui';
 
 import { CentreShell } from '../../centre-shell';
+import { LiveRefresh } from '../../volunteer/live';
 import { CancelDemandForm } from '../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { countUnmarked, listDemands } from '@blood-connect/centre';
@@ -32,11 +33,23 @@ export default async function DemandsPage() {
   const closed = demands.filter((row) => !open.includes(row));
 
   // How many confirmed donors are still waiting to be marked at the counter.
-  // It is the number that decides whether anybody needs to open the roster.
+  // It is the number that decides whether anybody needs to open the donor list.
   const unmarked = new Map(
     await Promise.all(
       open.map(async (demand) => [demand.id, await countUnmarked(ctx, demand.id)] as const),
     ),
+  );
+
+  /**
+   * Picked up by the bot, and nobody contacted.
+   *
+   * The one recruitment failure that looks exactly like success from here: the
+   * demand is open, the bot imported it, the counter waits, and no phone ever
+   * rings. It means the pool holds nobody who can answer this group today, and
+   * saying so beats leaving somebody to conclude the bot is broken.
+   */
+  const silent = open.filter(
+    (row) => row.botPublicId !== null && row.donorsNotified === 0,
   );
 
   const day = new Intl.DateTimeFormat('en-IN', {
@@ -132,10 +145,35 @@ export default async function DemandsPage() {
 
   return (
     <CentreShell actor={actor} title="Demand" currentPath="/centre/demands">
+      {/* The counters here are written back by the bot, so they move on their own. */}
+      <LiveRefresh everySeconds={30} />
+
       <PageHeader
         title={WORDING.donorDemand}
         description="Progress is written back by the donor bot as people are contacted and confirm. A demand with no public identifier has not been picked up yet, and nobody has been contacted for it."
       />
+
+      {silent.length > 0 ? (
+        <p
+          role="status"
+          className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+        >
+          <span className="font-medium">
+            {silent.length}{' '}
+            {silent.length === 1 ? 'demand has' : 'demands have'} been picked up
+            by the donor bot with nobody contacted yet.
+          </span>{' '}
+          {/*
+            Said on the screen rather than left in the specification, because
+            this is where somebody stands wondering why the phones are quiet.
+            Every reason listed is one the counter can act on or plan around.
+          */}
+          Nobody in the donor pool can answer this group today. Either no
+          registered donor has a matching group nearby, or the ones who do gave
+          recently and are still inside the gap between donations. It is not a
+          fault: the list refills as people become due again.
+        </p>
+      ) : null}
 
       <Card title="Recruiting now">
         <DataTable

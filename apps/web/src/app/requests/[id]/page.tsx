@@ -7,6 +7,7 @@ import {
   DataTable,
   DescList,
   PageHeader,
+  StatusBadge,
   type Column,
 } from '@blood-connect/ui';
 
@@ -16,11 +17,16 @@ import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getRequest, listSamples } from '@blood-connect/hospital';
 import { getDecisionForRequest } from '@blood-connect/centre';
 import {
+  URGENCY_LABELS,
+  URGENCY_SHORT,
   WORDING,
   bloodGroupLabel,
+  isUrgency,
   productLabel,
+  responseMinutesFor,
   type BloodGroup,
   type Product,
+  type Urgency,
 } from '@blood-connect/domain';
 
 export const metadata: Metadata = { title: 'Blood request · Blood Connect' };
@@ -31,6 +37,13 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   partially_approved: 'Partly approved',
   declined: 'Declined',
   cancelled: 'Cancelled',
+};
+
+const URGENCY_TONES: Readonly<Record<Urgency, 'danger' | 'warning' | 'neutral'>> = {
+  emergency: 'danger',
+  very_urgent: 'warning',
+  urgent: 'warning',
+  routine: 'neutral',
 };
 
 /** The statuses §3 lets a doctor cancel from. A draft is left, not cancelled. */
@@ -76,6 +89,22 @@ export default async function RequestPage({
   const decision = await getDecisionForRequest(ctx, id);
   const samples = await listSamples(ctx, id);
   const canCancel = CANCELLABLE.includes(request.status);
+
+  /**
+   * The priority, beside the identifier rather than buried in the detail list.
+   *
+   * The two travel together: the bystander carries the ID to the counter, and
+   * how fast it gets answered is the other half of what the counter needs to
+   * know. Three of the four levels land on today (ADR 0010), so the date beside
+   * it cannot say this and the level has to.
+   */
+  const urgency = isUrgency(request.urgency ?? '')
+    ? (request.urgency as Urgency)
+    : undefined;
+  const answerMinutes =
+    urgency === undefined
+      ? null
+      : responseMinutesFor(urgency, ctx.config.request.responseMinutes);
 
   const when = new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
@@ -131,6 +160,16 @@ export default async function RequestPage({
           <p className="mt-2 font-mono text-3xl font-bold tabular-nums tracking-wider text-ink sm:text-4xl">
             {request.requestId}
           </p>
+          {urgency ? (
+            <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-ink-muted">
+              <StatusBadge label={URGENCY_SHORT[urgency]} tone={URGENCY_TONES[urgency]} />
+              <span>
+                {answerMinutes === null
+                  ? 'Answered in the order the queue reaches it'
+                  : `The centre is asked to answer within ${String(answerMinutes)} minutes`}
+              </span>
+            </p>
+          ) : null}
           <p className="mt-3 text-sm text-ink-muted">
             They take it to the blood centre, who will ask them for the
             patient&rsquo;s details. Nothing else is needed from you.
@@ -141,6 +180,11 @@ export default async function RequestPage({
       <PageHeader
         title={request.requestId ?? 'Blood request'}
         description={STATUS_LABELS[request.status] ?? request.status}
+        actions={
+          urgency ? (
+            <StatusBadge label={URGENCY_SHORT[urgency]} tone={URGENCY_TONES[urgency]} />
+          ) : undefined
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -168,6 +212,10 @@ export default async function RequestPage({
                       : '—'}
                   </span>
                 ),
+              },
+              {
+                term: 'Priority',
+                value: urgency ? URGENCY_LABELS[urgency] : '—',
               },
               {
                 term: WORDING.dateRequired,

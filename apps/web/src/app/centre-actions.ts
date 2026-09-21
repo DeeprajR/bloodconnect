@@ -38,7 +38,36 @@ import { assertSameOrigin, currentActor } from '@/lib/session';
  * what the answer is called are all settled inside the transaction.
  */
 
-export type FormState = { readonly error: string | null; readonly done?: boolean };
+export type FormState = {
+  readonly error: string | null;
+  readonly done?: boolean;
+  /**
+   * What was typed, handed back so a rejected form can put it back.
+   *
+   * A server action re-renders the form from scratch, so an input with no
+   * `defaultValue` comes back empty. At a counter that means a person who
+   * missed one required field loses fifteen answers they took from a bystander
+   * standing in front of them, and types them all again. The values never leave
+   * the round trip they came from: they are echoed to the same person who sent
+   * them and stored nowhere.
+   */
+  readonly values?: Readonly<Record<string, string>>;
+};
+
+/**
+ * Every text value on the form, for echoing back on a rejection.
+ *
+ * Deliberately not the whole `FormData`: files and the framework's own action
+ * fields have no business being reflected into an input, so only strings that
+ * came from named fields survive.
+ */
+function submittedValues(form: FormData): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const [key, entry] of form.entries()) {
+    if (typeof entry === 'string' && !key.startsWith('$')) values[key] = entry;
+  }
+  return values;
+}
 
 function value(form: FormData, name: string): string {
   const raw = form.get(name);
@@ -448,7 +477,9 @@ export async function attachPatientAction(
     previousReaction: optional(formData, 'previousReaction') ?? undefined,
   });
 
-  if (!result.ok) return { error: result.error.message };
+  // Everything they typed goes back with the message. The counter fixes the one
+  // field that was wrong instead of re-interviewing the bystander.
+  if (!result.ok) return { error: result.error.message, values: submittedValues(formData) };
 
   revalidatePath('/centre/requests');
   revalidatePath(`/centre/requests/${requestUuid}`);

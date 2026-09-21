@@ -18,6 +18,7 @@ import { donorDemandConfirmations } from '@blood-connect/db';
 import {
   nextEligibleOn,
   parseBloodGroup,
+  qualifyDonor,
   type CalendarDay,
   type Sex,
 } from '@blood-connect/domain';
@@ -124,6 +125,11 @@ async function applyOne(
         sex: donors.sex,
         bloodGroup: donors.bloodGroup,
         lastDonatedOn: donors.lastDonatedOn,
+        // Read so the qualification can be re-derived below rather than
+        // blanket-cleared, which would quietly un-block an underweight donor.
+        dob: donors.dob,
+        weightKg: donors.weightKg,
+        durableFlagStatus: donors.durableFlagStatus,
       })
       .from(donors)
       .where(eq(donors.id, row.donorId));
@@ -152,28 +158,66 @@ async function applyOne(
 
       /**
        * The counter typed a group off the unit it collected, so the donor's
-       * group is now **verified** rather than self-declared (contract 1.1.0).
+       * group is now confirmed rather than self-declared (contract 1.1.0).
        *
-       * This is the only way `blood_group_verified_at` is ever set, and §7.7
-       * recruits nobody without it, so before the contract carried this
-       * column, a donor who registered through the bot could never be selected
-       * into a wave. The centre is the authority on what a unit is; the bot
-       * simply records what it was told.
+       * Recruitment does **not** wait for this. It runs on the group the donor
+       * gave us, because requiring confirmation first was circular: nobody is
+       * typed without donating, nobody donates without being asked, and nobody
+       * was asked until typed. What this still buys is the correction.
        *
        * If the typed group differs from what they believed, **the typed one
-       * wins**. That disagreement is exactly the case verification exists for,
-       * and continuing to recruit on the guess would send them to a counter
-       * that cannot use their blood.
+       * wins**, and the disagreement is recorded. The centre is the authority
+       * on what a unit is; the bot records what it was told.
        */
       const typed = parseBloodGroup(row.donatedBloodGroup);
+
+      /**
+       * Typing the group settles the one thing a donor could not settle alone.
+       *
+       * Somebody who registered saying "I don't know" was stored as
+       * `not_qualified` for exactly that reason, and this is the event that
+       * resolves it. It is **re-derived** rather than cleared, so a donor who
+       * was also underweight stays blocked for the reason that still applies.
+       */
+      const requalified = typed
+        ? qualifyDonor(
+            {
+              dob: donor.dob as CalendarDay,
+              weightKg: donor.weightKg,
+              flagged: donor.durableFlagStatus !== 'clear',
+              groupUnknown: false,
+            },
+            ctx.clock.today(),
+            {
+              minAge: ctx.config.donor.minAge,
+              maxAge: ctx.config.donor.maxAge,
+              minWeightKg: ctx.config.donor.minWeightKg,
+            },
+          )
+        : undefined;
 
       await tx
         .update(donors)
         .set({
           lastDonatedOn: donatedOn,
+          /**
+           * The donation window, moved forward by the donation that just
+           * happened.
+           *
+           * This is the column every wave checks against today's date, so
+           * writing it here is what makes "nobody is asked again inside their
+           * interval" true rather than intended (§5, §7.7).
+           */
           nextEligibleOn: eligible ?? null,
           ...(typed
             ? { bloodGroup: typed, bloodGroupVerifiedAt: now }
+            : {}),
+          ...(requalified
+            ? {
+                qualificationStatus: requalified.status,
+                qualificationReason: requalified.reason,
+                qualifiedAt: now,
+              }
             : {}),
         })
         .where(eq(donors.id, donor.id));

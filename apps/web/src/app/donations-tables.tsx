@@ -11,7 +11,8 @@ import type { DonationRow } from '@blood-connect/centre';
  * `/centre/donations` shows the full lists. A second implementation would drift,
  * and the two would disagree about what a walk-in looks like within a month.
  *
- * **No phone numbers here.** The roster page carries them because that is where
+ * **No phone numbers here.** The demand's own donor list carries them, because
+ * that is where
  * somebody is calling a name at a desk; a list to be read does not need them,
  * and §2.10 asks for the narrower read wherever one will do.
  */

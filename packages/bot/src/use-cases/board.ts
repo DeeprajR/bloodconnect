@@ -52,11 +52,12 @@ export type BoardEntry = {
  */
 export type BoardBlock =
   | { readonly reason: 'not_registered' }
-  | { readonly reason: 'group_unverified' }
+  /** Their answers put them outside the thresholds, with the reason stored. */
+  | { readonly reason: 'not_qualified'; readonly detail: string }
+  | { readonly reason: 'flagged' }
   | { readonly reason: 'interval'; readonly until: string }
   | { readonly reason: 'paused'; readonly until: string }
-  | { readonly reason: 'wrong_group'; readonly needed: string }
-  | { readonly reason: 'flagged' };
+  | { readonly reason: 'wrong_group'; readonly needed: string };
 
 export type Board = {
   readonly entries: readonly BoardEntry[];
@@ -110,10 +111,11 @@ export async function openBoard(
   const [donor] = await ctx.db
     .select({
       bloodGroup: donors.bloodGroup,
-      bloodGroupVerifiedAt: donors.bloodGroupVerifiedAt,
       nextEligibleOn: donors.nextEligibleOn,
       snoozeUntil: donors.snoozeUntil,
       durableFlagStatus: donors.durableFlagStatus,
+      qualificationStatus: donors.qualificationStatus,
+      qualificationReason: donors.qualificationReason,
     })
     .from(donors)
     .where(eq(donors.id, donorId));
@@ -186,20 +188,35 @@ function toEntry(
 /**
  * The first reason this donor cannot answer anything, or `null`.
  *
- * Ordered by what they can act on: a group staff can type comes before an
- * interval they can only wait out.
+ * Ordered by what they can act on: something a person can resolve comes before
+ * an interval they can only wait out.
  */
 function blockFor(
   donor: {
-    bloodGroupVerifiedAt: Date | null;
     nextEligibleOn: string | null;
     snoozeUntil: string | null;
     durableFlagStatus: string;
+    qualificationStatus: string;
+    qualificationReason: string | null;
   },
   today: string,
 ): BoardBlock | null {
-  if (donor.bloodGroupVerifiedAt === null) return { reason: 'group_unverified' };
-  if (donor.durableFlagStatus !== 'clear') return { reason: 'flagged' };
+  /**
+   * The stored judgement first, and it carries its own sentence.
+   *
+   * The reason was written when the donor answered, in their terms, so the board
+   * repeats what they were already told rather than inventing a second wording
+   * for the same fact.
+   */
+  if (donor.qualificationStatus === 'not_qualified') {
+    return {
+      reason: 'not_qualified',
+      detail: donor.qualificationReason ?? 'We cannot match you at the moment.',
+    };
+  }
+  if (donor.qualificationStatus === 'flagged' || donor.durableFlagStatus !== 'clear') {
+    return { reason: 'flagged' };
+  }
   if (donor.snoozeUntil !== null && donor.snoozeUntil > today) {
     return { reason: 'paused', until: donor.snoozeUntil };
   }

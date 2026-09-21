@@ -13,6 +13,7 @@ import {
 
 import { BLOOD_GROUPS, WORDING, bloodGroupLabel } from '@blood-connect/domain';
 
+import { DateParts } from './date-parts';
 import { attachPatientAction, type FormState } from './centre-actions';
 
 /**
@@ -24,20 +25,28 @@ import { attachPatientAction, type FormState } from './centre-actions';
  * against or issued. Except for an emergency, which may be answered first
  * and completed after.
  *
- * **Four fields are demanded and the rest are offered**, in the order
- * somebody actually asks them: who is this, where are they, how old, what
- * group. The four are what the record cannot exist without. Everything
- * else is worth asking while the person is standing there, which is why
- * it is on the page at all, but behind a disclosure, because it must
- * never be what delays a unit.
+ * **Four fields are demanded and the rest are offered**, in the order somebody
+ * actually asks them: who is this, where are they, how old, what group. The four
+ * are what the record cannot exist without. Everything else is worth asking
+ * while the person is standing there, which is why it is on the page at all,
+ * but behind a disclosure, because it must never be what delays a unit.
  *
- * Kit-native (ADR 0015): the disclosure is a native `<details>` styled
- * with Tailwind's `group-open` variant, so nothing on the page depends on
+ * **A rejected form keeps everything that was typed.** Every field reads its
+ * default from `state.values`, which the action echoes back on failure. Before
+ * that, missing one required field emptied the whole form, and the person who
+ * paid for it was a counter clerk re-asking a bystander for an address they had
+ * already given. The disclosure below opens itself when anything inside it
+ * survived, so a returned answer is never hidden behind a closed panel.
+ *
+ * Kit-native (ADR 0015): the disclosure is a native `<details>` styled with
+ * Tailwind's `group-open` variant, so nothing on the page depends on
  * JavaScript being loaded — the same reason the ux4g version used a
  * `<details>`, kept exactly.
  */
 
 const initial: FormState = { error: null };
+
+const groupOptions = BLOOD_GROUPS.map((g) => ({ value: g, label: bloodGroupLabel(g) }));
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -66,6 +75,25 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
     initial,
   );
 
+  /** Whatever came back from a rejected submit, or nothing on a first render. */
+  const was = (field: string): string => state.values?.[field] ?? '';
+
+  /*
+    Open the disclosure if anything inside it survived a rejection. A returned
+    answer sitting behind a collapsed panel reads as lost, and somebody types it
+    again.
+  */
+  const extras = [
+    'uhid',
+    'attenderName',
+    'attenderPhone',
+    'address',
+    'diagnosis',
+    'history',
+    'previousReaction',
+  ];
+  const extrasFilled = extras.some((field) => was(field) !== '');
+
   if (state.done === true) {
     return (
       <div
@@ -89,6 +117,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
             name="name"
             required
             autoFocus
+            defaultValue={was('name')}
             className="text-base"
           />
         )}
@@ -98,12 +127,11 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
         <FormField
           label={WORDING.ipNumber}
           hint="From the ward. It identifies the admission."
-          required
         >
-          {(p) => <TextInput {...p} name="ipNo" required />}
+          {(p) => <TextInput {...p} name="ipNo" defaultValue={was('ipNo')} />}
         </FormField>
         <FormField label={WORDING.ward}>
-          {(p) => <TextInput {...p} name="ward" />}
+          {(p) => <TextInput {...p} name="ward" defaultValue={was('ward')} />}
         </FormField>
       </div>
 
@@ -120,14 +148,14 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
           <Select
             {...p}
             name="bloodGroup"
-            defaultValue=""
+            defaultValue={was('bloodGroup')}
             required
             className="text-base"
           >
             <option value="">Choose</option>
-            {BLOOD_GROUPS.map((g) => (
-              <option key={g} value={g}>
-                {bloodGroupLabel(g)}
+            {groupOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </Select>
@@ -142,6 +170,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
               name="age"
               type="number"
               inputMode="numeric"
+              defaultValue={was('age')}
             />
           )}
         </FormField>
@@ -151,7 +180,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
           hint="A newborn is usually recorded in days."
         >
           {(p) => (
-            <Select {...p} name="ageUnit" defaultValue="years">
+            <Select {...p} name="ageUnit" defaultValue={was('ageUnit') === '' ? 'years' : was('ageUnit')}>
               <option value="years">Years</option>
               <option value="months">Months</option>
               <option value="days">Days</option>
@@ -160,16 +189,16 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
         </FormField>
       </div>
 
-      <FormField
+      <DateParts
+        id="dob"
         label={WORDING.dateOfBirth}
+        defaultValue={was('dob')}
         hint="Give this or the age above. The record needs one of them."
-      >
-        {(p) => <TextInput {...p} name="dob" type="date" />}
-      </FormField>
+      />
 
       <FormField label={WORDING.sex}>
         {(p) => (
-          <Select {...p} name="sex" defaultValue="">
+          <Select {...p} name="sex" defaultValue={was('sex')}>
             <option value="">Not stated</option>
             <option value="female">Female</option>
             <option value="male">Male</option>
@@ -184,7 +213,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
         `group-open:` lets the chevron rotate on open without one line
         of JavaScript.
       */}
-      <details className="group rounded-card border border-border bg-surface-muted">
+      <details className="group rounded-card border border-border bg-surface-muted" open={extrasFilled}>
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
           <span className="flex flex-col">
             <span className="text-sm font-medium text-ink">
@@ -215,10 +244,12 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
 
         <div className="space-y-4 border-t border-border bg-surface px-4 py-4">
           <FormField label={WORDING.hospitalId}>
-            {(p) => <TextInput {...p} name="uhid" />}
+            {(p) => <TextInput {...p} name="uhid" defaultValue={was('uhid')} />}
           </FormField>
           <FormField label={WORDING.attenderName}>
-            {(p) => <TextInput {...p} name="attenderName" />}
+            {(p) => (
+              <TextInput {...p} name="attenderName" defaultValue={was('attenderName')} />
+            )}
           </FormField>
           <FormField label={WORDING.attenderPhone}>
             {(p) => (
@@ -227,17 +258,20 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
                 name="attenderPhone"
                 type="tel"
                 inputMode="tel"
+                defaultValue={was('attenderPhone')}
               />
             )}
           </FormField>
           <FormField label="Address">
-            {(p) => <TextArea {...p} name="address" rows={2} />}
+            {(p) => <TextArea {...p} name="address" rows={2} defaultValue={was('address')} />}
           </FormField>
           <FormField label={WORDING.knownDiagnosis}>
-            {(p) => <TextArea {...p} name="diagnosis" rows={2} />}
+            {(p) => (
+              <TextArea {...p} name="diagnosis" rows={2} defaultValue={was('diagnosis')} />
+            )}
           </FormField>
           <FormField label={WORDING.relevantHistory}>
-            {(p) => <TextArea {...p} name="history" rows={2} />}
+            {(p) => <TextArea {...p} name="history" rows={2} defaultValue={was('history')} />}
           </FormField>
 
           <FormField label={WORDING.previousTransfusion}>
@@ -245,7 +279,9 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
               <Select
                 {...p}
                 name="previousTransfusion"
-                defaultValue="unknown"
+                defaultValue={
+                  was('previousTransfusion') === '' ? 'unknown' : was('previousTransfusion')
+                }
               >
                 <option value="unknown">Unknown</option>
                 <option value="yes">Yes</option>
@@ -255,7 +291,14 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
           </FormField>
 
           <FormField label={WORDING.previousReaction}>
-            {(p) => <TextArea {...p} name="previousReaction" rows={2} />}
+            {(p) => (
+              <TextArea
+                {...p}
+                name="previousReaction"
+                rows={2}
+                defaultValue={was('previousReaction')}
+              />
+            )}
           </FormField>
         </div>
       </details>

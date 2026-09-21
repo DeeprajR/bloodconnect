@@ -27,7 +27,13 @@ import { addDays } from '@blood-connect/domain';
 import type { BotContext } from './context.js';
 import { MESSAGES } from './messages.js';
 import { enqueue, type QueuedMessage } from './outbox.js';
-import type { ChannelAddress, IncomingUpdate, OutgoingMessage } from './ports/channel.js';
+import {
+  INERT_CHOICE,
+  type ChannelAddress,
+  type Choice,
+  type IncomingUpdate,
+  type OutgoingMessage,
+} from './ports/channel.js';
 import {
   acceptRequest,
   answerScreeningQuestion,
@@ -52,6 +58,7 @@ import {
   deleteDonorData,
   draftFromProfile,
   findDonorByAddress,
+  noteInterest,
   optOutDonor,
   resumeDonor,
   snoozeDonor,
@@ -59,6 +66,89 @@ import {
 
 /** How long "pause" lasts before a donor is asked again. */
 const SNOOZE_DAYS = 90;
+
+/* -------------------------------------------------------------------------- */
+/* The menu                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The standing menu, offered rather than memorised (§5, §8).
+ *
+ * Routing is still by state and not by command: every one of these taps arrives
+ * as the same word somebody could have typed, and the router handles it in the
+ * same branch. Nothing new can be reached only through a button, which is what
+ * keeps the bot usable by somebody who types "needs" and never sees a keyboard
+ * at all.
+ *
+ * The pause item flips to "start again" for a donor who is paused, because
+ * offering to pause somebody who already has is a button that does nothing and
+ * reads as a bug.
+ */
+function menuChoices(paused: boolean): Choice[] {
+  return [
+    { label: MESSAGES.menu.needs, data: 'needs' },
+    { label: MESSAGES.menu.donate, data: 'donate' },
+    { label: MESSAGES.menu.profile, data: 'profile' },
+    paused
+      ? { label: MESSAGES.menu.resume, data: 'resume' }
+      : { label: MESSAGES.menu.pause, data: 'pause' },
+    { label: MESSAGES.menu.help, data: 'help' },
+  ];
+}
+
+/** The same menu under a message that has none of its own. */
+const withMenu = (message: OutgoingMessage, paused: boolean): OutgoingMessage => ({
+  ...message,
+  choices: message.choices ?? menuChoices(paused),
+});
+
+/* -------------------------------------------------------------------------- */
+/* Answered questions                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Turns the question somebody just answered into a record of their answer.
+ *
+ * The point is that a question can be answered **once**. Before this, every set
+ * of buttons stayed live for ever: a donor could tap "Female" and then "Male"
+ * on the same question, or answer a screening question twice while the reply to
+ * the first was still in the outbox. The second tap was usually rejected
+ * somewhere deeper, but the person saw a button that looked answerable and got
+ * either silence or a contradiction.
+ *
+ * So the message they tapped is edited in place: the option they chose is
+ * ticked, the rest are dimmed and made inert. The question stays on screen and
+ * readable, which is why the alternatives are dimmed rather than removed.
+ *
+ * Only the buttons are edited, never the text (`editChoicesOnly`), so the
+ * question keeps the exact wording they answered.
+ *
+ * **Correcting an answer is a different thing and stays fully live.** The fix
+ * flow re-asks the original question as a new message with fresh, active
+ * buttons, and locks that one in turn when it is answered. One question, one
+ * answer, as many times as somebody wants to change their mind (§5).
+ */
+function lockAnswered(
+  asked: OutgoingMessage,
+  chosen: string,
+  messageRef: string,
+): OutgoingMessage | undefined {
+  if (!asked.choices || asked.choices.length === 0) return undefined;
+  // A tap that matches nothing on the message is a stale callback from an
+  // older card. Locking on it would mark every option unavailable and none
+  // chosen, which reads as "you answered, and we lost it".
+  if (!asked.choices.some((choice) => choice.data === chosen)) return undefined;
+
+  return {
+    ...asked,
+    replaces: messageRef,
+    editChoicesOnly: true,
+    choices: asked.choices.map((choice) => ({
+      ...choice,
+      state: choice.data === chosen ? ('chosen' as const) : ('unavailable' as const),
+    })),
+  };
+}
 
 /** Queues replies, keyed so a redelivered update writes nothing twice. */
 async function reply(
@@ -95,9 +185,21 @@ async function standingMessage(
   donorId: string,
 ): Promise<OutgoingMessage> {
   const standing = await standingFor(ctx, donorId);
-  if (!standing) return { text: MESSAGES.help };
+  if (!standing) return withMenu({ text: MESSAGES.help }, false);
 
   const lines: string[] = [];
+
+  /**
+   * The reason a message will never arrive, said before the list.
+   *
+   * First, because it outranks everything under it: a donor their answers put
+   * outside the thresholds is in no wave, so "nothing is needed right now"
+   * underneath would be true and completely misleading (§7.7).
+   */
+  if (standing.qualification !== 'qualified' && standing.qualificationReason) {
+    lines.push(standing.qualificationReason);
+    lines.push('');
+  }
 
   if (standing.pausedUntil !== null) {
     lines.push(MESSAGES.paused(standing.pausedUntil));
@@ -121,12 +223,16 @@ async function standingMessage(
         ) + (need.alreadyAsked ? `: ${MESSAGES.alreadyAsked}` : ''),
       );
     }
-    if (standing.pausedUntil === null && standing.eligibleFrom === null) {
+    if (
+      standing.pausedUntil === null &&
+      standing.eligibleFrom === null &&
+      standing.qualification === 'qualified'
+    ) {
       lines.push('\nWe will message you if one of these is a match for you.');
     }
   }
 
-  return { text: lines.join('\n') };
+  return withMenu({ text: lines.join('\n') }, standing.pausedUntil !== null);
 }
 
 /**
@@ -161,12 +267,16 @@ function boardMessage(board: Board): OutgoingMessage {
   const mine = board.entries.filter((entry) => entry.matchesMe && !entry.alreadyAsked);
 
   if (board.blocked !== null) {
-    // Said once, and without a lecture (§5).
-    const until =
+    // Said once, and without a lecture (§5). The detail is a date for the two
+    // reasons that name one, and the stored sentence for a donor whose answers
+    // put them outside the thresholds.
+    const detail =
       board.blocked.reason === 'interval' || board.blocked.reason === 'paused'
         ? board.blocked.until
-        : '';
-    lines.push('', MESSAGES.boardBlocked(board.blocked.reason, until));
+        : board.blocked.reason === 'not_qualified'
+          ? board.blocked.detail
+          : '';
+    lines.push('', MESSAGES.boardBlocked(board.blocked.reason, detail));
     return { text: lines.join('\n') };
   }
 
@@ -195,10 +305,26 @@ function boardMessage(board: Board): OutgoingMessage {
 export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Promise<void> {
   const address = update.address;
 
+  /**
+   * A tap on an option that has already been answered.
+   *
+   * Telegram delivers the tap whatever the button looks like, so a dimmed
+   * option still arrives here. It is answered with silence on purpose: the
+   * person tapped something visibly inert, and replying with their standing
+   * situation would be a wall of text they did not ask for.
+   */
+  if (update.kind === 'choice' && update.data === INERT_CHOICE) return;
+
   // A tap on a request card is answerable whatever state the person is in, so
   // it is handled before anything else looks them up.
   if (update.kind === 'choice' && isJourneyChoice(update.data)) {
-    await handleJourneyChoice(ctx, address, update.data, update.updateId);
+    await handleJourneyChoice(
+      ctx,
+      address,
+      update.data,
+      update.updateId,
+      update.messageRef,
+    );
     return;
   }
 
@@ -250,7 +376,25 @@ export async function handleUpdate(ctx: BotContext, update: IncomingUpdate): Pro
    * they were half-way through.
    */
   if (state) {
-    await showInterview(ctx, address, await answerInterview(ctx, address, said), update.updateId);
+    /*
+      The question as it currently stands, captured **before** the answer is
+      applied. After `answerInterview` the state has moved on and the prompt
+      would describe the next question, so locking against it would tick a
+      button on the wrong screen.
+    */
+    const asked = update.kind === 'choice' ? await promptFor(ctx, state) : undefined;
+    const locked =
+      asked && update.kind === 'choice'
+        ? lockAnswered(asked, said, update.messageRef)
+        : undefined;
+
+    await showInterview(
+      ctx,
+      address,
+      await answerInterview(ctx, address, said),
+      update.updateId,
+      locked,
+    );
     return;
   }
 
@@ -282,14 +426,59 @@ const JOURNEY_VERBS = ['accept', 'decline', 'screen'] as const;
 const isJourneyChoice = (data: string): boolean =>
   (JOURNEY_VERBS as readonly string[]).includes(data.split(':')[0] ?? '');
 
+/**
+ * The buttons that were on the message this tap came from.
+ *
+ * Rebuilt from the callback data rather than remembered, because a journey has
+ * no conversation row to hold a copy in and a card can be tapped days after it
+ * was sent, from a process that has restarted since. The labels are fixed
+ * constants, so the data is enough to reconstruct exactly what was displayed.
+ *
+ * `undefined` for anything unrecognised, which leaves the buttons live rather
+ * than locking a message this cannot describe correctly.
+ */
+function journeyChoicesFor(data: string): readonly Choice[] | undefined {
+  const [verb, ...rest] = data.split(':');
+  const argument = rest.join(':');
+
+  if (verb === 'accept' || verb === 'decline') {
+    return [
+      { label: MESSAGES.cardYes, data: `accept:${argument}` },
+      { label: MESSAGES.cardNo, data: `decline:${argument}` },
+    ];
+  }
+
+  if (verb === 'screen') {
+    const [journeyId, rawIndex] = argument.split(':');
+    if (!journeyId || rawIndex === undefined) return undefined;
+    return [
+      { label: MESSAGES.answerYes, data: `screen:${journeyId}:${rawIndex}:yes` },
+      { label: MESSAGES.answerNo, data: `screen:${journeyId}:${rawIndex}:no` },
+    ];
+  }
+
+  return undefined;
+}
+
 async function handleJourneyChoice(
   ctx: BotContext,
   address: ChannelAddress,
   data: string,
   updateId: string,
+  messageRef: string,
 ): Promise<void> {
   const [verb, ...rest] = data.split(':');
   const argument = rest.join(':');
+
+  /*
+    The card or question they just tapped, marked with the answer they gave, so
+    neither of its two buttons can be pressed a second time (§8).
+  */
+  const asked = journeyChoicesFor(data);
+  const locked = asked
+    ? lockAnswered({ text: '', choices: asked }, data, messageRef)
+    : undefined;
+  const before = locked ? [locked] : [];
 
   if (verb === 'accept') {
     const result = await acceptRequest(ctx, argument);
@@ -297,6 +486,7 @@ async function handleJourneyChoice(
       ctx,
       address,
       [
+        ...before,
         result.ok
           ? question(argument, 0, result.value.nextQuestion ?? '')
           : { text: result.error.message },
@@ -311,7 +501,7 @@ async function handleJourneyChoice(
     await reply(
       ctx,
       address,
-      [{ text: result.ok ? MESSAGES.declined : result.error.message }],
+      [...before, { text: result.ok ? MESSAGES.declined : result.error.message }],
       updateId,
     );
     return;
@@ -326,6 +516,7 @@ async function handleJourneyChoice(
 
   const result = await answerScreeningQuestion(ctx, journeyId, index, answer);
   if (!result.ok) {
+    // Refused, so the question is still open and its buttons stay live.
     await reply(ctx, address, [{ text: result.error.message }], updateId);
     return;
   }
@@ -340,14 +531,14 @@ async function handleJourneyChoice(
           ? { text: MESSAGES.waitlisted }
           : { text: MESSAGES.confirmed(step.hospital, step.neededBy) };
 
-  await reply(ctx, address, [message], updateId);
+  await reply(ctx, address, [...before, message], updateId);
 }
 
 const question = (journeyId: string, index: number, text: string): OutgoingMessage => ({
   text,
   choices: [
-    { label: 'Yes', data: `screen:${journeyId}:${String(index)}:yes` },
-    { label: 'No', data: `screen:${journeyId}:${String(index)}:no` },
+    { label: MESSAGES.answerYes, data: `screen:${journeyId}:${String(index)}:yes` },
+    { label: MESSAGES.answerNo, data: `screen:${journeyId}:${String(index)}:no` },
   ],
 });
 
@@ -472,8 +663,8 @@ const requestCard = (
 ): OutgoingMessage => ({
   text: MESSAGES.request(bloodGroup, neededBy, hospital),
   choices: [
-    { label: 'Yes, I can give', data: `accept:${journeyId}` },
-    { label: 'Not this time', data: `decline:${journeyId}` },
+    { label: MESSAGES.cardYes, data: `accept:${journeyId}` },
+    { label: MESSAGES.cardNo, data: `decline:${journeyId}` },
   ],
 });
 
@@ -578,8 +769,53 @@ async function handleRegistered(
     return;
   }
 
-  if (word === 'help') {
-    await reply(ctx, address, [{ text: MESSAGES.help }], updateId);
+  /**
+   * "I would like to give", with nothing open that matches (§5).
+   *
+   * Somebody who came looking rather than waiting to be asked. It records the
+   * offer on the event log and answers with the one fact that is true for them:
+   * either they are in the pool, or something is standing in the way and this
+   * is what it is. It deliberately creates **no journey**: a journey is a
+   * commitment against a specific request, and there may be no request at all.
+   *
+   * Where it is going: a walk-in is recorded by the counter, not here. The bot
+   * holds no grant to write the centre's own tables, which is the boundary of
+   * §5.1 doing its job rather than an omission.
+   */
+  if (word === 'donate' || word === 'give') {
+    const standing = await standingFor(ctx, donorId);
+    await noteInterest(ctx, donorId);
+
+    const blocked =
+      standing && standing.qualification !== 'qualified' && standing.qualificationReason
+        ? standing.qualificationReason
+        : standing?.pausedUntil
+          ? MESSAGES.paused(standing.pausedUntil)
+          : standing?.eligibleFrom
+            ? MESSAGES.notEligibleYet(standing.eligibleFrom)
+            : null;
+
+    await reply(
+      ctx,
+      address,
+      [
+        withMenu(
+          {
+            text:
+              blocked === null
+                ? MESSAGES.interestNoted
+                : MESSAGES.interestBlocked(blocked),
+          },
+          standing?.pausedUntil !== null && standing?.pausedUntil !== undefined,
+        ),
+      ],
+      updateId,
+    );
+    return;
+  }
+
+  if (word === 'help' || word === 'menu') {
+    await reply(ctx, address, [withMenu({ text: MESSAGES.help }, false)], updateId);
     return;
   }
 
@@ -602,15 +838,27 @@ async function showInterview(
   address: ChannelAddress,
   result: AnswerResult,
   updateId: string,
+  /** The question they just answered, edited to show the answer (§8). */
+  locked?: OutgoingMessage,
 ): Promise<void> {
+  /*
+    The lock goes first in every branch, so the question they answered settles
+    before the next one arrives. The outbox preserves this order, which is the
+    whole reason replies go through it rather than being sent inline.
+  */
+  const before = locked ? [locked] : [];
+
   if (result.kind === 'next') {
-    await reply(ctx, address, [await promptFor(ctx, result.state)], updateId);
+    await reply(ctx, address, [...before, await promptFor(ctx, result.state)], updateId);
     return;
   }
 
   if (result.kind === 'invalid') {
-    // Say what is wrong and ask the same question again, rather than leaving
-    // somebody staring at an error with no prompt.
+    /*
+      Not locked: the answer was refused, so the question is still open and its
+      buttons must stay live. Ticking an option that was not accepted would be
+      a lie about what the system knows.
+    */
     await reply(
       ctx,
       address,
@@ -624,7 +872,7 @@ async function showInterview(
     await reply(
       ctx,
       address,
-      [{ text: MESSAGES.profileSaved }, await standingMessage(ctx, result.donorId)],
+      [...before, { text: MESSAGES.profileSaved }, await standingMessage(ctx, result.donorId)],
       updateId,
     );
     return;
@@ -637,7 +885,12 @@ async function showInterview(
      * Not the abandoned message: nothing was lost, and saying so would be
      * untrue. What they need is the one word that turns it on later.
      */
-    await reply(ctx, address, [{ text: MESSAGES.registeredDormant(result.name) }], updateId);
+    await reply(
+      ctx,
+      address,
+      [...before, { text: MESSAGES.registeredDormant(result.name) }],
+      updateId,
+    );
     return;
   }
 
@@ -671,6 +924,7 @@ async function showInterview(
         ctx,
         address,
         [
+          ...before,
           closing,
           { text: MESSAGES.linkResumed(target.bloodGroup, target.hospital) },
           ...(journeyId === undefined
@@ -686,7 +940,12 @@ async function showInterview(
     await reply(
       ctx,
       address,
-      [closing, { text: MESSAGES.linkGone }, await standingMessage(ctx, result.donorId)],
+      [
+        ...before,
+        closing,
+        { text: MESSAGES.linkGone },
+        await standingMessage(ctx, result.donorId),
+      ],
       updateId,
     );
     return;
@@ -695,7 +954,7 @@ async function showInterview(
   await reply(
     ctx,
     address,
-    [closing, await standingMessage(ctx, result.donorId)],
+    [...before, closing, await standingMessage(ctx, result.donorId)],
     updateId,
   );
 }

@@ -11,6 +11,18 @@
  * (exactly 18, exactly 65, exactly at the weight threshold, one day either side
  * of the interval), runs both, and asserts the sets are identical.
  *
+ * Two things the predicate does and does not do, both worth knowing before
+ * reading it:
+ *
+ *  - **The blood group is the donor's own word for it.** It no longer has to
+ *    have been typed off a unit first. That rule was circular: a donor is typed
+ *    by donating, donates by being asked, and was not asked until typed, so a
+ *    pool of new donors stayed permanently silent. Every unit is typed at the
+ *    counter before it is used, which is the control that protects the patient.
+ *  - **The donation window is checked live, every time.** Nobody who gave
+ *    inside their interval is ever selected, whatever else is stored about
+ *    them.
+ *
  * Both readings take their thresholds from the same `AppConfig` object (§12), so
  * a revised inter-donation interval cannot move one and not the other.
  */
@@ -21,6 +33,7 @@ import {
   ageOn,
   compatibleDonorGroupsFor,
   hasIntervalElapsed,
+  isQualified,
   parseCalendarDay,
   type BloodGroup,
   type CalendarDay,
@@ -35,7 +48,6 @@ import { enqueue, type QueuedMessage } from '../outbox.js';
 /** The shape both readings of the predicate agree about. */
 export type DonorForEligibility = {
   readonly bloodGroup: string;
-  readonly bloodGroupVerifiedAt: Date | null;
   readonly dob: string;
   readonly weightKg: number;
   readonly nextEligibleOn: string | null;
@@ -44,6 +56,8 @@ export type DonorForEligibility = {
   readonly optedOutAt: Date | null;
   readonly deletedAt: Date | null;
   readonly consentCurrentAt: Date | null;
+  /** The judgement written when they answered. See `qualifyDonor`. */
+  readonly qualificationStatus: string;
 };
 
 /**
@@ -65,19 +79,51 @@ export function isEligible(
   if (donor.consentCurrentAt === null) return false;
   if (donor.snoozeUntil !== null && donor.snoozeUntil > today) return false;
 
-  // Are they the right person for this request?
+  /**
+   * Are they the right person for this request?
+   *
+   * The group is the one the donor gave us, and it is trusted. It used to have
+   * to be typed off a unit first, which sounds careful and is not: a donor is
+   * only typed by donating, and they only donate by being asked, so a pool of
+   * people who had never given could never be asked and never became typable.
+   * The pre-transfusion test is the control that actually protects the patient,
+   * and the counter types every unit before it is used regardless.
+   */
   const compatible = compatibleDonorGroupsFor(need) as readonly string[];
   if (!compatible.includes(donor.bloodGroup)) return false;
-  // A self-declared group recruits nobody: the trip would be wasted.
-  if (donor.bloodGroupVerifiedAt === null) return false;
 
-  // Can they give today?
+  /**
+   * What their answers came to, decided when they gave them (§5).
+   *
+   * Age, weight and the durable health questions all live behind this one
+   * column now, so the two halves of the predicate cannot drift on them: there
+   * is nothing left here to get out of step with the SQL.
+   */
+  if (!isQualified(donor.qualificationStatus)) return false;
   if (donor.durableFlagStatus !== 'clear') return false;
-  // `date` columns arrive as plain strings; the branded type is what stops a
-  // day being compared against an instant somewhere down the line.
+
+  /**
+   * Can they give **today**?
+   *
+   * The one part of the judgement that is deliberately not stored, because it
+   * is a fact about the calendar rather than about the donor. Somebody who gave
+   * three weeks ago is not asked again until the interval has run, whatever
+   * their qualification says (§5, §12).
+   *
+   * `date` columns arrive as plain strings; the branded type is what stops a
+   * day being compared against an instant somewhere down the line.
+   */
   const eligible = parseCalendarDay(donor.nextEligibleOn);
   if (!hasIntervalElapsed(eligible, today)) return false;
 
+  /**
+   * Age is checked here as well as being stored.
+   *
+   * Not redundancy: a qualification written at 64 is still `qualified` at 66,
+   * because nothing recomputes it on a birthday. The stored judgement covers
+   * the answers, and this covers the passage of time. Same reason the interval
+   * is live.
+   */
   const age = ageOn(donor.dob as CalendarDay, today);
   // Inclusive at both ends: exactly 18 and exactly 65 are both eligible.
   if (age < config.donor.minAge || age > config.donor.maxAge) return false;
@@ -129,8 +175,20 @@ export async function selectWave(
     .where(
       and(
         sql`${donors.bloodGroup} = ANY(${sql.raw(`ARRAY[${compatible.map((g) => `'${g}'`).join(',')}]`)})`,
-        sql`${donors.bloodGroupVerifiedAt} IS NOT NULL`,
-        // NULL means never donated, which is eligible now.
+        /**
+         * The stored judgement, in front of everything it covers (§5).
+         *
+         * Age, weight and the health answers were decided when the donor gave
+         * them. This is the column that carries the result, and the index
+         * `donors_qualified_idx` is built for exactly this shape.
+         */
+        eq(donors.qualificationStatus, 'qualified'),
+        /**
+         * The donation window, checked against today and never stored as a
+         * verdict. NULL means never donated, which is eligible now; anything
+         * else is a date that has to have arrived. This is the guarantee that
+         * somebody who gave three weeks ago is not asked again.
+         */
         or(isNull(donors.nextEligibleOn), sql`${donors.nextEligibleOn} <= ${today}`),
         /**
          * Age bounds, inclusive at both ends, expressed as birth dates so the

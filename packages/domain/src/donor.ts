@@ -81,6 +81,133 @@ export const isWithinAgeBounds = (
 };
 
 /* -------------------------------------------------------------------------- */
+/* Qualification                                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * What the donor's own answers came to.
+ *
+ * `qualified` means nothing they told us would stop them being asked.
+ * `not_qualified` means a threshold does, and it will keep doing so until the
+ * answer itself changes. `flagged` means somebody needs to look before this
+ * person is asked for anything.
+ *
+ * Note what is absent: "eligible today". That is a question about the calendar,
+ * not about their answers, and it is asked separately every time a wave runs.
+ * Folding the two together is how a stored judgement rots.
+ */
+export const QUALIFICATION_STATUSES = ['qualified', 'not_qualified', 'flagged'] as const;
+export type QualificationStatus = (typeof QUALIFICATION_STATUSES)[number];
+
+export type Qualification = {
+  readonly status: QualificationStatus;
+  /** Why, in words the donor would use. Null when they qualify. */
+  readonly reason: string | null;
+};
+
+export type QualificationInput = {
+  readonly dob: CalendarDay;
+  readonly weightKg: number;
+  /** True when a durable health answer needs a person to look (§5). */
+  readonly flagged: boolean;
+  /**
+   * True when the donor answered "I don't know" to their blood group.
+   *
+   * A group nobody knows is not the same as a group nobody has tested. The
+   * second is trusted and recruited on; the first is a blank, and the column it
+   * would go in cannot hold one, so it is filled with a default. Matching on
+   * that default would send somebody to a counter on a value the **system**
+   * invented, which is a different and much worse thing than acting on a value
+   * the donor gave.
+   */
+  readonly groupUnknown?: boolean | undefined;
+};
+
+export type QualificationThresholds = {
+  readonly minAge: number;
+  readonly maxAge: number;
+  readonly minWeightKg: number;
+};
+
+/**
+ * Decides a donor's qualification from what they told us (§5, §12).
+ *
+ * Order matters, and it is the order that produces the most useful sentence
+ * rather than the order that is cheapest to evaluate:
+ *
+ *  1. **Flagged first.** A health answer that needs checking outranks a
+ *     threshold, because it is the one a person can resolve today by looking.
+ *  2. **Too young before too light.** Somebody of 16 is told to come back at
+ *     18, which is true and finite. Telling them about a weight limit as well
+ *     buries the one fact they can act on.
+ *  3. **Weight last**, and phrased as the threshold rather than as a judgement
+ *     about them.
+ *
+ * Never says "rejected", "ineligible" or "banned" (§2.7). Every reason names
+ * what would change it, because a donor who is told only that they cannot help
+ * does not come back when they could.
+ */
+export function qualifyDonor(
+  donor: QualificationInput,
+  today: CalendarDay,
+  thresholds: QualificationThresholds,
+): Qualification {
+  if (donor.flagged) {
+    return {
+      status: 'flagged',
+      reason:
+        'One of your health answers needs a quick check with the blood centre ' +
+        'before we ask you to give.',
+    };
+  }
+
+  const age = ageOn(donor.dob, today);
+
+  if (age < thresholds.minAge) {
+    return {
+      status: 'not_qualified',
+      reason: `Blood donation starts at ${String(thresholds.minAge)}. We will be glad to hear from you then.`,
+    };
+  }
+
+  if (age > thresholds.maxAge) {
+    return {
+      status: 'not_qualified',
+      reason: `Regular donation stops at ${String(thresholds.maxAge)}. Thank you for everything you have given.`,
+    };
+  }
+
+  if (donor.weightKg < thresholds.minWeightKg) {
+    return {
+      status: 'not_qualified',
+      reason: `Donors need to weigh at least ${String(thresholds.minWeightKg)} kg. It keeps the donation safe for you.`,
+    };
+  }
+
+  /**
+   * Last, because it is the only one on this list that somebody else resolves.
+   *
+   * Everything above is a fact about the donor that a message cannot change.
+   * This one ends the first time they give blood, so it is worth naming that in
+   * the same breath.
+   */
+  if (donor.groupUnknown === true) {
+    return {
+      status: 'not_qualified',
+      reason:
+        'We do not know your blood group yet, so we cannot match you to a ' +
+        'patient. Walk in to the blood centre any time. They check it from the ' +
+        'unit they collect, and from then on we can.',
+    };
+  }
+
+  return { status: 'qualified', reason: null };
+}
+
+/** True for the one status a wave may select from. */
+export const isQualified = (status: string): boolean => status === 'qualified';
+
+/* -------------------------------------------------------------------------- */
 /* Inter-donation interval                                                     */
 /* -------------------------------------------------------------------------- */
 

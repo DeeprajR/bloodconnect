@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Card, PageHeader, StatusBadge, linkButtonClasses } from '@blood-connect/ui';
 
 import { CentreShell } from '../centre-shell';
+import { LiveRefresh } from '../volunteer/live';
 import { RecruitButton } from '../centre-forms';
 import { StockChart } from '../stock-chart';
 import { CompletedDonations, UpcomingDonations } from '../donations-tables';
@@ -68,6 +69,15 @@ export default async function CentrePage() {
 
   return (
     <CentreShell actor={actor} title="Blood centre" currentPath="/centre">
+      {/*
+        Live, and without taking the page away from whoever is reading it.
+        `router.refresh()` re-runs this server component and swaps the data in
+        place: no navigation, no lost scroll position, no form on the page
+        reset under somebody's hands. Thirty seconds, because the number that
+        moves fastest here is the count of requests waiting to be answered.
+      */}
+      <LiveRefresh everySeconds={30} />
+
       <PageHeader
         title="Overview"
         description="Answer requests from stock. Whatever the shelf cannot cover becomes demand for real donors, in the same transaction."

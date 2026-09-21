@@ -23,8 +23,9 @@ import {
 import {
   WEIGHT_BANDS,
   ageOn,
-  effectiveWeightKg,
   nextEligibleOn,
+  qualifyDonor,
+  weightKgFromBand,
   parseBloodGroup,
   parseCalendarDay,
   subtractDays,
@@ -727,6 +728,38 @@ async function commit(
   const flagged = durableAnswersFrom(draft.screening ?? {});
   const permanent = flagged.some((entry) => isPermanentDeferral(entry.questionKey));
 
+  const weightBandForQualification = draft.weightBand ?? '50_60';
+
+  /**
+   * Their qualification, decided here and written with the profile (§5).
+   *
+   * This is the moment every input the judgement rests on is present and
+   * settled, so it is the moment to decide it. Doing it in the same transaction
+   * as the profile means the two cannot disagree: there is no window in which a
+   * donor row exists with a qualification computed from different answers.
+   *
+   * It is recomputed on a profile edit for the same reason, because a corrected
+   * date of birth or weight band is exactly the kind of change that should move
+   * somebody into or out of the pool.
+   */
+  const qualification = qualifyDonor(
+    {
+      dob,
+      weightKg: weightKgFromBand(weightBandForQualification),
+      flagged: flagged.length > 0,
+      // "I don't know" is a blank, not an answer, and the column it lands in
+      // cannot hold a blank. Recruiting on the default would be matching on a
+      // group the system chose.
+      groupUnknown: draft.groupUnknown === true || draft.bloodGroup === undefined,
+    },
+    ctx.clock.today(),
+    {
+      minAge: ctx.config.donor.minAge,
+      maxAge: ctx.config.donor.maxAge,
+      minWeightKg: ctx.config.donor.minWeightKg,
+    },
+  );
+
   const values = await summaryRows(ctx, draft);
   const snapshot = Object.fromEntries(
     values.map((row) => [row.step, row.detail ? row.detail.join(' · ') : row.value]),
@@ -741,11 +774,27 @@ async function commit(
       dob,
       sex,
       bloodGroup: draft.bloodGroup ?? 'O+',
-      // Unverified until staff type them at a donation: §7.7 recruits nobody
-      // on a self-declared group, which is exactly the point of the column.
+      /**
+       * Left unset, and no longer a gate.
+       *
+       * The centre stamps it when it types the group off a unit this donor
+       * gave, and if the typed group disagrees with what they believed, the
+       * typed one wins. Recruitment does not wait for it: it runs on the group
+       * the donor gave us (§7.7).
+       */
       bloodGroupVerifiedAt: null,
       weightBand,
-      weightKg: effectiveWeightKg(weightBand, ctx.config.donor.minWeightKg),
+      /**
+       * The band's lower bound, which is the conservative reading (§5).
+       *
+       * This used to pass the configured **minimum** as the second argument.
+       * That argument is the donor's own exact figure, so every registration
+       * stored precisely the threshold weight, and somebody who tapped
+       * "Under 45" was written down as weighing exactly 45 and passed the
+       * check that exists to stop them being asked. The interview collects no
+       * exact figure, so there is nothing to pass: the band is the answer.
+       */
+      weightKg: weightKgFromBand(weightBand),
       districtId: draft.districtId ?? null,
       cityId: draft.cityId ?? null,
       townId: draft.townId ?? null,
@@ -754,6 +803,9 @@ async function commit(
       lastDonatedOn: lastDonated,
       nextEligibleOn: eligible,
       durableFlagStatus: flagged.length > 0 ? 'flagged' : 'clear',
+      qualificationStatus: qualification.status,
+      qualificationReason: qualification.reason,
+      qualifiedAt: now,
       /**
        * The acknowledgement is what makes every later message lawful (§5).
        *
@@ -840,6 +892,9 @@ async function commit(
         permanent,
         groupKnown: draft.groupUnknown !== true,
         phoneVerified: draft.phoneVerified === true,
+        // The decision, so "how many of the people who signed up can we ask?"
+        // is answerable from the log rather than only from a live query.
+        qualification: qualification.status,
       },
     });
   });

@@ -11,6 +11,7 @@ import {
 } from '@blood-connect/ui';
 
 import { CentreShell } from '../../centre-shell';
+import { LiveRefresh } from '../../volunteer/live';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { stockByGroup } from '@blood-connect/centre';
 import {
@@ -192,6 +193,14 @@ export default async function QueuePage({
 
   return (
     <CentreShell actor={actor} title="Blood requests" current="requests">
+      {/*
+        The queue answers itself while somebody watches it. `router.refresh()`
+        re-runs this page and swaps the rows in place, so a counter reading the
+        list does not lose their place and a request raised on a ward appears
+        without anybody pressing anything.
+      */}
+      <LiveRefresh everySeconds={30} />
+
       <PageHeader
         title="Requests awaiting an answer"
         description={

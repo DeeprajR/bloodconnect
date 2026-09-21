@@ -10,7 +10,7 @@ import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getDemand, listRoster, listWalkIns } from '@blood-connect/centre';
 import { WORDING, bloodGroupLabel, productLabel } from '@blood-connect/domain';
 
-export const metadata: Metadata = { title: 'Roster · Blood Connect' };
+export const metadata: Metadata = { title: 'Donors coming in · Blood Connect' };
 
 const OUTCOME_LABELS: Readonly<Record<string, string>> = {
   confirmed: 'Expected',
@@ -24,12 +24,16 @@ type RosterRow = Awaited<ReturnType<typeof listRoster>>[number];
 type WalkInRow = Awaited<ReturnType<typeof listWalkIns>>[number];
 
 /**
- * The counter's roster for one demand (§4, §8.3).
+ * The donors coming in for one demand (§4, §8.3).
  *
  * It is a **separate page** on purpose. Donor names and phone numbers are the
  * only donor contact details that cross into the centre's half of the database
  * (§2.10), and they belong on the screen where somebody is actually calling a
  * name at a desk, not spread across a list of every demand ever raised.
+ *
+ * The word "roster" is kept out of everything a person reads here. It is the
+ * name of the table, not a word a counter clerk uses, and the screen says
+ * "donors coming in", which is what it is.
  */
 export default async function RosterPage({
   params,
@@ -173,8 +177,8 @@ export default async function RosterPage({
           <div className="space-y-4">
             <p className="text-sm text-ink-muted">
               {/*
-                The centre's own record, not a roster row: it holds no INSERT on
-                the bot's roster at all (§5.1). The bot reads these and stops
+                The centre's own record, not a row in the bot's own list: it holds
+                no INSERT on that at all (§5.1). The bot reads these and stops
                 recruiting for a unit already collected.
               */}
               Recorded here rather than on the roster, because nobody on this
