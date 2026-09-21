@@ -132,7 +132,8 @@ install a Next PostCSS plugin into its consumers.
 **Shipped**, on `feat/ui-kit`, not yet merged: PR-01/02a/02b, PR-03
 through PR-10 (sign-in through centre/requests), `linkButtonClasses`
 (PR-11a), PR-11 through PR-14 (donations, quarantine, tags, demands +
-roster), P15 (the forms pass), and A01 through A08 (all of
+roster), P15 (the forms pass), A01 through A08 (all of `apps/admin`),
+and W01 (apps/web's four straggling UX4G files, found while doing
 `apps/admin`). Commit-by-commit detail lives in this branch's session
 handoff notes, not here.
 
@@ -235,22 +236,32 @@ this kit again:**
    route" stayed a required step for every PR in this rollout, not an
    optional nicety.
 
-**Also found, out of scope for this session and not fixed**:
-`apps/web` is not actually fully clear of UX4G despite the "Still
-open" note above only naming the three forms files. A grep for
-`ux4g-` in `apps/web/src/app` after the forms pass still turns up
+**apps/web's four straggling UX4G files (found during the apps/admin
+work above, fixed in a follow-up pass, W01).** A grep for `ux4g-` in
+`apps/web/src/app` after the forms pass still turned up
 `admissions/new/page.tsx`, `role-home.tsx`, `shell.tsx` and
-`sign-out-button.tsx` (the last of these is also true of
-`apps/admin`'s `sign-out-button.tsx` before A03 restyled it — a small
-enough control that it is easy to forget it is still UX4G-styled
-inside an otherwise kit-styled shell). `shell.tsx` in `apps/web` may
-already be dead code the way `apps/admin`'s was, but that needs
-confirming, not assuming, before deleting it. The final cleanup PR's
-premise ("all of both apps is on the kit") is not yet true even now
-that `apps/admin` is done, because of this apps/web gap.
+`sign-out-button.tsx` — missed because the "Still open" note in
+PR-03-onward's entry above only ever named the three forms files, not
+these. `role-home.tsx` turned out to be dead code: grepping for
+`RoleHome` across `apps/web/src` found nothing but its own
+definition, so it was deleted rather than restyled (superseded by the
+per-role home pages `/dashboard`, `/centre`, `/volunteer` got in their
+own PRs). `admissions/new/page.tsx` was the one real remaining UX4G
+screen, restyled onto `KitShell` + `Card` the same way
+`apps/web/src/app/patients/new/page.tsx` already was. With that done,
+`shell.tsx` had zero importers left and was deleted (confirmed by
+grep first, not assumed, exactly the caution the previous note
+asked for). `sign-out-button.tsx` was restyled to `<Button variant="ghost"
+size="sm">`, matching `apps/admin`'s A03 fix for the identical gap.
+Verified live, signed in as a doctor: the `?patientId` error state,
+the real admission form, and the sidebar's sign-out button all render
+on the kit. `apps/web` is now genuinely clear of UX4G component
+classes outside `layout.tsx`, `legacy-styles.css`, `theme.css` and
+`ux4g-runtime.tsx` — the infrastructure both apps keep until the final
+cleanup PR removes it from both at once.
 
-**Not yet done**: the four straggling `apps/web` files named above;
-the final cleanup PR.
+**Not yet done**: the final cleanup PR. Both apps are now fully on the
+kit, so its premise ("all of both apps is on the kit") finally holds.
 
 ## What did NOT come across from blood-connect-ui
 

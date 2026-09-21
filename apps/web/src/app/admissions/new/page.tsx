@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-import { AppShell } from '../../shell';
+import { Card } from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
 import { AdmissionForm } from '../../hospital-forms';
 import { requireAccess } from '@/lib/guards';
 
@@ -12,30 +14,29 @@ export default async function NewAdmissionPage({
   searchParams: Promise<{ patientId?: string }>;
 }) {
   const actor = await requireAccess('/admissions/new');
+  if (actor.kind !== 'user') return null;
   const { patientId } = await searchParams;
 
   if (!patientId) {
     return (
-      <AppShell actor={actor} title="New admission" narrow>
-        <div className="ux4g-alert ux4g-alert-error" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">Start from a patient record.</p>
-          </div>
-        </div>
-      </AppShell>
+      <KitShell role={actor.role} currentPath="/admissions/new" currentTitle="New admission">
+        <p
+          role="alert"
+          className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          Start from a patient record.
+        </p>
+      </KitShell>
     );
   }
 
   return (
-    <AppShell actor={actor} title="New admission" narrow>
-      <div className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h1 className="ux4g-card-title">Admit the patient</h1>
-        </div>
-        <div className="ux4g-card-body">
+    <KitShell role={actor.role} currentPath="/admissions/new" currentTitle="New admission">
+      <div className="mx-auto w-full max-w-2xl">
+        <Card title="Admit the patient">
           <AdmissionForm patientId={patientId} />
-        </div>
+        </Card>
       </div>
-    </AppShell>
+    </KitShell>
   );
 }
