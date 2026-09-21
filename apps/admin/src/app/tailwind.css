@@ -1,0 +1,38 @@
+/*
+ * apps/admin · Tailwind v4 entry
+ *
+ * `@import "tailwindcss";` pulls in Tailwind v4's preflight, base
+ * layer, and utilities. Everything after runs through
+ * `@tailwindcss/postcss` (see `postcss.config.cjs`).
+ *
+ * `@source` tells Tailwind where to look for classes to generate
+ * utilities from. The default scan is limited to files inside this
+ * app; the kit lives in a different workspace package, so its class
+ * usage would be missed without an explicit source. The path is
+ * relative to this file: from `apps/admin/src/app/tailwind.css` four
+ * levels up reaches the workspace root, then `packages/ui/src` is the
+ * kit source tree.
+ *
+ * The kit's token files are `@import`ed here rather than imported
+ * from `layout.tsx` on purpose. Turbopack treats a CSS file imported
+ * from a `.tsx` module as a standalone CSS module and does not run it
+ * through the app's PostCSS pipeline; the `@theme` blocks inside
+ * `tokens/base.css` and `tokens/accent-admin.css` therefore never
+ * reach `@tailwindcss/postcss`, and Tailwind emits neither the
+ * `--color-*` custom properties nor the `bg-canvas` / `text-ink` /
+ * `bg-primary` utilities. Importing them here, from the one CSS
+ * entrypoint the app already sends through Tailwind, is what makes
+ * `@theme` work in the first place (ADR 0015).
+ *
+ * `accent-admin.css`, not `accent-medical.css`: the administration
+ * app uses a slate-blue accent so a screen from either app is
+ * immediately distinguishable from the other on a shared workstation
+ * (ADR 0015's Decision).
+ */
+
+@import 'tailwindcss';
+@source '../../../../packages/ui/src';
+
+@import '../../../../packages/ui/src/tokens/base.css';
+@import '../../../../packages/ui/src/tokens/accent-admin.css';
+@import '../../../../packages/ui/src/tokens/typography.css';
