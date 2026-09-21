@@ -78,6 +78,18 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
   /** Whatever came back from a rejected submit, or nothing on a first render. */
   const was = (field: string): string => state.values?.[field] ?? '';
 
+  /**
+   * `useActionState` re-renders the same mounted `<form>` rather than
+   * remounting it, and React only applies a `<select>`'s `defaultValue` on
+   * mount — never on a later re-render. Text inputs don't show this because
+   * whatever the person typed is still sitting in the DOM regardless, but a
+   * `<select>` would keep showing "Choose" after a rejection even though
+   * `state.values` has the answer. Keying each `Select` to the values that
+   * came back forces a remount when — and only when — a new server response
+   * arrives, so `defaultValue` is reapplied.
+   */
+  const valuesKey = JSON.stringify(state.values ?? {});
+
   /*
     Open the disclosure if anything inside it survived a rejection. A returned
     answer sitting behind a collapsed panel reads as lost, and somebody types it
@@ -147,6 +159,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
         {(p) => (
           <Select
             {...p}
+            key={valuesKey}
             name="bloodGroup"
             defaultValue={was('bloodGroup')}
             required
@@ -180,7 +193,12 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
           hint="A newborn is usually recorded in days."
         >
           {(p) => (
-            <Select {...p} name="ageUnit" defaultValue={was('ageUnit') === '' ? 'years' : was('ageUnit')}>
+            <Select
+              {...p}
+              key={valuesKey}
+              name="ageUnit"
+              defaultValue={was('ageUnit') === '' ? 'years' : was('ageUnit')}
+            >
               <option value="years">Years</option>
               <option value="months">Months</option>
               <option value="days">Days</option>
@@ -198,7 +216,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
 
       <FormField label={WORDING.sex}>
         {(p) => (
-          <Select {...p} name="sex" defaultValue={was('sex')}>
+          <Select {...p} key={valuesKey} name="sex" defaultValue={was('sex')}>
             <option value="">Not stated</option>
             <option value="female">Female</option>
             <option value="male">Male</option>
@@ -278,6 +296,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
             {(p) => (
               <Select
                 {...p}
+                key={valuesKey}
                 name="previousTransfusion"
                 defaultValue={
                   was('previousTransfusion') === '' ? 'unknown' : was('previousTransfusion')
