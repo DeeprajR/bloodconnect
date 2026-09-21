@@ -28,6 +28,15 @@
  * app uses a slate-blue accent so a screen from either app is
  * immediately distinguishable from the other on a shared workstation
  * (ADR 0015's Decision).
+ *
+ * `preflight.css` sets element-level styles (`body`, `*:focus-visible`,
+ * `th`), not just `@theme` tokens, so unlike the files above its
+ * cascade position matters (ADR 0015's Progress note #1: an unlayered
+ * rule beats every layered one regardless of source order). `layer(base)`
+ * puts it in the same layer Tailwind's own preflight uses, so a utility
+ * class still wins over it as expected. Deferred until UX4G's own
+ * `theme.css` was gone (final cleanup PR), so its body/heading resets
+ * do not double up with UX4G's.
  */
 
 @import 'tailwindcss';
@@ -36,3 +45,4 @@
 @import '../../../../packages/ui/src/tokens/base.css';
 @import '../../../../packages/ui/src/tokens/accent-admin.css';
 @import '../../../../packages/ui/src/tokens/typography.css';
+@import '../../../../packages/ui/src/tokens/preflight.css' layer(base);

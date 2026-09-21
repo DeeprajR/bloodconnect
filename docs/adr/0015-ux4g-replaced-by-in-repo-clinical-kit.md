@@ -1,7 +1,8 @@
 # 0015 · UX4G replaced by an in-repo clinical kit
 
-**Status.** Accepted. In progress — see "Progress" below for the current
-state of the rollout, two bugs the rollout surfaced, and what's next.
+**Status.** Accepted and complete as of 2026-09-21 — see "Progress"
+below for the rollout's history, four bugs it surfaced, and the final
+cleanup PR that closed it out.
 
 ## Context
 
@@ -120,12 +121,18 @@ install a Next PostCSS plugin into its consumers.
   `accent-admin.css` (slate-blue), not `apps/web`'s medical red,
   per the Decision above.
 
-- **Final PR.** Removes `ux4g-runtime.tsx` and the
-  `ux4g-web-components` npm dependency from both apps, replaces both
-  apps' `theme.css` with a one-line import of the kit's aggregate,
-  and imports `@blood-connect/ui/tokens/preflight.css` at that point
-  (deferred until UX4G is gone so its own body/heading resets do not
-  double up).
+- **Final PR (W02, shipped 2026-09-21).** Removed `ux4g-runtime.tsx`,
+  `legacy-styles.css` and `theme.css` from both apps, and the
+  `ux4g-web-components` npm dependency from both `package.json`s.
+  `theme.css`'s only still-referenced rule — `.app-skip-link` — was
+  inlined as Tailwind utilities on the `<a href="#main">` in each
+  `layout.tsx` rather than kept as a file for one rule. Both apps'
+  `tailwind.css` now also `@import`s `@blood-connect/ui/tokens/preflight.css`,
+  wrapped in `layer(base)` so it ranks with Tailwind's own base layer
+  rather than unlayered (the same cascade-layers reasoning as Progress
+  note #1, applied here instead of assumed safe). `<body>`'s manual
+  `bg-canvas text-ink` classes were dropped now that preflight sets
+  the same properties globally.
 
 ## Progress (as of 2026-09-21)
 
@@ -133,9 +140,9 @@ install a Next PostCSS plugin into its consumers.
 through PR-10 (sign-in through centre/requests), `linkButtonClasses`
 (PR-11a), PR-11 through PR-14 (donations, quarantine, tags, demands +
 roster), P15 (the forms pass), A01 through A08 (all of `apps/admin`),
-and W01 (apps/web's four straggling UX4G files, found while doing
-`apps/admin`). Commit-by-commit detail lives in this branch's session
-handoff notes, not here.
+W01 (apps/web's four straggling UX4G files, found while doing
+`apps/admin`), and W02 (the final cleanup PR). Commit-by-commit detail
+lives in this branch's session handoff notes, not here.
 
 **Four bugs the rollout surfaced, all worth knowing before touching
 this kit again:**
@@ -257,11 +264,28 @@ Verified live, signed in as a doctor: the `?patientId` error state,
 the real admission form, and the sidebar's sign-out button all render
 on the kit. `apps/web` is now genuinely clear of UX4G component
 classes outside `layout.tsx`, `legacy-styles.css`, `theme.css` and
-`ux4g-runtime.tsx` — the infrastructure both apps keep until the final
-cleanup PR removes it from both at once.
+`ux4g-runtime.tsx` — the infrastructure the final cleanup PR (W02,
+below) removed from both apps at once.
 
-**Not yet done**: the final cleanup PR. Both apps are now fully on the
-kit, so its premise ("all of both apps is on the kit") finally holds.
+**W02, the final cleanup PR.** `ux4g-runtime.tsx`, `legacy-styles.css`
+and `theme.css` deleted from both apps; `ux4g-web-components` removed
+from both `package.json`s and the lockfile (confirmed with `grep -n
+ux4g pnpm-lock.yaml` returning nothing). `theme.css`'s one surviving
+rule, the `.app-skip-link` a11y skip link, was inlined as Tailwind
+utilities directly on the anchor in each `layout.tsx` rather than kept
+as a one-rule file. Both apps' `tailwind.css` now imports
+`@blood-connect/ui/tokens/preflight.css` — wrapped in `layer(base)`,
+not left unlayered, per Progress note #1's lesson — and `<body>`'s
+manual `bg-canvas text-ink` classes came off now that preflight sets
+the same globally. Verified with `pnpm build` on both apps (clean) and
+live with `playwright-cli`: sign-in, the skip link's focus state, and
+a client-heavy restyled screen on each app (`/centre/tags`,
+`/panel`), with no console errors and no visual regression from
+UX4G's removal. `pnpm verify` is green.
+
+**Not yet done**: nothing. This ADR's rollout is complete — both apps
+render entirely through `@blood-connect/ui`, and neither depends on
+`ux4g-web-components`.
 
 ## What did NOT come across from blood-connect-ui
 
