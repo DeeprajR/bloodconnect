@@ -165,7 +165,7 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
             required
             className="text-base"
           >
-            <option value="">Choose</option>
+            <option key="" value="">Choose</option>
             {groupOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -199,9 +199,9 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
               name="ageUnit"
               defaultValue={was('ageUnit') === '' ? 'years' : was('ageUnit')}
             >
-              <option value="years">Years</option>
-              <option value="months">Months</option>
-              <option value="days">Days</option>
+              <option key="years" value="years">Years</option>
+              <option key="months" value="months">Months</option>
+              <option key="days" value="days">Days</option>
             </Select>
           )}
         </FormField>
@@ -217,10 +217,10 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
       <FormField label={WORDING.sex}>
         {(p) => (
           <Select {...p} key={valuesKey} name="sex" defaultValue={was('sex')}>
-            <option value="">Not stated</option>
-            <option value="female">Female</option>
-            <option value="male">Male</option>
-            <option value="other">Other</option>
+            <option key="" value="">Not stated</option>
+            <option key="female" value="female">Female</option>
+            <option key="male" value="male">Male</option>
+            <option key="other" value="other">Other</option>
           </Select>
         )}
       </FormField>
@@ -302,9 +302,9 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
                   was('previousTransfusion') === '' ? 'unknown' : was('previousTransfusion')
                 }
               >
-                <option value="unknown">Unknown</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
+                <option key="unknown" value="unknown">Unknown</option>
+                <option key="yes" value="yes">Yes</option>
+                <option key="no" value="no">No</option>
               </Select>
             )}
           </FormField>
