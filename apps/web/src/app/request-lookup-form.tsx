@@ -25,7 +25,7 @@ export function RequestLookupForm({
   datePart: string;
   defaultValue: string;
 }) {
-  const [typedDate, typedSequence] = defaultValue.split('-');
+  const [typedDate, typedSequence] = defaultValue === '' ? [] : defaultValue.split('-');
 
   return (
     <form
