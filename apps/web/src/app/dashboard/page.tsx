@@ -1,7 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../shell';
+import {
+  Card,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  linkButtonClasses,
+  type Column,
+} from '@blood-connect/ui';
+
+import { KitShell } from '../kit-shell';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import {
   isOverdue,
@@ -30,6 +40,16 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   cancelled: 'Cancelled',
 };
 
+// The kit's `Button` renders a `<button>`, but the primary action here
+// is navigation; `linkButtonClasses` (PR-11a) gives a <Link> the same
+// `variant="primary"` / `size="md"` shape.
+const LINK_BUTTON = linkButtonClasses({ variant: 'primary' });
+
+type LiveRequest = Awaited<
+  ReturnType<typeof listRequestsForDoctor>
+>[number];
+type Admission = Awaited<ReturnType<typeof listAdmissions>>[number];
+
 export default async function DashboardPage() {
   // Layer 2 of §13. The proxy already decided this; the page decides it again.
   const actor = await requireAccess('/dashboard');
@@ -46,143 +66,144 @@ export default async function DashboardPage() {
   const live = requests.filter((r) => r.status !== 'draft');
   const open = admissions.filter((a) => a.status === 'admitted');
 
-  return (
-    <AppShell actor={actor} title="Dashboard">
-      <div className="app-row-split">
-        <div className="app-stack-tight">
-          <h1 className="ux4g-heading-l-strong">Blood requests</h1>
-          <p className="ux4g-body-m-default">
-            {/*
-              What the doctor's job now is, in one line (ADR 0010). The patient
-              is the centre's to identify, and saying so here is what stops
-              somebody opening the optional section out of habit.
-            */}
-            Four answers and an ID. Give the ID to the patient&rsquo;s bystander. The
-            blood centre takes it from there.
-          </p>
-        </div>
+  const requestColumns: Column<LiveRequest>[] = [
+    {
+      key: 'id',
+      header: 'Request ID',
+      cell: (r) => (
         <Link
-          className="ux4g-btn ux4g-btn-primary ux4g-btn-lg app-target"
-          href="/requests/new"
+          href={`/requests/${r.id}`}
+          className="font-medium text-primary hover:underline"
         >
-          New request
+          {r.requestId}
         </Link>
-      </div>
-
-      <section className="ux4g-card ux4g-card-outline" aria-labelledby="live">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title" id="live">
-            Submitted requests
-          </h2>
-        </div>
-        <div className="ux4g-card-body app-scroll-x">
-          {live.length === 0 ? (
-            <p className="ux4g-body-s-default">Nothing submitted yet.</p>
-          ) : (
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Request ID</th>
-                  <th scope="col">Urgency</th>
-                  <th scope="col">Wanted</th>
-                  <th scope="col">Patient</th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {live.map((request) => (
-                  <tr key={request.id}>
-                    <td className="app-figure">
-                      <Link href={`/requests/${request.id}`}>{request.requestId}</Link>
-                    </td>
-                    <td>
-                      {isUrgency(request.urgency ?? '')
-                        ? URGENCY_SHORT[request.urgency as Urgency]
-                        : '-'}
-                    </td>
-                    <td>
-                      {request.units} ×{' '}
-                      {request.product ? productLabel(request.product) : '-'}{' '}
-                      {request.bloodGroup ? bloodGroupLabel(request.bloodGroup) : ''}
-                    </td>
-                    <td>
-                      {/*
-                        Empty until the centre attaches one, which is the
-                        ordinary case (ADR 0010). Said in words, because a blank
-                        cell reads as a bug rather than as a state.
-                      */}
-                      {request.patientName ?? (
-                        <span className="ux4g-label-m-default">
-                          with the bystander
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {STATUS_LABELS[request.status] ?? request.status}
-                      {/*
-                        Overdue is derived, never stored (§3): true the moment
-                        the day passes, not whenever a job next runs.
-                      */}
-                      {isOverdue(request, today) ? (
-                        <span className="ux4g-badge-digit-danger"> Overdue</span>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      ),
+    },
+    {
+      key: 'urgency',
+      header: 'Urgency',
+      cell: (r) =>
+        isUrgency(r.urgency ?? '')
+          ? URGENCY_SHORT[r.urgency as Urgency]
+          : '—',
+    },
+    {
+      key: 'wanted',
+      header: 'Wanted',
+      cell: (r) => (
+        <>
+          {r.units} × {r.product ? productLabel(r.product) : '—'}{' '}
+          {r.bloodGroup ? bloodGroupLabel(r.bloodGroup) : ''}
+        </>
+      ),
+    },
+    {
+      key: 'patient',
+      header: 'Patient',
+      cell: (r) =>
+        r.patientName ?? (
+          <span className="text-ink-subtle">with the bystander</span>
+        ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (r) => (
+        <span className="inline-flex items-center gap-2">
+          {STATUS_LABELS[r.status] ?? r.status}
+          {isOverdue(r, today) && (
+            <StatusBadge label="Overdue" tone="danger" />
           )}
-        </div>
-      </section>
+        </span>
+      ),
+    },
+  ];
 
-      <section className="ux4g-card ux4g-card-outline" aria-labelledby="admitted">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title" id="admitted">
-            Admitted patients
-          </h2>
-          <p className="ux4g-card-sub-title">Start a request from an admission.</p>
-        </div>
-        <div className="ux4g-card-body app-scroll-x">
-          {open.length === 0 ? (
-            <p className="ux4g-body-s-default">
-              No open admissions. Record a patient to begin.
-            </p>
-          ) : (
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Patient</th>
-                  <th scope="col">{WORDING.ipNumber}</th>
-                  <th scope="col">{WORDING.ward}</th>
-                  <th scope="col">Group</th>
-                  <th scope="col">
-                    <span className="app-sr-only">Action</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {open.map((admission) => (
-                  <tr key={admission.id}>
-                    <td>
-                      <Link href={`/admissions/${admission.id}`}>
-                        {admission.patientName}
-                      </Link>
-                    </td>
-                    <td className="app-figure">{admission.ipNo}</td>
-                    <td>{admission.ward}</td>
-                    <td className="app-figure">
-                      {bloodGroupLabel(admission.bloodGroup as BloodGroup)}
-                    </td>
-                    <td>
-                      <StartRequestButton admissionId={admission.id} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
-    </AppShell>
+  const admissionColumns: Column<Admission>[] = [
+    {
+      key: 'patient',
+      header: 'Patient',
+      cell: (a) => (
+        <Link
+          href={`/admissions/${a.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {a.patientName}
+        </Link>
+      ),
+    },
+    {
+      key: 'ip',
+      header: WORDING.ipNumber,
+      cell: (a) => <span className="tabular-nums">{a.ipNo}</span>,
+    },
+    { key: 'ward', header: WORDING.ward, cell: (a) => a.ward },
+    {
+      key: 'group',
+      header: 'Group',
+      cell: (a) => (
+        <span className="tabular-nums">
+          {bloodGroupLabel(a.bloodGroup as BloodGroup)}
+        </span>
+      ),
+    },
+    {
+      key: 'action',
+      header: '',
+      mobileLabel: 'Action',
+      align: 'right',
+      cell: (a) => <StartRequestButton admissionId={a.id} />,
+    },
+  ];
+
+  return (
+    <KitShell role={actor.role} currentPath="/dashboard" currentTitle="Dashboard">
+      <PageHeader
+        title="Blood requests"
+        description="Four answers and an ID. Give the ID to the patient’s bystander. The blood centre takes it from there."
+        actions={
+          <Link href="/requests/new" className={LINK_BUTTON}>
+            New request
+          </Link>
+        }
+      />
+
+      <Card title="Submitted requests">
+        {live.length === 0 ? (
+          <EmptyState
+            title="Nothing submitted yet"
+            description="Start with New request when a bystander is with you."
+          />
+        ) : (
+          <DataTable
+            columns={requestColumns}
+            rows={live}
+            getRowKey={(r) => r.id}
+          />
+        )}
+      </Card>
+
+      <Card
+        title="Admitted patients"
+        actions={
+          <span className="text-xs text-ink-subtle">
+            Start a request from an admission.
+          </span>
+        }
+      >
+        {open.length === 0 ? (
+          <EmptyState
+            title="No open admissions"
+            description="Record a patient to begin."
+          />
+        ) : (
+          <DataTable
+            columns={admissionColumns}
+            rows={open}
+            getRowKey={(a) => a.id}
+          />
+        )}
+      </Card>
+    </KitShell>
   );
 }

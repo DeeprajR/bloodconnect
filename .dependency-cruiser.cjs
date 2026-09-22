@@ -41,10 +41,16 @@ module.exports = {
       name: 'no-deep-package-imports-from-apps',
       comment:
         'The same rule for everything outside packages/: apps and db import a package by name ' +
-        '(§11.2).',
+        '(§11.2). The one exception is packages/ui/src/tokens/*.css: those files are the kit’s ' +
+        'published CSS subpath entry points, listed in its package.json exports map — the ' +
+        'resolver walks through the exports and lands here, so the deep-looking path is in fact ' +
+        'the contract (ADR 0015).',
       severity: 'error',
       from: { pathNot: '^packages/' },
-      to: { path: '^packages/[^/]+/src/.+' },
+      to: {
+        path: '^packages/[^/]+/src/.+',
+        pathNot: '^packages/ui/src/tokens/[^/]+\\.css$',
+      },
     },
     {
       name: 'contract-is-shared-only',
@@ -115,6 +121,29 @@ module.exports = {
       severity: 'error',
       from: { path: '^packages/(platform|hospital|centre)/' },
       to: { path: '^packages/bot/' },
+    },
+    {
+      name: 'ui-is-presentation-only',
+      comment:
+        'packages/ui is the shared design kit (ADR 0015). It may not import from any module ' +
+        'that reads or writes the database, so a badge or a table cell can never leak the shape ' +
+        'of a row a role is not allowed to see (§14). Presentation reads props, nothing else.',
+      severity: 'error',
+      from: { path: '^packages/ui/' },
+      to: {
+        path:
+          '^(packages/(domain|platform|hospital|centre|bot|contract|config|ids|result|ops|volunteer|testing)|db)/',
+      },
+    },
+    {
+      name: 'nothing-depends-on-ui-except-apps',
+      comment:
+        'The kit is a presentation surface for the two applications. A package importing it ' +
+        'would mean a domain rule had been written in the styling layer, where it would run ' +
+        'only when somebody happened to render the component.',
+      severity: 'error',
+      from: { path: '^packages/(?!ui)' },
+      to: { path: '^packages/ui/' },
     },
     {
       name: 'no-production-code-in-testing',

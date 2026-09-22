@@ -1,0 +1,59 @@
+/*
+ * @blood-connect/ui · base tokens
+ *
+ * Clinical palette shared by every Blood Connect surface. Ported from
+ * the `blood-connect-ui` hackathon frontend (ADR 0015).
+ *
+ * Declared in a Tailwind v4 `@theme` block so Tailwind's PostCSS
+ * plugin generates both the `:root` CSS custom properties AND the
+ * matching utility classes (`bg-canvas`, `text-ink`, `border-border`,
+ * `rounded-card`, `shadow-card`, and so on). Without Tailwind PostCSS
+ * this file is inert — an unknown at-rule the browser ignores — which
+ * is fine, because in Bloodconnect only the apps that opt into the
+ * kit's utilities also install Tailwind. Non-Tailwind consumers can
+ * still read the values through `var(--color-*)` after Tailwind has
+ * emitted them, or import `tokens/index.css` for a bundled set.
+ *
+ * Light-only by decision — see ADR 0015 and ADR 0004. The per-app
+ * accent tokens (`--color-primary-*`) live in `accent-medical.css`
+ * (web) and `accent-admin.css` (administration), imported alongside
+ * this file so the two applications are immediately distinguishable
+ * on a shared workstation.
+ */
+
+@theme {
+  /* Surfaces & structure */
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f3f5;
+  --color-border: #e2e5ea;
+  --color-border-strong: #cdd2da;
+
+  /* Text */
+  --color-ink: #1a1d21;
+  --color-ink-muted: #5b626c;
+  --color-ink-subtle: #868d98;
+
+  /* Status palette. Every badge that uses these must also render a
+   * label and a shaped dot: colour is never the only signal
+   * (WCAG 1.4.1, §22). */
+  --color-success: #1b7f4b;
+  --color-success-soft: #e6f4ec;
+  --color-warning: #9a6700;
+  --color-warning-soft: #fdf3e0;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fbeae9;
+  --color-info: #1f5f8b;
+  --color-info-soft: #e7f0f6;
+  --color-neutral: #5b626c;
+  --color-neutral-soft: #eef0f2;
+
+  /* Structure */
+  --radius-card: 0.625rem;
+  --radius-control: 0.375rem;
+
+  --shadow-card:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-overlay: 0 10px 30px rgba(16, 24, 40, 0.14);
+}

@@ -3,6 +3,14 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
+import {
+  Button,
+  FormField,
+  Select,
+  TextArea,
+  TextInput,
+} from '@blood-connect/ui';
+
 import { BLOOD_GROUPS, WORDING, bloodGroupLabel } from '@blood-connect/domain';
 
 import { DateParts } from './date-parts';
@@ -11,10 +19,11 @@ import { attachPatientAction, type FormState } from './centre-actions';
 /**
  * The patient, taken from the bystander at the desk (ADR 0010).
  *
- * The other half of the request slip: a doctor gave four fields and read an ID
- * aloud; somebody carried it here, and this is where the patient finally gets a
- * name. Until it is filled the request cannot be reserved against or issued.
- * Except for an emergency, which may be answered first and completed after.
+ * The other half of the request slip: a doctor gave four fields and read
+ * an ID aloud; somebody carried it here, and this is where the patient
+ * finally gets a name. Until it is filled the request cannot be reserved
+ * against or issued. Except for an emergency, which may be answered first
+ * and completed after.
  *
  * **Four fields are demanded and the rest are offered**, in the order somebody
  * actually asks them: who is this, where are they, how old, what group. The four
@@ -28,102 +37,37 @@ import { attachPatientAction, type FormState } from './centre-actions';
  * paid for it was a counter clerk re-asking a bystander for an address they had
  * already given. The disclosure below opens itself when anything inside it
  * survived, so a returned answer is never hidden behind a closed panel.
+ *
+ * Kit-native (ADR 0015): the disclosure is a native `<details>` styled with
+ * Tailwind's `group-open` variant, so nothing on the page depends on
+ * JavaScript being loaded — the same reason the ux4g version used a
+ * `<details>`, kept exactly.
  */
 
 const initial: FormState = { error: null };
 
+const groupOptions = BLOOD_GROUPS.map((g) => ({ value: g, label: bloodGroupLabel(g) }));
+
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      className="ux4g-btn ux4g-btn-primary ux4g-btn-lg app-target"
-      disabled={pending}
-      aria-disabled={pending}
-    >
+    <Button type="submit" loading={pending} className="w-full sm:w-auto">
       {pending ? 'Recording…' : 'Record the patient'}
-    </button>
+    </Button>
   );
 }
 
 function Problem({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="ux4g-alert ux4g-alert-error" role="alert">
-      <div className="ux4g-alert-content">
-        <p className="ux4g-alert-message">{message}</p>
-      </div>
+    <div
+      role="alert"
+      className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {message}
     </div>
   );
 }
-
-function Text({
-  id,
-  label,
-  hint,
-  type = 'text',
-  required = false,
-  inputMode,
-  defaultValue = '',
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  type?: string;
-  required?: boolean;
-  inputMode?: 'text' | 'numeric' | 'tel';
-  defaultValue?: string;
-}) {
-  return (
-    <div className="ux4g-form-group app-stack-tight">
-      <label className="ux4g-label-m-strong" htmlFor={id}>
-        {label}
-      </label>
-      <input
-        className="ux4g-input ux4g-input-md"
-        id={id}
-        name={id}
-        type={type}
-        inputMode={inputMode}
-        required={required}
-        defaultValue={defaultValue}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-      />
-      {hint ? (
-        <p className="ux4g-label-m-default" id={`${id}-hint`}>
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function Note({
-  id,
-  label,
-  defaultValue = '',
-}: {
-  id: string;
-  label: string;
-  defaultValue?: string;
-}) {
-  return (
-    <div className="ux4g-form-group app-stack-tight">
-      <label className="ux4g-label-m-strong" htmlFor={id}>
-        {label}
-      </label>
-      <textarea
-        className="ux4g-input ux4g-input-md"
-        id={id}
-        name={id}
-        rows={2}
-        defaultValue={defaultValue}
-      />
-    </div>
-  );
-}
-
-const groupOptions = BLOOD_GROUPS.map((g) => ({ value: g, label: bloodGroupLabel(g) }));
 
 export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
   const [state, action] = useActionState(
@@ -133,6 +77,18 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
 
   /** Whatever came back from a rejected submit, or nothing on a first render. */
   const was = (field: string): string => state.values?.[field] ?? '';
+
+  /**
+   * `useActionState` re-renders the same mounted `<form>` rather than
+   * remounting it, and React only applies a `<select>`'s `defaultValue` on
+   * mount — never on a later re-render. Text inputs don't show this because
+   * whatever the person typed is still sitting in the DOM regardless, but a
+   * `<select>` would keep showing "Choose" after a rejection even though
+   * `state.values` has the answer. Keying each `Select` to the values that
+   * came back forces a remount when — and only when — a new server response
+   * arrives, so `defaultValue` is reapplied.
+   */
+  const valuesKey = JSON.stringify(state.values ?? {});
 
   /*
     Open the disclosure if anything inside it survived a rejection. A returned
@@ -152,102 +108,103 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
 
   if (state.done === true) {
     return (
-      <div className="ux4g-alert ux4g-alert-success" role="status">
-        <div className="ux4g-alert-content">
-          <p className="ux4g-alert-message">
-            Patient recorded. This request can be answered now.
-          </p>
-        </div>
+      <div
+        role="status"
+        className="rounded-control border border-success/30 bg-success-soft px-3 py-2 text-sm text-ink"
+      >
+        <span className="font-medium text-success">Patient recorded.</span>{' '}
+        This request can be answered now.
       </div>
     );
   }
 
   return (
-    <form action={action} className="app-stack" noValidate>
+    <form action={action} className="space-y-4" noValidate>
       <Problem message={state.error} />
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="name">
-          {WORDING.patientName}
-        </label>
-        <input
-          className="ux4g-input ux4g-input-lg"
-          id="name"
-          name="name"
-          required
-          autoFocus
-          defaultValue={was('name')}
-        />
-      </div>
+      <FormField label={WORDING.patientName} required>
+        {(p) => (
+          <TextInput
+            {...p}
+            name="name"
+            required
+            autoFocus
+            defaultValue={was('name')}
+            className="text-base"
+          />
+        )}
+      </FormField>
 
-      <div className="app-row">
-        <Text
-          id="ipNo"
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField
           label={WORDING.ipNumber}
-          required
           hint="From the ward. It identifies the admission."
-          defaultValue={was('ipNo')}
-        />
-        <Text id="ward" label={WORDING.ward} defaultValue={was('ward')} />
-      </div>
-
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="bloodGroup">
-          Patient&rsquo;s own {WORDING.bloodGroupAndRh}
-        </label>
-        <select
-          className="ux4g-form-select ux4g-form-select-lg"
-          id="bloodGroup"
-          name="bloodGroup"
-          defaultValue={was('bloodGroup')}
-          required
-          aria-describedby="bloodGroup-hint"
         >
-          <option value="">Choose</option>
-          {groupOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <p className="ux4g-label-m-default" id="bloodGroup-hint">
-          {/*
-            Not the group on the request. An emergency is often answered with O−
-            whatever the patient turns out to be, and recording one as the other
-            would put a group nobody measured onto a clinical record.
-          */}
-          What the patient is, not what was asked for. The centre types every
-          unit before it is used.
-        </p>
+          {(p) => <TextInput {...p} name="ipNo" defaultValue={was('ipNo')} />}
+        </FormField>
+        <FormField label={WORDING.ward}>
+          {(p) => <TextInput {...p} name="ward" defaultValue={was('ward')} />}
+        </FormField>
       </div>
 
-      <div className="app-row">
-        <Text
-          id="age"
-          label={WORDING.age}
-          type="number"
-          inputMode="numeric"
-          defaultValue={was('age')}
-        />
-        <div className="ux4g-form-group app-stack-tight">
-          <label className="ux4g-label-m-strong" htmlFor="ageUnit">
-            Age unit
-          </label>
-          <select
-            className="ux4g-form-select ux4g-form-select-md"
-            id="ageUnit"
-            name="ageUnit"
-            defaultValue={was('ageUnit') === '' ? 'years' : was('ageUnit')}
+      <FormField
+        label={`Patient's own ${WORDING.bloodGroupAndRh}`}
+        // Not the group on the request. An emergency is often answered
+        // with O− whatever the patient turns out to be, and recording one
+        // as the other would put a group nobody measured onto a clinical
+        // record.
+        hint="What the patient is, not what was asked for. The centre types every unit before it is used."
+        required
+      >
+        {(p) => (
+          <Select
+            {...p}
+            key={valuesKey}
+            name="bloodGroup"
+            defaultValue={was('bloodGroup')}
+            required
+            className="text-base"
           >
-            <option value="years">Years</option>
-            <option value="months">Months</option>
-            <option value="days">Days</option>
-          </select>
-          <p className="ux4g-label-m-default">
-            {/* A neonate is recorded in days, which is why the unit exists. */}
-            A newborn is usually recorded in days.
-          </p>
-        </div>
+            <option value="">Choose</option>
+            {groupOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </FormField>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label={WORDING.age}>
+          {(p) => (
+            <TextInput
+              {...p}
+              name="age"
+              type="number"
+              inputMode="numeric"
+              defaultValue={was('age')}
+            />
+          )}
+        </FormField>
+        <FormField
+          label="Age unit"
+          // A neonate is recorded in days, which is why the unit exists.
+          hint="A newborn is usually recorded in days."
+        >
+          {(p) => (
+            <Select
+              {...p}
+              key={valuesKey}
+              name="ageUnit"
+              defaultValue={was('ageUnit') === '' ? 'years' : was('ageUnit')}
+            >
+              <option value="years">Years</option>
+              <option value="months">Months</option>
+              <option value="days">Days</option>
+            </Select>
+          )}
+        </FormField>
       </div>
 
       <DateParts
@@ -257,43 +214,41 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
         hint="Give this or the age above. The record needs one of them."
       />
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-m-strong" htmlFor="sex">
-          {WORDING.sex}
-        </label>
-        <select
-          className="ux4g-form-select ux4g-form-select-md"
-          id="sex"
-          name="sex"
-          defaultValue={was('sex')}
-        >
-          <option value="">Not stated</option>
-          <option value="female">Female</option>
-          <option value="male">Male</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
+      <FormField label={WORDING.sex}>
+        {(p) => (
+          <Select {...p} key={valuesKey} name="sex" defaultValue={was('sex')}>
+            <option value="">Not stated</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+          </Select>
+        )}
+      </FormField>
 
       {/*
-        Worth asking while the person is at the desk, but never what delays a
-        unit, so it is offered, not demanded.
+        Worth asking while the person is at the desk, but never what
+        delays a unit, so it is offered, not demanded. `group` +
+        `group-open:` lets the chevron rotate on open without one line
+        of JavaScript.
       */}
-      <details className="app-more" open={extrasFilled}>
-        <summary className="app-more-summary">
-          <span className="app-stack-tight">
-            <span>Contact and clinical context</span>
-            <span className="ux4g-label-m-default">
+      <details className="group rounded-card border border-border bg-surface-muted" open={extrasFilled}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="flex flex-col">
+            <span className="text-sm font-medium text-ink">
+              Contact and clinical context
+            </span>
+            <span className="text-xs text-ink-muted">
               Optional, ask while they are here
             </span>
           </span>
           <svg
-            className="app-more-chevron"
             width="20"
             height="20"
             viewBox="0 0 20 20"
             fill="none"
             aria-hidden="true"
             focusable="false"
+            className="shrink-0 text-ink-muted transition-transform group-open:rotate-180"
           >
             <path
               d="M5 7.5 10 12.5 15 7.5"
@@ -305,47 +260,65 @@ export function AttachPatientForm({ requestUuid }: { requestUuid: string }) {
           </svg>
         </summary>
 
-        <div className="app-stack app-more-body">
-          <Text id="uhid" label={WORDING.hospitalId} defaultValue={was('uhid')} />
-          <Text
-            id="attenderName"
-            label={WORDING.attenderName}
-            defaultValue={was('attenderName')}
-          />
-          <Text
-            id="attenderPhone"
-            label={WORDING.attenderPhone}
-            type="tel"
-            inputMode="tel"
-            defaultValue={was('attenderPhone')}
-          />
-          <Note id="address" label="Address" defaultValue={was('address')} />
-          <Note id="diagnosis" label={WORDING.knownDiagnosis} defaultValue={was('diagnosis')} />
-          <Note id="history" label={WORDING.relevantHistory} defaultValue={was('history')} />
+        <div className="space-y-4 border-t border-border bg-surface px-4 py-4">
+          <FormField label={WORDING.hospitalId}>
+            {(p) => <TextInput {...p} name="uhid" defaultValue={was('uhid')} />}
+          </FormField>
+          <FormField label={WORDING.attenderName}>
+            {(p) => (
+              <TextInput {...p} name="attenderName" defaultValue={was('attenderName')} />
+            )}
+          </FormField>
+          <FormField label={WORDING.attenderPhone}>
+            {(p) => (
+              <TextInput
+                {...p}
+                name="attenderPhone"
+                type="tel"
+                inputMode="tel"
+                defaultValue={was('attenderPhone')}
+              />
+            )}
+          </FormField>
+          <FormField label="Address">
+            {(p) => <TextArea {...p} name="address" rows={2} defaultValue={was('address')} />}
+          </FormField>
+          <FormField label={WORDING.knownDiagnosis}>
+            {(p) => (
+              <TextArea {...p} name="diagnosis" rows={2} defaultValue={was('diagnosis')} />
+            )}
+          </FormField>
+          <FormField label={WORDING.relevantHistory}>
+            {(p) => <TextArea {...p} name="history" rows={2} defaultValue={was('history')} />}
+          </FormField>
 
-          <div className="ux4g-form-group app-stack-tight">
-            <label className="ux4g-label-m-strong" htmlFor="previousTransfusion">
-              {WORDING.previousTransfusion}
-            </label>
-            <select
-              className="ux4g-form-select ux4g-form-select-md"
-              id="previousTransfusion"
-              name="previousTransfusion"
-              defaultValue={
-                was('previousTransfusion') === '' ? 'unknown' : was('previousTransfusion')
-              }
-            >
-              <option value="unknown">Unknown</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </div>
+          <FormField label={WORDING.previousTransfusion}>
+            {(p) => (
+              <Select
+                {...p}
+                key={valuesKey}
+                name="previousTransfusion"
+                defaultValue={
+                  was('previousTransfusion') === '' ? 'unknown' : was('previousTransfusion')
+                }
+              >
+                <option value="unknown">Unknown</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </Select>
+            )}
+          </FormField>
 
-          <Note
-            id="previousReaction"
-            label={WORDING.previousReaction}
-            defaultValue={was('previousReaction')}
-          />
+          <FormField label={WORDING.previousReaction}>
+            {(p) => (
+              <TextArea
+                {...p}
+                name="previousReaction"
+                rows={2}
+                defaultValue={was('previousReaction')}
+              />
+            )}
+          </FormField>
         </div>
       </details>
 

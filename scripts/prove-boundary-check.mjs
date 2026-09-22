@@ -10,7 +10,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,14 +30,30 @@ export const probe = canDonateRedCellsTo;
  * `.bin` shim: the shims are shell scripts on POSIX and `.cmd` files on Windows,
  * and spawning one without a shell fails silently on Windows, which would make
  * this check pass for the wrong reason.
+ *
+ * The binary was renamed in dependency-cruiser 18.3.1 from
+ * `dependency-cruise.mjs` to `dependency-cruiser.mjs` (with the trailing `r`).
+ * The two candidate paths are tried in order — newer first, so the fresh
+ * spelling wins on a fresh install — with the last existing one used.
+ * A version bump that renames it again will fail loudly here rather than in
+ * the middle of `pnpm verify`, which is what §11.2 asks of every mechanical
+ * check.
  */
-const cruiserEntry = path.join(
-  repoRoot,
-  'node_modules',
-  'dependency-cruiser',
-  'bin',
-  'dependency-cruise.mjs',
-);
+const cruiserEntryCandidates = [
+  path.join(repoRoot, 'node_modules', 'dependency-cruiser', 'bin', 'dependency-cruiser.mjs'),
+  path.join(repoRoot, 'node_modules', 'dependency-cruiser', 'bin', 'dependency-cruise.mjs'),
+];
+
+const cruiserEntry = cruiserEntryCandidates.find((candidate) => existsSync(candidate));
+
+if (cruiserEntry === undefined) {
+  process.stderr.write(
+    'dependency-cruiser binary not found. Tried:\n' +
+      cruiserEntryCandidates.map((candidate) => `  ${candidate}\n`).join('') +
+      'Its binary may have been renamed again; update scripts/prove-boundary-check.mjs.\n',
+  );
+  process.exit(1);
+}
 
 function runCruiser() {
   return spawnSync(

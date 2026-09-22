@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { Card, PageHeader } from '@blood-connect/ui';
+
 import { CentreShell } from '../../../centre-shell';
 import { BagForm } from '../../../centre-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
@@ -14,11 +16,12 @@ export default async function NewBagPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const actor = await requireAccess('/centre/stock/new');
+  if (actor.kind !== 'user') return null;
   const ctx = await useCaseContext(actor);
   const query = await searchParams;
 
-  // Arriving from a scan of a free tag: the tag is already in hand, so it is
-  // filled in rather than typed a second time.
+  // Arriving from a scan of a free tag: the tag is already in hand, so
+  // it is filled in rather than typed a second time.
   const raw = query['tag'];
   const tagUid = typeof raw === 'string' ? raw.trim() : '';
 
@@ -28,29 +31,37 @@ export default async function NewBagPage({
   );
 
   return (
-    <CentreShell actor={actor} title="Register a bag" narrow current="register">
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">Register a bag</h1>
-        <p className="ux4g-body-m-default">
-          {/*
-            §10 requires the typed path regardless of hardware, so it is the path
-            that was built. A scanner presents as a keyboard and fills the same
-            fields when one arrives.
-          */}
-          Type the unit number, or read it with a scanner. The expiry is worked out
-          from the collection date and the shelf life, and shown before you save.
-        </p>
+    <CentreShell
+      actor={actor}
+      title="Register a bag"
+      currentPath="/centre/stock/new"
+    >
+      <PageHeader
+        title="Register a bag"
+        description={
+          // §10 requires the typed path regardless of hardware, so it is
+          // the path that was built. A scanner presents as a keyboard and
+          // fills the same fields when one arrives.
+          'Type the unit number, or read it with a scanner. The expiry is worked out from the collection date and the shelf life, and shown before you save.'
+        }
+      />
+
+      <Card>
+        <BagForm
+          today={ctx.clock.today()}
+          shelfLives={byProduct}
+          tagUid={tagUid}
+        />
+      </Card>
+
+      <div>
+        <Link
+          href="/centre/stock"
+          className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+        >
+          ← Back to the register
+        </Link>
       </div>
-
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-body">
-          <BagForm today={ctx.clock.today()} shelfLives={byProduct} tagUid={tagUid} />
-        </div>
-      </section>
-
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre/stock">
-        Back to the register
-      </Link>
     </CentreShell>
   );
 }

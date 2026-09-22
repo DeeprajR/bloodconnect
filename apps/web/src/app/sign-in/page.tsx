@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { AppShell } from '../shell';
+import { Card } from '@blood-connect/ui';
 import { currentActor } from '@/lib/session';
 import { landingFor } from '@blood-connect/platform';
 import { SignInForm } from './form';
@@ -14,6 +14,13 @@ export const metadata: Metadata = { title: 'Sign in · Blood Connect' };
  * (§2.2). A first sign-in happens on the emailed invite link, which is P5,
  * until then the seed script is the only way an account comes into being, and
  * that is the spec's own sanctioned path.
+ *
+ * The sign-in page deliberately does NOT wrap in the app shell: an
+ * unauthenticated visitor has no navigation to speak of, no identity to
+ * announce, and no role-scoped chrome to render. A centred card on the canvas
+ * is the whole page. This is also the first screen restyled with the
+ * `@blood-connect/ui` kit (ADR 0015) — the rest of the app still ships UX4G
+ * chrome, so the two coexist in this transitional PR.
  */
 export default async function SignInPage() {
   const actor = await currentActor();
@@ -23,25 +30,37 @@ export default async function SignInPage() {
   if (actor.kind === 'user') redirect(landingFor(actor.role));
 
   return (
-    <AppShell actor={actor} title="Sign in" narrow>
-      <div className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h1 className="ux4g-card-title">Sign in</h1>
-          <p className="ux4g-card-sub-title">
-            Use the account your administrator created for you.
-          </p>
+    <div
+      id="main"
+      className="flex min-h-dvh items-center justify-center bg-canvas p-6"
+    >
+      <div className="w-full max-w-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="flex size-9 items-center justify-center rounded-control bg-primary text-base font-bold text-white"
+          >
+            B
+          </span>
+          <div>
+            <p className="text-base font-semibold text-ink">Blood Connect</p>
+            <p className="text-xs text-ink-subtle">Staff sign in</p>
+          </div>
         </div>
 
-        <div className="ux4g-card-body">
+        <Card>
           <SignInForm />
-        </div>
+        </Card>
 
-        <div className="ux4g-card-footer">
-          <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/reset">
+        <div className="text-center text-sm">
+          <Link
+            href="/reset"
+            className="font-medium text-primary hover:underline"
+          >
             Forgot your password?
           </Link>
         </div>
       </div>
-    </AppShell>
+    </div>
   );
 }

@@ -71,19 +71,19 @@ jobs:
         run: psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f db/docker/init.sql
 
       - name: Migrations apply cleanly to an empty database (§5.9)
-        run: pnpm db:migrate
+        run: |
+          pnpm db:migrate
+          pnpm db:migrate:bot
 
       - name: Migrations are idempotent against an already-migrated database
         # The second half of §5.9's requirement: clean against empty, and clean
         # against a database seeded from the previous release.
-        run: pnpm db:migrate
+        run: |
+          pnpm db:migrate
+          pnpm db:migrate:bot
 
       - name: The bot's migrations never mention the shared tables (§2.1)
-        run: |
-          if [ -d db/migrations-bot ] && grep -riE 'donor_demand' db/migrations-bot; then
-            echo "::error::db/migrations-bot references a shared contract table. Only db/migrations may create them (§2.1)."
-            exit 1
-          fi
+        run: pnpm check:bot-migrations
 
       # ------------------------------------------------------------------ test
       - name: Seed

@@ -2,7 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { AppShell } from '../../shell';
+import {
+  Button,
+  Card,
+  DataTable,
+  PageHeader,
+  StatusBadge,
+  type Column,
+} from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
 import { ChangeEmailForm, EditDoctorForm, SealForm } from '../../forms';
 import { removeSealAction, resendInviteAction, setStatusAction } from '../../actions';
 import { requireAccess, useCaseContext } from '@/lib/guards';
@@ -10,6 +19,10 @@ import { getDoctor } from '@blood-connect/platform';
 import { getPatientsForDoctor } from '@blood-connect/hospital';
 
 export const metadata: Metadata = { title: 'Doctor · Administration' };
+
+type PatientRow = NonNullable<
+  Awaited<ReturnType<typeof getPatientsForDoctor>>
+>[number];
 
 export default async function DoctorPage({
   params,
@@ -32,47 +45,70 @@ export default async function DoctorPage({
   const reactivate = setStatusAction.bind(null, id, 'active');
   const clearSeal = removeSealAction.bind(null, id);
 
+  const patientColumns: Column<PatientRow>[] = [
+    { key: 'name', header: 'Patient', cell: (p) => p.name },
+    {
+      key: 'uhid',
+      header: 'Hospital ID',
+      cell: (p) => <span className="tabular-nums">{p.uhid ?? '–'}</span>,
+    },
+    {
+      key: 'ip',
+      header: 'IP number',
+      cell: (p) => <span className="tabular-nums">{p.ipNo}</span>,
+    },
+    { key: 'ward', header: 'Ward', cell: (p) => p.ward },
+    {
+      key: 'group',
+      header: 'Group',
+      cell: (p) => <span className="tabular-nums">{p.bloodGroup}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (p) => (
+        <StatusBadge
+          label={p.admissionStatus === 'admitted' ? 'Live' : 'Discharged'}
+          tone={p.admissionStatus === 'admitted' ? 'success' : 'neutral'}
+        />
+      ),
+    },
+    {
+      key: 'requests',
+      header: 'Requests',
+      cell: (p) => <span className="tabular-nums">{p.requestCount}</span>,
+    },
+    { key: 'diagnosis', header: 'Known diagnosis', cell: (p) => p.diagnosis ?? '–' },
+  ];
+
   return (
-    <AppShell actor={actor} title={doctor.fullName}>
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">{doctor.fullName}</h1>
-        <p className="ux4g-body-m-default">
-          {doctor.status === 'pending_activation'
+    <KitShell currentPath="/doctors" currentTitle={doctor.fullName}>
+      <PageHeader
+        title={doctor.fullName}
+        description={
+          doctor.status === 'pending_activation'
             ? 'Invited. They have not set a password yet.'
             : doctor.status === 'deactivated'
               ? 'Deactivated. They cannot sign in and every session has ended.'
-              : 'Active.'}
-        </p>
-      </div>
+              : 'Active.'
+        }
+      />
 
-      <div className="app-grid">
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">Details</h2>
-          </div>
-          <div className="ux4g-card-body">
-            <EditDoctorForm
-              userId={doctor.id}
-              fullName={doctor.fullName}
-              provisionalReg={doctor.provisionalReg}
-            />
-          </div>
-        </section>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card title="Details">
+          <EditDoctorForm
+            userId={doctor.id}
+            fullName={doctor.fullName}
+            provisionalReg={doctor.provisionalReg}
+          />
+        </Card>
 
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">Email address</h2>
-          </div>
-          <div className="ux4g-card-body">
-            <ChangeEmailForm userId={doctor.id} currentEmail={doctor.email} />
-          </div>
-        </section>
+        <Card title="Email address">
+          <ChangeEmailForm userId={doctor.id} currentEmail={doctor.email} />
+        </Card>
 
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">Seal</h2>
-          </div>
-          <div className="ux4g-card-body app-stack">
+        <Card title="Seal">
+          <div className="space-y-4">
             {doctor.hasSeal ? (
               <>
                 {/*
@@ -82,38 +118,29 @@ export default async function DoctorPage({
                 <img
                   src={`/api/seal/${doctor.id}`}
                   alt={`Seal for ${doctor.fullName}`}
-                  style={{ maxHeight: 120, background: 'var(--ux4g-bg-neutral-elevated)' }}
+                  className="max-h-32 rounded-control border border-border bg-surface-muted"
                 />
                 <form action={clearSeal}>
-                  <button
-                    type="submit"
-                    className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
-                  >
+                  <Button type="submit" variant="danger" size="sm">
                     Remove seal
-                  </button>
+                  </Button>
                 </form>
               </>
             ) : (
-              <p className="ux4g-body-s-default">No seal uploaded.</p>
+              <p className="text-sm text-ink-muted">No seal uploaded.</p>
             )}
             <SealForm userId={doctor.id} />
           </div>
-        </section>
+        </Card>
 
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">Access</h2>
-          </div>
-          <div className="ux4g-card-body app-stack">
+        <Card title="Access">
+          <div className="space-y-3">
             {doctor.status === 'pending_activation' ? (
-              <form action={resend}>
-                <button
-                  type="submit"
-                  className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
-                >
+              <form action={resend} className="space-y-1.5">
+                <Button type="submit" variant="secondary" size="sm">
                   Send the invite again
-                </button>
-                <p className="ux4g-label-m-default">
+                </Button>
+                <p className="text-xs text-ink-subtle">
                   This replaces the earlier link, which stops working.
                 </p>
               </form>
@@ -121,85 +148,51 @@ export default async function DoctorPage({
 
             {doctor.status === 'deactivated' ? (
               <form action={reactivate}>
-                <button
-                  type="submit"
-                  className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
-                >
+                <Button type="submit" variant="secondary" size="sm">
                   Reactivate
-                </button>
+                </Button>
               </form>
             ) : (
-              <form action={deactivate}>
-                <button
-                  type="submit"
-                  className="ux4g-btn ux4g-btn-outline-danger ux4g-btn-md app-target"
-                >
+              <form action={deactivate} className="space-y-1.5">
+                <Button type="submit" variant="danger" size="sm">
                   Deactivate
-                </button>
-                <p className="ux4g-label-m-default">
+                </Button>
+                <p className="text-xs text-ink-subtle">
                   Ends every session immediately. The record is kept.
                 </p>
               </form>
             )}
           </div>
-        </section>
+        </Card>
       </div>
 
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">Patients</h2>
-          <p className="ux4g-card-sub-title">
-            This doctor’s patients, live and historical. Opening this page is recorded in
-            the audit log, naming every record shown.
+      <Card title="Patients">
+        <div className="space-y-4">
+          <p className="text-sm text-ink-muted">
+            This doctor’s patients, live and historical. Opening this page is
+            recorded in the audit log, naming every record shown.
           </p>
-        </div>
-        <div className="ux4g-card-body app-scroll-x">
           {patients === undefined ? (
-            <p className="ux4g-body-s-default">
+            <p className="text-sm text-ink-muted">
               This account cannot read patient records.
             </p>
-          ) : patients.length === 0 ? (
-            <p className="ux4g-body-s-default">
-              This doctor has not requested blood for anyone yet.
-            </p>
           ) : (
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Patient</th>
-                  <th scope="col">Hospital ID</th>
-                  <th scope="col">IP number</th>
-                  <th scope="col">Ward</th>
-                  <th scope="col">Group</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Requests</th>
-                  <th scope="col">Known diagnosis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {patients.map((patient) => (
-                  <tr key={`${patient.patientId}-${patient.ipNo}`}>
-                    <td>{patient.name}</td>
-                    <td className="app-figure">{patient.uhid ?? '-'}</td>
-                    <td className="app-figure">{patient.ipNo}</td>
-                    <td>{patient.ward}</td>
-                    <td className="app-figure">{patient.bloodGroup}</td>
-                    <td>
-                      {patient.admissionStatus === 'admitted' ? 'Live' : 'Discharged'}
-                    </td>
-                    <td className="app-figure">{patient.requestCount}</td>
-                    <td>{patient.diagnosis ?? '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable
+              columns={patientColumns}
+              rows={patients}
+              getRowKey={(p) => `${p.patientId}-${p.ipNo}`}
+              emptyLabel="This doctor has not requested blood for anyone yet."
+            />
           )}
         </div>
-      </section>
+      </Card>
 
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/doctors">
-        Back to the list
+      <Link
+        href="/doctors"
+        className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+      >
+        ← Back to the list
       </Link>
-    </AppShell>
+    </KitShell>
   );
 }

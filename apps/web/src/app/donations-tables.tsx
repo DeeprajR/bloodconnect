@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { DataTable, type Column } from '@blood-connect/ui';
 import { bloodGroupLabel } from '@blood-connect/domain';
 import type { DonationRow } from '@blood-connect/centre';
 
@@ -32,41 +33,46 @@ export function UpcomingDonations({
   readonly rows: readonly DonationRow[];
   readonly empty?: string;
 }) {
-  if (rows.length === 0) {
-    return <p className="ux4g-body-s-default">{empty}</p>;
-  }
+  const columns: Column<DonationRow>[] = [
+    { key: 'donor', header: 'Donor', cell: (r) => r.donorName },
+    {
+      key: 'group',
+      header: 'Group',
+      cell: (r) => (
+        <span className="tabular-nums">{bloodGroupLabel(r.bloodGroup as never)}</span>
+      ),
+    },
+    {
+      key: 'expected',
+      header: 'Expected by',
+      cell: (r) => <span className="tabular-nums">{r.day}</span>,
+    },
+    { key: 'reached', header: 'Reached on', cell: (r) => channelLabel(r.channel) },
+    {
+      key: 'roster',
+      header: '',
+      mobileLabel: 'Roster',
+      align: 'right',
+      cell: (r) => (
+        // Marking somebody off happens on the roster, with the phone
+        // number next to the name.
+        <Link
+          href={`/centre/demands/${r.demandId}`}
+          className="font-medium text-primary hover:underline"
+        >
+          Open roster
+        </Link>
+      ),
+    },
+  ];
 
   return (
-    <div className="app-scroll-x">
-      <table className="ux4g-table">
-        <thead>
-          <tr>
-            <th scope="col">Donor</th>
-            <th scope="col">Group</th>
-            <th scope="col">Expected by</th>
-            <th scope="col">Reached on</th>
-            <th scope="col">
-              <span className="app-sr-only">Donors coming in</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.donorName}</td>
-              <td className="app-figure">{bloodGroupLabel(row.bloodGroup as never)}</td>
-              <td className="app-figure">{row.day}</td>
-              <td>{channelLabel(row.channel)}</td>
-              <td>
-                {/* Marking somebody off happens on the demand's donor list,
-                    with the phone number next to the name. */}
-                <Link href={`/centre/demands/${row.demandId}`}>See donors</Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      rows={[...rows]}
+      getRowKey={(r) => r.id}
+      emptyLabel={empty}
+    />
   );
 }
 
@@ -77,34 +83,36 @@ export function CompletedDonations({
   readonly rows: readonly DonationRow[];
   readonly empty?: string;
 }) {
-  if (rows.length === 0) {
-    return <p className="ux4g-body-s-default">{empty}</p>;
-  }
+  const columns: Column<DonationRow>[] = [
+    { key: 'donor', header: 'Donor', cell: (r) => r.donorName },
+    {
+      key: 'group',
+      header: 'Group',
+      cell: (r) => (
+        <span className="tabular-nums">{bloodGroupLabel(r.bloodGroup as never)}</span>
+      ),
+    },
+    {
+      key: 'unit',
+      header: 'Unit',
+      cell: (r) => (
+        <span className="font-mono tabular-nums">{r.bagIdentifier ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'given',
+      header: 'Given on',
+      cell: (r) => <span className="tabular-nums">{r.day}</span>,
+    },
+    { key: 'how', header: 'How', cell: (r) => channelLabel(r.channel) },
+  ];
 
   return (
-    <div className="app-scroll-x">
-      <table className="ux4g-table">
-        <thead>
-          <tr>
-            <th scope="col">Donor</th>
-            <th scope="col">Group</th>
-            <th scope="col">Unit</th>
-            <th scope="col">Given on</th>
-            <th scope="col">How</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.donorName}</td>
-              <td className="app-figure">{bloodGroupLabel(row.bloodGroup as never)}</td>
-              <td className="app-figure">{row.bagIdentifier ?? '-'}</td>
-              <td className="app-figure">{row.day}</td>
-              <td>{channelLabel(row.channel)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      rows={[...rows]}
+      getRowKey={(r) => r.id}
+      emptyLabel={empty}
+    />
   );
 }

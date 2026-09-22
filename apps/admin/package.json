@@ -18,16 +18,19 @@
     "@blood-connect/ops": "workspace:*",
     "@blood-connect/platform": "workspace:*",
     "@blood-connect/result": "workspace:*",
+    "@blood-connect/ui": "workspace:*",
     "drizzle-orm": "^0.45.2",
+    "geist": "^1.4.2",
     "next": "^16.3.4",
     "postgres": "^3.4.9",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "ux4g-web-components": "^2.1.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7"
+    "@types/react-dom": "^19.2.7",
+    "tailwindcss": "^4.1.14"
   }
 }

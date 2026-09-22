@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AppShell } from '../../shell';
+import { DataTable, PageHeader, type Column } from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
+import { TraceSearchForm } from './form';
 import { notePage } from '@/lib/metrics';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { trace } from '@blood-connect/ops';
@@ -30,6 +33,8 @@ const STAGE_WORDS: Record<string, string> = {
   audit: 'Audit',
 };
 
+type Step = Awaited<ReturnType<typeof trace>>['steps'][number] & { _row: string };
+
 /**
  * Follow one unit of blood end to end (§14).
  *
@@ -57,94 +62,67 @@ export default async function TracePage({
 
   notePage('/panel/trace', startedAt);
 
-  return (
-    <AppShell actor={actor} title="Follow a request">
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">Follow one request</h1>
-        <p className="ux4g-body-m-default">
-          Paste a request number from the slip, a demand id, or a correlation id from a
-          log line. Reading a trace is recorded in the audit log.
-        </p>
-      </div>
+  const columns: Column<Step>[] = [
+    {
+      key: 'when',
+      header: 'When',
+      cell: (s) => <span className="tabular-nums">{stampFormat.format(s.at)}</span>,
+    },
+    { key: 'step', header: 'Step', cell: (s) => STAGE_WORDS[s.stage] ?? s.stage },
+    { key: 'what', header: 'What happened', cell: (s) => s.detail },
+    {
+      key: 'record',
+      header: 'Record',
+      cell: (s) => <span className="break-all text-xs tabular-nums">{s.recordId ?? '–'}</span>,
+    },
+  ];
 
-      <form className="app-row" method="get" action="/panel/trace">
-        <div className="ux4g-form-group app-stack-tight app-grow">
-          <label className="ux4g-label-m-strong" htmlFor="q">
-            Identifier
-          </label>
-          <input
-            className="ux4g-input ux4g-input-lg app-figure"
-            id="q"
-            name="q"
-            defaultValue={typed}
-            placeholder="090926-00001"
-            autoFocus
-            required
-          />
-        </div>
-        <button type="submit" className="ux4g-btn ux4g-btn-primary ux4g-btn-lg app-target">
-          Follow it
-        </button>
-      </form>
+  return (
+    <KitShell currentPath="/panel" currentTitle="Follow a request">
+      <PageHeader
+        title="Follow one request"
+        description="Paste a request number from the slip, a demand id, or a correlation id from a log line. Reading a trace is recorded in the audit log."
+      />
+
+      <TraceSearchForm defaultValue={typed} />
 
       {result === null ? null : !result.found ? (
-        <div className="ux4g-alert ux4g-alert-warning" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">{result.notes[0]}</p>
-          </div>
-        </div>
+        <p
+          role="status"
+          className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+        >
+          {result.notes[0]}
+        </p>
       ) : (
         <>
-          <div className="app-scroll-x">
-            <table className="ux4g-table">
-              <caption className="app-sr-only">
-                Every recorded step, oldest first
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">When</th>
-                  <th scope="col">Step</th>
-                  <th scope="col">What happened</th>
-                  <th scope="col">Record</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.steps.map((step, index) => (
-                  <tr key={`${step.stage}-${String(index)}`}>
-                    <th scope="row" className="app-figure">
-                      {stampFormat.format(step.at)}
-                    </th>
-                    <td>{STAGE_WORDS[step.stage] ?? step.stage}</td>
-                    <td>{step.detail}</td>
-                    <td className="app-figure app-trace-id">{step.recordId ?? '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            rows={result.steps.map((s, i) => ({ ...s, _row: `${s.stage}-${String(i)}` }))}
+            getRowKey={(s) => s._row}
+            caption="Every recorded step, oldest first"
+          />
 
           {/*
             The limits, stated on every successful trace rather than only when
             something is missing. An operator has to know what this screen
             cannot see before they conclude that nothing happened.
           */}
-          <div className="ux4g-alert ux4g-alert-info" role="note">
-            <div className="ux4g-alert-content">
-              <ul className="app-stack-tight app-plain-list">
-                {result.notes.map((note) => (
-                  <li className="ux4g-body-s-default" key={note}>
-                    {note}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="rounded-control border border-info/30 bg-info-soft px-3 py-2">
+            <ul className="list-disc space-y-1 pl-4 text-sm text-ink">
+              {result.notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
           </div>
         </>
       )}
 
-      <p className="ux4g-body-s-default">
-        <Link href="/panel">Back to the panel</Link>
-      </p>
-    </AppShell>
+      <Link
+        href="/panel"
+        className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+      >
+        ← Back to the panel
+      </Link>
+    </KitShell>
   );
 }

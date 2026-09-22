@@ -2,7 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { AppShell } from '../../shell';
+import {
+  Card,
+  DataTable,
+  DescList,
+  PageHeader,
+  StatusBadge,
+  type Column,
+} from '@blood-connect/ui';
+
+import { KitShell } from '../../kit-shell';
 import { CancelRequestForm, SampleForm } from '../../hospital-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
 import { getRequest, listSamples } from '@blood-connect/hospital';
@@ -30,15 +39,24 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   cancelled: 'Cancelled',
 };
 
+const URGENCY_TONES: Readonly<Record<Urgency, 'danger' | 'warning' | 'neutral'>> = {
+  emergency: 'danger',
+  very_urgent: 'warning',
+  urgent: 'warning',
+  routine: 'neutral',
+};
+
 /** The statuses §3 lets a doctor cancel from. A draft is left, not cancelled. */
 const CANCELLABLE = ['submitted', 'approved', 'partially_approved'];
+
+type Sample = Awaited<ReturnType<typeof listSamples>>[number];
 
 /**
  * A draft is editable; anything else is a record.
  *
  * One route rather than two, because the doctor arrives at the same place
- * either way, from the dashboard, or from having just submitted. What changes
- * is whether there is a form on it.
+ * either way, from the dashboard, or from having just submitted. What
+ * changes is whether there is a form on it.
  */
 export default async function RequestPage({
   params,
@@ -52,6 +70,8 @@ export default async function RequestPage({
   // Straight off the form. The ID is the only thing the doctor came for.
   const justRaised = query['raised'] === '1';
   const actor = await requireAccess(`/requests/${id}`);
+  if (actor.kind !== 'user') return null;
+
   const ctx = await useCaseContext(actor);
 
   const row = await getRequest(ctx, id);
@@ -59,8 +79,9 @@ export default async function RequestPage({
 
   const { request } = row;
 
-  // Rendered from the snapshot, not from the live patient record. That is the
-  // whole point of freezing it (§2.6). Empty until the centre attaches one.
+  // Rendered from the snapshot, not from the live patient record. That is
+  // the whole point of freezing it (§2.6). Empty until the centre attaches
+  // one.
   const patient = (request.patientSnapshot ?? {}) as Record<string, string | null>;
   const doctor = (request.doctorSnapshot ?? {}) as Record<string, string | null>;
 
@@ -93,229 +114,246 @@ export default async function RequestPage({
     timeZone: 'Asia/Kolkata',
   });
 
+  const sampleColumns: Column<Sample>[] = [
+    {
+      key: 'identifier',
+      header: 'Identifier',
+      cell: (s) => (
+        <span className="font-mono tabular-nums text-ink">
+          {s.sampleIdentifier}
+        </span>
+      ),
+    },
+    {
+      key: 'collectedAt',
+      header: 'Collected',
+      cell: (s) => (
+        <span className="tabular-nums">{when.format(s.collectedAt)}</span>
+      ),
+    },
+    { key: 'by', header: 'By', cell: (s) => s.collectedBy ?? '—' },
+    { key: 'note', header: 'Note', cell: (s) => s.note ?? '—' },
+  ];
+
   return (
-    <AppShell actor={actor} title={request.requestId ?? 'Blood request'}>
+    <KitShell
+      role={actor.role}
+      currentPath={`/requests/${id}`}
+      currentTitle={request.requestId ?? 'Blood request'}
+    >
       {justRaised ? (
         /**
          * The handoff (ADR 0010).
          *
-         * Big enough to read across a bed, because that is what happens next:
-         * the doctor says it to the patient's bystander, who carries it to the
-         * blood centre. Everything else on this page is for later.
+         * Big enough to read across a bed, because that is what happens
+         * next: the doctor says it to the patient's bystander, who carries
+         * it to the blood centre. Everything else on this page is for
+         * later.
          */
-        <section className="ux4g-card ux4g-card-outline app-handoff">
-          <div className="ux4g-card-body app-stack-tight">
-            <p className="ux4g-label-l-strong">Give this to the patient’s bystander</p>
-            <p className="app-handoff-id app-figure">{request.requestId}</p>
-            {urgency ? (
-              <p className={`app-priority app-priority-${urgency}`}>
-                <span className="app-priority-label">{URGENCY_SHORT[urgency]}</span>
-                <span className="ux4g-label-m-default">
-                  {answerMinutes === null
-                    ? 'Answered in the order the queue reaches it'
-                    : `The centre is asked to answer within ${String(answerMinutes)} minutes`}
-                </span>
-              </p>
-            ) : null}
-            <p className="ux4g-body-m-default">
-              They take it to the blood centre, who will ask them for the patient’s
-              details. Nothing else is needed from you.
-            </p>
-          </div>
-        </section>
-      ) : null}
-
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong app-figure">{request.requestId}</h1>
-        <div className="app-row">
+        <div
+          className="rounded-card border border-primary/30 bg-primary-soft p-6 text-center"
+          role="status"
+        >
+          <p className="text-sm font-medium text-primary">
+            Give this to the patient&rsquo;s bystander
+          </p>
+          <p className="mt-2 font-mono text-3xl font-bold tabular-nums tracking-wider text-ink sm:text-4xl">
+            {request.requestId}
+          </p>
           {urgency ? (
-            <span className={`app-priority-tag app-priority-${urgency}`}>
-              {URGENCY_SHORT[urgency]}
-            </span>
+            <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-ink-muted">
+              <StatusBadge label={URGENCY_SHORT[urgency]} tone={URGENCY_TONES[urgency]} />
+              <span>
+                {answerMinutes === null
+                  ? 'Answered in the order the queue reaches it'
+                  : `The centre is asked to answer within ${String(answerMinutes)} minutes`}
+              </span>
+            </p>
           ) : null}
-          <p className="ux4g-body-m-default">
-            {STATUS_LABELS[request.status] ?? request.status}
+          <p className="mt-3 text-sm text-ink-muted">
+            They take it to the blood centre, who will ask them for the
+            patient&rsquo;s details. Nothing else is needed from you.
           </p>
         </div>
-      </div>
+      ) : null}
 
-      <div className="app-grid">
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">What was asked for</h2>
-          </div>
-          <div className="ux4g-card-body">
-            <dl className="app-stack-tight">
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.product}</dt>
-                <dd className="ux4g-body-s-default">
-                  {request.product ? productLabel(request.product as Product) : '-'}
-                </dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.units}</dt>
-                <dd className="ux4g-body-s-default app-figure">{request.units}</dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.requestedBloodGroup}</dt>
-                <dd className="ux4g-body-s-default app-figure">
-                  {request.bloodGroup
-                    ? bloodGroupLabel(request.bloodGroup as BloodGroup)
-                    : '-'}
-                </dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">Priority</dt>
-                <dd className="ux4g-body-s-default">
-                  {urgency ? URGENCY_LABELS[urgency] : '-'}
-                </dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.dateRequired}</dt>
-                <dd className="ux4g-body-s-default app-figure">{request.dateRequired}</dd>
-              </div>
-              <div className="app-stack-tight">
-                <dt className="ux4g-label-m-strong">{WORDING.indication}</dt>
-                <dd className="ux4g-body-s-default">{request.indication}</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
+      <PageHeader
+        title={request.requestId ?? 'Blood request'}
+        description={STATUS_LABELS[request.status] ?? request.status}
+        actions={
+          urgency ? (
+            <StatusBadge label={URGENCY_SHORT[urgency]} tone={URGENCY_TONES[urgency]} />
+          ) : undefined
+        }
+      />
 
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">Patient, as recorded at submit</h2>
-            <p className="ux4g-card-sub-title">
-              A snapshot. Later edits to the patient record do not change it.
-            </p>
-          </div>
-          <div className="ux4g-card-body">
-            <dl className="app-stack-tight">
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.patientName}</dt>
-                <dd className="ux4g-body-s-default">{patient['name']}</dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.ipNumber}</dt>
-                <dd className="ux4g-body-s-default app-figure">{patient['ipNo']}</dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">{WORDING.ward}</dt>
-                <dd className="ux4g-body-s-default">{patient['ward']}</dd>
-              </div>
-              <div className="app-row">
-                <dt className="ux4g-label-m-strong">Requested by</dt>
-                <dd className="ux4g-body-s-default">
-                  {doctor['fullName']}
-                  {doctor['provisionalReg'] ? ` · ${doctor['provisionalReg']}` : ''}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </section>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card title="What was asked for">
+          <DescList
+            items={[
+              {
+                term: WORDING.product,
+                value: request.product
+                  ? productLabel(request.product as Product)
+                  : '—',
+              },
+              {
+                term: WORDING.units,
+                value: (
+                  <span className="tabular-nums">{request.units}</span>
+                ),
+              },
+              {
+                term: WORDING.requestedBloodGroup,
+                value: (
+                  <span className="tabular-nums">
+                    {request.bloodGroup
+                      ? bloodGroupLabel(request.bloodGroup as BloodGroup)
+                      : '—'}
+                  </span>
+                ),
+              },
+              {
+                term: 'Priority',
+                value: urgency ? URGENCY_LABELS[urgency] : '—',
+              },
+              {
+                term: WORDING.dateRequired,
+                value: (
+                  <span className="tabular-nums">{request.dateRequired}</span>
+                ),
+              },
+              {
+                term: WORDING.indication,
+                value: request.indication,
+              },
+            ]}
+          />
+        </Card>
+
+        <Card title="Patient, as recorded at submit">
+          <p className="mb-3 text-xs text-ink-subtle">
+            A snapshot. Later edits to the patient record do not change it.
+          </p>
+          <DescList
+            items={[
+              { term: WORDING.patientName, value: patient['name'] ?? '—' },
+              {
+                term: WORDING.ipNumber,
+                value: (
+                  <span className="tabular-nums">
+                    {patient['ipNo'] ?? '—'}
+                  </span>
+                ),
+              },
+              { term: WORDING.ward, value: patient['ward'] ?? '—' },
+              {
+                term: 'Requested by',
+                value: (
+                  <>
+                    {doctor['fullName']}
+                    {doctor['provisionalReg']
+                      ? ` · ${doctor['provisionalReg']}`
+                      : ''}
+                  </>
+                ),
+              },
+            ]}
+          />
+        </Card>
       </div>
 
       {decision ? (
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">What the {WORDING.bloodCentre.toLowerCase()} answered</h2>
-            <p className="ux4g-card-sub-title app-figure">
-              {decision.unitsIssued} of {decision.unitsRequested} {WORDING.units.toLowerCase()}
-            </p>
-          </div>
-          <div className="ux4g-card-body app-stack-tight">
+        <Card
+          title={`What the ${WORDING.bloodCentre.toLowerCase()} answered`}
+          actions={
+            <span className="text-xs tabular-nums text-ink-subtle">
+              {decision.unitsIssued} of {decision.unitsRequested}{' '}
+              {WORDING.units.toLowerCase()}
+            </span>
+          }
+        >
+          <div className="space-y-1.5">
             {decision.note ? (
-              <p className="ux4g-body-s-default">{decision.note}</p>
+              <p className="text-sm text-ink">{decision.note}</p>
             ) : null}
             {decision.demandId ? (
-              <p className="ux4g-body-s-default">
+              <p className="text-sm text-ink-muted">
                 {/*
-                  The shortfall recruits donors, and the doctor should know it.
-                  Cancelling now reaches real people who agreed to come in.
+                  The shortfall recruits donors, and the doctor should know
+                  it. Cancelling now reaches real people who agreed to come
+                  in.
                 */}
-                Donors are being asked for the units the shelf could not cover.
+                Donors are being asked for the units the shelf could not
+                cover.
               </p>
             ) : null}
           </div>
-        </section>
+        </Card>
       ) : null}
 
-      <section className="ux4g-card ux4g-card-outline">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title">{WORDING.crossmatchSample}</h2>
-          <p className="ux4g-card-sub-title">
-            {/*
-              §15: the identifier is unique across the hospital, because it
-              travels on a tube between the ward and the laboratory.
-            */}
-            The identifier is unique across the hospital. More than one sample can
-            be recorded against a request.
-          </p>
-        </div>
+      <Card title={WORDING.crossmatchSample}>
+        <p className="mb-4 text-xs text-ink-subtle">
+          {/*
+            §15: the identifier is unique across the hospital, because it
+            travels on a tube between the ward and the laboratory.
+          */}
+          The identifier is unique across the hospital. More than one sample
+          can be recorded against a request.
+        </p>
 
         {samples.length > 0 ? (
-          <div className="ux4g-card-body app-scroll-x">
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Identifier</th>
-                  <th scope="col">Collected</th>
-                  <th scope="col">By</th>
-                  <th scope="col">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {samples.map((sample) => (
-                  <tr key={sample.id}>
-                    <td className="app-figure">{sample.sampleIdentifier}</td>
-                    <td className="app-figure">{when.format(sample.collectedAt)}</td>
-                    <td>{sample.collectedBy ?? '-'}</td>
-                    <td>{sample.note ?? '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mb-4">
+            <DataTable
+              columns={sampleColumns}
+              rows={samples}
+              getRowKey={(s) => s.id}
+            />
           </div>
         ) : null}
 
         {request.status !== 'cancelled' ? (
-          <div className="ux4g-card-body">
-            <SampleForm requestUuid={request.id} />
-          </div>
+          <SampleForm requestUuid={request.id} />
         ) : null}
-      </section>
+      </Card>
 
       {request.status === 'cancelled' ? (
-        <div className="ux4g-alert ux4g-alert-warning" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              Cancelled: {request.cancelReason}
-            </p>
-          </div>
+        <div
+          role="status"
+          className="rounded-control border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-ink"
+        >
+          <p>
+            <span className="font-medium text-warning">Cancelled:</span>{' '}
+            {request.cancelReason}
+          </p>
         </div>
       ) : null}
 
       {canCancel ? (
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">No longer needed?</h2>
-            <p className="ux4g-card-sub-title">
-              {/*
-                §3: the one post-submit action a doctor has, "and without it the
-                centre chases units nobody needs".
-              */}
-              The patient improved, died, was referred, or it was raised in error.
-            </p>
-          </div>
-          <div className="ux4g-card-body">
-            <CancelRequestForm requestUuid={request.id} hasDecision={decision !== undefined} />
-          </div>
-        </section>
+        <Card title="No longer needed?">
+          <p className="mb-4 text-xs text-ink-subtle">
+            {/*
+              §3: the one post-submit action a doctor has, "and without it
+              the centre chases units nobody needs".
+            */}
+            The patient improved, died, was referred, or it was raised in
+            error.
+          </p>
+          <CancelRequestForm
+            requestUuid={request.id}
+            hasDecision={decision !== undefined}
+          />
+        </Card>
       ) : null}
 
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/dashboard">
-        Back to the dashboard
-      </Link>
-    </AppShell>
+      <div>
+        <Link
+          href="/dashboard"
+          className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+        >
+          ← Back to the dashboard
+        </Link>
+      </div>
+    </KitShell>
   );
 }

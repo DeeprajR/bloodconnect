@@ -27,7 +27,7 @@ Section references written as §n point at the specification.
 
 ## Where the build is
 
-**Milestone A reached. The loop in §1 closes.**
+**Milestone C reached. The loop in §1 closes, and the system is demonstrable.**
 
 ```
 P0  Foundations                  ✅
@@ -39,10 +39,17 @@ P5  Module 1 depth               ✅
 P6  Centre depth, collisions    ✅
 P7  Bot depth, the interview    ✅
 P7b The request slip             ✅  (ADR 0010)
-P8  Endings sweep                ◐  Milestone B, one row short (ADR 0011)
-P9  Volunteer + public board     ← next
-…
+P8  Endings sweep                ✅  ▲ Milestone B (ADR 0011, ADR 0012)
+P9  Volunteer + public board     ✅  (ADR 0013)
+P10 Control panel                ✅  (ADR 0014)
+P11 Tag reader integration       ⏸  gated on hardware
+P12 Vision, shadow mode          ⏸  gated on hardware
+P13 Demo readiness               ✅  ▲ Milestone C
 ```
+
+Both applications' UX4G-based UI has also since been replaced by an in-repo
+kit, `@blood-connect/ui`, shared by `apps/web` and `apps/admin` on two
+accent colours (ADR 0015).
 
 A doctor raises a request; the centre answers it from the shelf and whatever stock cannot cover
 becomes demand **in the same transaction**; the bot recruits the nearest eligible donors; one is
@@ -133,12 +140,65 @@ columns. The unit number and the date stay, because that is the donation record.
 `pnpm smoke:bot` runs the whole thing as `app_bot`, which is what caught it.
 ([ADR 0009](docs/adr/0009-the-interview-and-an-erasure-that-did-not-land.md))
 
-**Next, and a change of shape.** The doctor app becomes a **request slip**: blood group,
+**A change of shape.** The doctor app becomes a **request slip**: blood group,
 product, units, urgency, and an ID to read aloud to the patient's bystander, who carries it
 to the blood centre. Everything else about the request, the patient, the admission, the
 clinical context, the crossmatch sample, is entered at the counter, because a doctor
 handling several patients at once is the wrong person to be typing an address.
 ([ADR 0010](docs/adr/0010-the-doctor-app-becomes-a-request-slip.md))
+
+**P8** closed every ⚠︎ ending §8's flow index named, one flow short at first: the account
+update-request queue had never been built, so its own ⚠︎ ending had nowhere to close. Built in
+[ADR 0012](docs/adr/0012-the-update-queue-holds-two-fields.md); recorded as reached short in
+[ADR 0011](docs/adr/0011-the-endings-sweep-and-one-milestone-short.md) rather than quietly
+patched over. Two endings that were genuinely missing are now built too: declining the
+acknowledgement leaves a donor registered and dormant rather than nothing at all, and somebody
+still holding a card for a request that has filled is told the moment it fills.
+
+**P9** built the volunteer dashboard as `packages/volunteer`, a module whose own boundary test
+reads its source and fails on the name of any table holding a patient, a doctor, a donor or a
+bag: eight pressure tiles, demands behind a tile, the generated share message, and the public
+board behind `flag.public_board`. ([ADR 0013](docs/adr/0013-the-volunteer-board-cannot-see-a-person.md))
+
+**P10** built the control panel, administrator-only, in the administration app, with no
+clinical function: dependency tiles that do the job rather than ping it, the silent-failure
+board §11.9 names, per-surface and per-route metrics, a screen that follows one unit of blood
+end to end from a correlation id, and the resolved configuration, read-only. The container-
+stopping test earned its place immediately, catching a storage tile that stayed green with
+MinIO stopped. ([ADR 0014](docs/adr/0014-the-control-panel-and-what-it-cannot-see.md))
+
+**P13, demo readiness.** The seed now admits patients (`pnpm db:seed`, `SYN-PT-`/`SYN-IP-`
+prefixed) so the walkthrough below starts from a stocked, populated database rather than a
+patient typed in by hand first. `pnpm bot:diag` checks the bot's database connection, chat
+channel and contract version without starting the ticker or the conversation loop, useful
+before a demo or when the loop looks stuck. `LICENSE` and `NOTICE` (Apache-2.0, §12.7) land
+here too — **the copyright holder in `NOTICE` is a placeholder**, not a confirmed legal name;
+see the file itself.
+
+### The walkthrough
+
+The loop in §1, end to end, the thing a demo audience is actually shown:
+
+1. Sign in as the doctor and submit a request for **4 units of PRBC, O−** → get a request
+   number back, read-aloud length (`DDMMYY-NNNNN`).
+2. Sign in as the blood centre and decide it from the queue: whatever is on the shelf is
+   issued oldest-expiry-first: whatever is short raises donor demand **in the same
+   transaction**.
+3. `pnpm bot` (or leave it running) picks the demand up on its next tick; the nearest wave of
+   donors is asked first, visible in the seeded donor pool's spread across localities.
+4. A donor accepts, answers the six screening questions, and confirms — told the hospital and
+   a time.
+5. **Cancel the request**, from the doctor's own request view. Every donor who had agreed to
+   come is stood down immediately, in the same transaction that releases any units the centre
+   was holding. This is the step most systems of this kind get wrong, and it is worth showing
+   deliberately rather than skipping to the happy path.
+6. Re-raise the request, let a donor confirm again, then mark them **Donated** at the centre's
+   counter. Their interval rolls forward, they are thanked with a next-eligible date, and the
+   demand closes once every unit is in.
+
+Run `pnpm bot:diag` first if any step involving the bot does not behave as expected — it says
+which of the database, the chat channel or the contract version is the problem, rather than
+leaving that to be guessed from the ticker's log output.
 
 Run `pnpm db:seed` and sign in as any of:
 
@@ -201,6 +261,7 @@ exists will not re-run it: `docker compose down -v` then `pnpm up` to start clea
 | `pnpm smoke:centre` | Runs the centre's writes as `app_web` and asserts what that role must not be able to do. The suite connects as `migrator`, so it proves nothing about the grants; this does |
 | `pnpm smoke:bot` | The same for `app_bot`: the interview, the profile edit, erasure, and the six things the bot must not be able to reach |
 | `pnpm bot` | The donor bot: long-polls the channel and ticks. `CHANNEL=memory` needs no token |
+| `pnpm bot:diag` | Checks the bot's database, chat channel and contract version and says what to do about each failure, without starting the ticker or conversation loop |
 | `pnpm check:bot-migrations` | Greps the bot's migrations for a table the web release owns (§2.1) |
 | `pnpm db:generate` / `pnpm db:generate:bot` | Generate a migration from the Drizzle schema, for either set |
 | `pnpm db:migrate` / `pnpm db:migrate:bot` / `pnpm db:seed` | Apply either migration set / seed reference data |
@@ -254,5 +315,7 @@ Because there is no second reader on a commit here, CI is the reviewer:
 
 ## Licence
 
-Apache-2.0 (§12.7). The `LICENSE` and `NOTICE` files land in P12 with the rest of the
-demonstration packaging.
+Apache-2.0 (§12.7). See [`LICENSE`](LICENSE) for the full text and
+[`NOTICE`](NOTICE) for attribution — **the copyright holder named there is a
+placeholder**, pending confirmation from whichever hospital, university or
+other entity this is actually released in the name of.

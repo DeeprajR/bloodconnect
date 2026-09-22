@@ -1,0 +1,29 @@
+{
+  "name": "@blood-connect/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./tokens/base.css": "./src/tokens/base.css",
+    "./tokens/accent-medical.css": "./src/tokens/accent-medical.css",
+    "./tokens/accent-admin.css": "./src/tokens/accent-admin.css",
+    "./tokens/typography.css": "./src/tokens/typography.css",
+    "./tokens/preflight.css": "./src/tokens/preflight.css",
+    "./tokens/index.css": "./src/tokens/index.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": { "build": "tsc -b" },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}

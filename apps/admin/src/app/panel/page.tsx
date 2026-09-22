@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { after } from 'next/server';
 
-import { AppShell } from '../shell';
+import { PageHeader, linkButtonClasses } from '@blood-connect/ui';
+
+import { KitShell } from '../kit-shell';
 import { AlertRows } from './alert-rows';
 import { HealthTiles } from './health-tiles';
 import { MetricsTables } from './metrics-tables';
@@ -86,43 +88,43 @@ export default async function PanelPage() {
   const now = ctx.clock.now();
 
   return (
-    <AppShell actor={actor} title="Control panel">
-      <div className="app-row-split">
-        <div className="app-stack-tight">
-          <h1 className="ux4g-heading-l-strong">Control panel</h1>
-          <p className="ux4g-body-m-default">
-            Checked at {timeFormat.format(now)}. This screen reads. It cannot answer a
-            request, resolve a quarantine or change a threshold.
-          </p>
-        </div>
-        <Link className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target" href="/panel/trace">
-          Follow one request
-        </Link>
-      </div>
+    <KitShell currentPath="/panel" currentTitle="Control panel">
+      <PageHeader
+        title="Control panel"
+        description={`Checked at ${timeFormat.format(now)}. This screen reads. It cannot answer a request, resolve a quarantine or change a threshold.`}
+        actions={
+          <Link href="/panel/trace" className={linkButtonClasses({ variant: 'secondary' })}>
+            Follow one request
+          </Link>
+        }
+      />
 
-      <section className="app-stack-tight" aria-label="Dependencies">
-        <h2 className="ux4g-heading-s-strong">Dependencies</h2>
+      <section className="space-y-3" aria-label="Dependencies">
+        <h2 className="text-sm font-semibold text-ink">Dependencies</h2>
         <HealthTiles tiles={tiles} heartbeats={board.heartbeats} />
       </section>
 
-      <section className="app-stack-tight" aria-label="What is waiting">
-        <h2 className="ux4g-heading-s-strong">What is waiting on somebody</h2>
+      <section className="space-y-3" aria-label="What is waiting">
+        <h2 className="text-sm font-semibold text-ink">What is waiting on somebody</h2>
         <AlertRows alerts={board.alerts} gaps={board.gaps} />
       </section>
 
-      <section className="app-stack-tight" aria-label="Traffic">
-        <h2 className="ux4g-heading-s-strong">Traffic, last 24 hours</h2>
+      <section className="space-y-3" aria-label="Traffic">
+        <h2 className="text-sm font-semibold text-ink">Traffic, last 24 hours</h2>
         <MetricsTables surfaces={surfaces} routes={routes} statuses={statuses} />
       </section>
 
-      <section className="app-stack-tight">
-        <h2 className="ux4g-heading-s-strong">This deployment</h2>
-        <p className="ux4g-body-m-default">
-          Which configuration is actually in force, and which migrations this database
-          has.{' '}
-          <Link href="/panel/deployment">Open the deployment view</Link>.
+      <section className="space-y-1.5">
+        <h2 className="text-sm font-semibold text-ink">This deployment</h2>
+        <p className="text-sm text-ink-muted">
+          Which configuration is actually in force, and which migrations this
+          database has.{' '}
+          <Link href="/panel/deployment" className="font-medium text-primary hover:underline">
+            Open the deployment view
+          </Link>
+          .
         </p>
       </section>
-    </AppShell>
+    </KitShell>
   );
 }

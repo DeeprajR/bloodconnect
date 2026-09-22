@@ -3,13 +3,14 @@ import type { TrendPoint } from '@blood-connect/volunteer';
 /**
  * Units asked for against units met, by week (§6).
  *
- * Shown lightly, and deliberately so. §6 calls this the only place aggregate
- * history appears anywhere in the system, and a volunteer wants one thing from
- * it: is the effort working? A chart with axes would invite the second
- * question, which is a report, and a report about blood belongs to the centre.
+ * Shown lightly, and deliberately so. §6 calls this the only place
+ * aggregate history appears anywhere in the system, and a volunteer wants
+ * one thing from it: is the effort working? A chart with axes would
+ * invite the second question, which is a report, and a report about
+ * blood belongs to the centre.
  *
- * Bars are proportional, and every bar also carries its two numbers, because
- * §11.10 does not stop applying when a thing looks like a graph.
+ * Bars are proportional, and every bar also carries its two numbers,
+ * because §11.10 does not stop applying when a thing looks like a graph.
  */
 export function TrendStrip({
   points,
@@ -20,7 +21,7 @@ export function TrendStrip({
 }) {
   if (points.length === 0) {
     return (
-      <p className="ux4g-label-m-default">
+      <p className="text-sm text-ink-muted">
         No history for {group} in the last six weeks.
       </p>
     );
@@ -29,52 +30,75 @@ export function TrendStrip({
   const peak = Math.max(1, ...points.map((point) => point.unitsRequired));
 
   return (
-    <div className="app-stack-tight">
-      <h3 className="ux4g-label-l-strong">Last six weeks</h3>
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-ink">Last six weeks</h3>
 
-      <table className="ux4g-table app-trend">
-        <caption className="app-sr-only">
-          Units needed and units met per week, for {group}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Week of</th>
-            <th scope="col">Needed</th>
-            <th scope="col">Met</th>
-            <th scope="col">
-              <span className="app-sr-only">Proportion met</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((point) => (
-            <tr key={point.weekStart}>
-              <th scope="row" className="app-figure">
-                {point.weekStart}
+      <div className="overflow-x-auto rounded-card border border-border bg-surface">
+        <table className="w-full border-collapse text-sm">
+          <caption className="sr-only">
+            Units needed and units met per week, for {group}
+          </caption>
+          <thead>
+            <tr className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-ink-subtle">
+              <th scope="col" className="px-4 py-2 text-left font-semibold">
+                Week of
               </th>
-              <td className="app-figure">{point.unitsRequired}</td>
-              <td className="app-figure">{point.unitsMet}</td>
-              <td>
-                <span
-                  className="app-trend-track"
-                  style={{ inlineSize: `${(point.unitsRequired / peak) * 100}%` }}
-                >
-                  <span
-                    className="app-trend-met"
-                    style={{
-                      inlineSize: `${
-                        point.unitsRequired === 0
-                          ? 0
-                          : Math.min(100, (point.unitsMet / point.unitsRequired) * 100)
-                      }%`,
-                    }}
-                  />
-                </span>
-              </td>
+              <th scope="col" className="px-4 py-2 text-right font-semibold">
+                Needed
+              </th>
+              <th scope="col" className="px-4 py-2 text-right font-semibold">
+                Met
+              </th>
+              <th scope="col" className="w-[40%] px-4 py-2 font-semibold">
+                <span className="sr-only">Proportion met</span>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {points.map((point) => (
+              <tr
+                key={point.weekStart}
+                className="border-b border-border last:border-0"
+              >
+                <th
+                  scope="row"
+                  className="px-4 py-2.5 text-left align-middle font-normal tabular-nums text-ink"
+                >
+                  {point.weekStart}
+                </th>
+                <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                  {point.unitsRequired}
+                </td>
+                <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                  {point.unitsMet}
+                </td>
+                <td className="px-4 py-2.5 align-middle">
+                  <span
+                    className="block h-2 rounded-full bg-border"
+                    style={{
+                      inlineSize: `${String((point.unitsRequired / peak) * 100)}%`,
+                    }}
+                  >
+                    <span
+                      className="block h-full rounded-full bg-success"
+                      style={{
+                        inlineSize: `${String(
+                          point.unitsRequired === 0
+                            ? 0
+                            : Math.min(
+                                100,
+                                (point.unitsMet / point.unitsRequired) * 100,
+                              ),
+                        )}%`,
+                      }}
+                    />
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

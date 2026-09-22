@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { Card, PageHeader, StatusBadge, linkButtonClasses } from '@blood-connect/ui';
+
 import { CentreShell } from '../centre-shell';
 import { LiveRefresh } from '../volunteer/live';
 import { RecruitButton } from '../centre-forms';
@@ -22,8 +24,19 @@ import { STOCK_DISPLAY_ORDER, WORDING, bloodGroupLabel } from '@blood-connect/do
 
 export const metadata: Metadata = { title: 'Blood centre · Blood Connect' };
 
+// The header CTA and the "register" card's secondary links are <Link>s
+// styled as <Button>; `linkButtonClasses` (PR-11a) is the shared shape
+// for that pattern (see the ui-kit-migration handoff doc). LINK_GHOST is
+// a plain colored text link, not a button shape, so it isn't part of
+// that helper.
+const LINK_PRIMARY = linkButtonClasses({ variant: 'primary' });
+const LINK_SECONDARY = linkButtonClasses({ variant: 'secondary' });
+const LINK_GHOST = 'text-sm font-medium text-primary hover:underline';
+
 export default async function CentrePage() {
   const actor = await requireAccess('/centre');
+  if (actor.kind !== 'user') return null;
+
   const ctx = await useCaseContext(actor);
 
   const [stock, queue, demands, counts, quarantined, discrepancies, upcoming, completed] =
@@ -44,9 +57,9 @@ export default async function CentrePage() {
   /**
    * Shown in the clinical order, chart and table alike.
    *
-   * `stockByGroup` returns storage order. Ordering only the chart would leave
-   * the table under it disagreeing with the bars directly above, which is worse
-   * than either order on its own.
+   * `stockByGroup` returns storage order. Ordering only the chart would
+   * leave the table under it disagreeing with the bars directly above,
+   * which is worse than either order on its own.
    */
   const byGroup = new Map(stock.map((row) => [row.bloodGroup, row]));
   const shelf = STOCK_DISPLAY_ORDER.map((group) => byGroup.get(group)).filter(
@@ -55,7 +68,7 @@ export default async function CentrePage() {
   const overdue = queue.filter((row) => row.dateRequired < today);
 
   return (
-    <CentreShell actor={actor} title="Blood centre" current="dashboard">
+    <CentreShell actor={actor} title="Blood centre" currentPath="/centre">
       {/*
         Live, and without taking the page away from whoever is reading it.
         `router.refresh()` re-runs this server component and swaps the data in
@@ -65,69 +78,75 @@ export default async function CentrePage() {
       */}
       <LiveRefresh everySeconds={30} />
 
-      <div className="app-row-split">
-        <div className="app-stack-tight">
-          <h1 className="ux4g-heading-l-strong">Overview</h1>
-          <p className="ux4g-body-m-default">
-            Answer requests from stock. Whatever the shelf cannot cover becomes demand
-            for real donors, in the same transaction.
-          </p>
-        </div>
-        <Link className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target" href="/centre/requests">
-          {queue.length === 0 ? 'Request queue' : `Answer ${queue.length} waiting`}
-        </Link>
-      </div>
+      <PageHeader
+        title="Overview"
+        description="Answer requests from stock. Whatever the shelf cannot cover becomes demand for real donors, in the same transaction."
+        actions={
+          <Link href="/centre/requests" className={LINK_PRIMARY}>
+            {queue.length === 0
+              ? 'Request queue'
+              : `Answer ${String(queue.length)} waiting`}
+          </Link>
+        }
+      />
 
       {discrepancies.length > 0 ? (
-        <div className="ux4g-alert ux4g-alert-error" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              {/*
-                §4: a discrepancy never clears itself, so it is the one alarm on
-                this page that stays until a person has physically looked.
-              */}
-              {discrepancies.length} open tag{' '}
-              {discrepancies.length === 1 ? 'discrepancy' : 'discrepancies'}. Until each is
-              closed, two units may carry the same tag.{' '}
-              <Link href="/centre/tags">Open them</Link>.
-            </p>
-          </div>
-        </div>
+        <p
+          role="alert"
+          className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-ink"
+        >
+          {/*
+            §4: a discrepancy never clears itself, so it is the one alarm
+            on this page that stays until a person has physically looked.
+          */}
+          <span className="font-medium text-danger">
+            {discrepancies.length} open tag{' '}
+            {discrepancies.length === 1 ? 'discrepancy' : 'discrepancies'}.
+          </span>{' '}
+          Until each is closed, two units may carry the same tag.{' '}
+          <Link href="/centre/tags" className="font-medium underline">
+            Open them
+          </Link>
+          .
+        </p>
       ) : null}
 
       {overdue.length > 0 ? (
-        <div className="ux4g-alert ux4g-alert-error" role="alert">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              {overdue.length} {overdue.length === 1 ? 'request is' : 'requests are'} past
-              the day the blood was needed.{' '}
-              <Link href="/centre/requests">Open the queue</Link>.
-            </p>
-          </div>
-        </div>
+        <p
+          role="alert"
+          className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-ink"
+        >
+          <span className="font-medium text-danger">
+            {overdue.length}{' '}
+            {overdue.length === 1 ? 'request is' : 'requests are'} past the
+            day the blood was needed.
+          </span>{' '}
+          <Link href="/centre/requests" className="font-medium underline">
+            Open the queue
+          </Link>
+          .
+        </p>
       ) : null}
 
-      <section className="ux4g-card ux4g-card-outline" aria-labelledby="stock">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title" id="stock">
-            {WORDING.stockOnHand} against the {WORDING.stockFloor.toLowerCase()}
-          </h2>
-          <p className="ux4g-card-sub-title">
-            {/*
-              Red cells only, and the reason is worth stating on the screen: a
-              floor met by plasma would read as comfortable while there was
-              nothing a walk-in donor could replace.
-            */}
-            Whole blood and packed red cells. The components a donor can actually
-            replace. Reserved units are excluded; they belong to a decision already
-            made.
-          </p>
-        </div>
-        <div className="ux4g-card-body app-stack">
+      <Card
+        title={`${WORDING.stockOnHand} against the ${WORDING.stockFloor.toLowerCase()}`}
+      >
+        <p className="mb-4 text-xs text-ink-subtle">
           {/*
-            The picture first, then the numbers behind it. The chart answers
-            "which groups need donors tonight" at a glance; the table below is
-            what somebody reads once they know which row to look at.
+            Red cells only, and the reason is worth stating on the
+            screen: a floor met by plasma would read as comfortable while
+            there was nothing a walk-in donor could replace.
+          */}
+          Whole blood and packed red cells. The components a donor can
+          actually replace. Reserved units are excluded; they belong to a
+          decision already made.
+        </p>
+
+        <div className="space-y-4">
+          {/*
+            The picture first, then the numbers behind it. StockChart is
+            still UX4G-styled — its host card is kit, its bars aren't
+            yet. Ports in a follow-up.
           */}
           <StockChart
             rows={shelf}
@@ -137,186 +156,221 @@ export default async function CentrePage() {
             }}
           />
 
-          <div className="app-scroll-x">
-          <table className="ux4g-table">
-            <thead>
-              <tr>
-                <th scope="col">Group</th>
-                <th scope="col">On the shelf</th>
-                <th scope="col">Reserved</th>
-                <th scope="col">Floor</th>
-                <th scope="col">Short by</th>
-                <th scope="col">Expiring within 7 days</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shelf.map((row) => (
-                <tr key={row.bloodGroup}>
-                  <td className="app-figure">{bloodGroupLabel(row.bloodGroup)}</td>
-                  <td className="app-figure">{row.onShelf}</td>
-                  <td className="app-figure">{row.reserved}</td>
-                  <td className="app-figure">{row.floor}</td>
-                  <td className="app-figure">
-                    {row.short > 0 ? (
-                      <span className="ux4g-badge-digit-danger">{row.short}</span>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="app-figure">
-                    {row.expiringSoon > 0 ? row.expiringSoon : '-'}
-                  </td>
+          <div className="overflow-x-auto rounded-card border border-border">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-ink-subtle">
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    Group
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    On the shelf
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Reserved
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Floor
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Short by
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Expiring within 7 days
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {shelf.map((row) => (
+                  <tr
+                    key={row.bloodGroup}
+                    className="border-b border-border last:border-0"
+                  >
+                    <td className="px-4 py-2.5 align-middle font-medium tabular-nums text-ink">
+                      {bloodGroupLabel(row.bloodGroup)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                      {row.onShelf}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                      {row.reserved}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                      {row.floor}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle">
+                      {row.short > 0 ? (
+                        <StatusBadge
+                          label={String(row.short)}
+                          tone="danger"
+                        />
+                      ) : (
+                        <span className="text-ink-muted">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                      {row.expiringSoon > 0 ? row.expiringSoon : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-        <div className="ux4g-card-footer app-stack-tight">
-          <form action={recruitForFloorAction}>
-            <RecruitButton shortGroups={short.length} />
-          </form>
-          <p className="ux4g-label-m-default">
-            {/* The partial unique index makes this safe to press twice (§5.6). */}
-            One demand per short group. A group that already has an open floor
-            demand is skipped, so pressing this twice recruits nobody twice.
-          </p>
-        </div>
-      </section>
 
-      {/*
-        Second section, and the other half of the day's work: the shelf above,
-        the people who fill it here.
-      */}
-      <section className="ux4g-card ux4g-card-outline" aria-labelledby="donations">
-        <div className="ux4g-card-header app-row-split">
-          <div className="app-stack-tight">
-            <h2 className="ux4g-card-title" id="donations">
-              Donations
-            </h2>
-            <p className="ux4g-card-sub-title">
-              Donors expected at the counter, and what has already been collected.
+          <div className="flex flex-col gap-2 border-t border-border pt-4">
+            <form action={recruitForFloorAction}>
+              <RecruitButton shortGroups={short.length} />
+            </form>
+            <p className="text-xs text-ink-subtle">
+              {/* The partial unique index makes this safe to press twice (§5.6). */}
+              One demand per short group. A group that already has an open
+              floor demand is skipped, so pressing this twice recruits
+              nobody twice.
             </p>
           </div>
-          <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/centre/donations">
-            All donations
-          </Link>
         </div>
+      </Card>
 
-        <div className="ux4g-card-body app-stack">
-          <div className="app-stack-tight">
-            <h3 className="ux4g-label-l-strong">Coming in</h3>
+      {/*
+        Second section, and the other half of the day's work: the shelf
+        above, the people who fill it here.
+      */}
+      <Card
+        title="Donations"
+        actions={
+          <Link href="/centre/donations" className={LINK_GHOST}>
+            All donations →
+          </Link>
+        }
+      >
+        <p className="mb-4 text-xs text-ink-subtle">
+          Donors expected at the counter, and what has already been
+          collected.
+        </p>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-ink">Coming in</h3>
             <UpcomingDonations rows={upcoming} />
           </div>
 
-          <div className="app-stack-tight">
-            <h3 className="ux4g-label-l-strong">Already given</h3>
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-ink">Already given</h3>
             <CompletedDonations rows={completed} />
           </div>
         </div>
-      </section>
+      </Card>
 
-      <div className="app-grid">
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">Recruitment in progress</h2>
-          </div>
-          <div className="ux4g-card-body app-stack-tight">
-            <p className="ux4g-body-m-default">
-              <span className="app-figure">{counts.openDemands}</span> open{' '}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card title="Recruitment in progress">
+          <div className="space-y-3">
+            <p className="text-sm text-ink">
+              <span className="text-lg font-semibold tabular-nums">
+                {counts.openDemands}
+              </span>{' '}
+              open{' '}
               {counts.openDemands === 1 ? 'demand' : 'demands'}.
             </p>
             {counts.awaitingImport > 0 ? (
-              <p className="ux4g-label-m-default">
+              <p className="text-xs text-ink-muted">
                 {/*
-                  The bot polls for these. Until it runs, "raised" and "donors
-                  contacted" are different things, and the screen says so.
+                  The bot polls for these. Until it runs, "raised" and
+                  "donors contacted" are different things, and the screen
+                  says so.
                 */}
-                <span className="app-figure">{counts.awaitingImport}</span> not yet picked
-                up by the donor bot. Nobody has been contacted for those.
+                <span className="tabular-nums">{counts.awaitingImport}</span>{' '}
+                not yet picked up by the donor bot. Nobody has been
+                contacted for those.
               </p>
             ) : null}
-            <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/centre/demands">
-              Open demands
+            <Link href="/centre/demands" className={LINK_GHOST}>
+              Open demands →
             </Link>
           </div>
-        </section>
+        </Card>
 
-        <section className="ux4g-card ux4g-card-outline">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title">The register</h2>
-          </div>
-          <div className="ux4g-card-body app-stack-tight">
-            <p className="ux4g-body-m-default">
-              <span className="app-figure">{counts.reservedBags}</span> units reserved
-              against a decision.
+        <Card title="The register">
+          <div className="space-y-3">
+            <p className="text-sm text-ink">
+              <span className="text-lg font-semibold tabular-nums">
+                {counts.reservedBags}
+              </span>{' '}
+              units reserved against a decision.
             </p>
             {quarantined.length > 0 ? (
-              <p className="ux4g-label-m-default">
+              <p className="text-xs text-ink-muted">
                 {/*
-                  Quarantine is a waiting room, and a waiting room nobody can see
-                  is where units are forgotten (§4).
+                  Quarantine is a waiting room, and a waiting room nobody
+                  can see is where units are forgotten (§4).
                 */}
-                <span className="app-figure">{quarantined.length}</span> in{' '}
-                {WORDING.quarantine.toLowerCase()}, waiting for a decision
-                {quarantined.some((row) => row.overdue) ? ', some overdue' : ''}.
+                <span className="tabular-nums">{quarantined.length}</span>{' '}
+                in {WORDING.quarantine.toLowerCase()}, waiting for a
+                decision
+                {quarantined.some((row) => row.overdue) ? ', some overdue' : ''}
+                .
               </p>
             ) : null}
-            <div className="app-row">
-              <Link
-                className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
-                href="/centre/stock/new"
-              >
+            <div className="flex flex-wrap gap-2">
+              <Link href="/centre/stock/new" className={LINK_SECONDARY}>
                 Register a bag
               </Link>
-              <Link
-                className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target"
-                href="/centre/tags"
-              >
+              <Link href="/centre/tags" className={LINK_SECONDARY}>
                 Scan a tag
               </Link>
-              <Link className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md" href="/centre/stock">
-                View stock
+              <Link href="/centre/stock" className={LINK_GHOST}>
+                View stock →
               </Link>
-              <Link
-                className="ux4g-btn ux4g-btn-text-primary ux4g-btn-md"
-                href="/centre/quarantine"
-              >
-                {WORDING.quarantine}
+              <Link href="/centre/quarantine" className={LINK_GHOST}>
+                {WORDING.quarantine} →
               </Link>
             </div>
           </div>
-        </section>
+        </Card>
       </div>
 
       {demands.length > 0 ? (
-        <section className="ux4g-card ux4g-card-outline" aria-labelledby="open-demands">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title" id="open-demands">
-              Open {WORDING.donorDemand.toLowerCase()}
-            </h2>
-          </div>
-          <div className="ux4g-card-body app-scroll-x">
-            <table className="ux4g-table">
+        <Card title={`Open ${WORDING.donorDemand.toLowerCase()}`}>
+          <div className="overflow-x-auto rounded-card border border-border">
+            <table className="w-full border-collapse text-sm">
               <thead>
-                <tr>
-                  <th scope="col">Group</th>
-                  <th scope="col">Units</th>
-                  <th scope="col">Raised by</th>
-                  <th scope="col">Notified</th>
-                  <th scope="col">Confirmed</th>
+                <tr className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-ink-subtle">
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    Group
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Units
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left font-semibold">
+                    Raised by
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Notified
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-right font-semibold">
+                    Confirmed
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {demands.slice(0, 8).map((demand) => (
-                  <tr key={demand.id}>
-                    <td className="app-figure">{demand.bloodGroup}</td>
-                    <td className="app-figure">{demand.units}</td>
-                    <td>
-                      {demand.trigger === 'stock_floor' ? 'Stock floor' : 'Request shortfall'}
+                  <tr
+                    key={demand.id}
+                    className="border-b border-border last:border-0"
+                  >
+                    <td className="px-4 py-2.5 align-middle font-medium tabular-nums text-ink">
+                      {demand.bloodGroup}
                     </td>
-                    <td className="app-figure">{demand.donorsNotified}</td>
-                    <td className="app-figure">
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                      {demand.units}
+                    </td>
+                    <td className="px-4 py-2.5 align-middle text-ink">
+                      {demand.trigger === 'stock_floor'
+                        ? 'Stock floor'
+                        : 'Request shortfall'}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
+                      {demand.donorsNotified}
+                    </td>
+                    <td className="px-4 py-2.5 text-right align-middle tabular-nums text-ink">
                       {demand.confirmedUnits} / {demand.units}
                     </td>
                   </tr>
@@ -324,12 +378,17 @@ export default async function CentrePage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
       ) : null}
 
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre/settings">
-        Centre settings
-      </Link>
+      <div>
+        <Link
+          href="/centre/settings"
+          className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+        >
+          Centre settings →
+        </Link>
+      </div>
     </CentreShell>
   );
 }

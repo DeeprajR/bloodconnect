@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { Card, DataTable, PageHeader, type Column } from '@blood-connect/ui';
+
 import { CentreShell } from '../../../centre-shell';
 import { RosterMarkForm, WalkInForm } from '../../../centre-collision-forms';
 import { requireAccess, useCaseContext } from '@/lib/guards';
@@ -17,6 +19,9 @@ const OUTCOME_LABELS: Readonly<Record<string, string>> = {
   cancelled: 'Cancelled',
   waitlisted: 'On the waiting list',
 };
+
+type RosterRow = Awaited<ReturnType<typeof listRoster>>[number];
+type WalkInRow = Awaited<ReturnType<typeof listWalkIns>>[number];
 
 /**
  * The donors coming in for one demand (§4, §8.3).
@@ -48,181 +53,157 @@ export default async function RosterPage({
 
   const open = demand.status === 'open' || demand.status === 'fulfilled';
 
-  return (
-    <CentreShell actor={actor} title="Donors coming in">
-      <div className="app-stack-tight">
-        <h1 className="ux4g-heading-l-strong">
-          {bloodGroupLabel(demand.bloodGroup as never)} · {productLabel(demand.product as never)}
-        </h1>
-        <p className="ux4g-body-m-default">
-          {demand.units} {demand.units === 1 ? 'unit' : 'units'} wanted by{' '}
-          <span className="app-figure">{demand.dateRequired}</span>. {demand.completedUnits}{' '}
-          collected from the donors we asked
-          {walkIns.length > 0 ? (
-            <>
-              , and <span className="app-figure">{walkIns.length}</span> from people who
-              simply came in
-            </>
-          ) : null}
-          .
-        </p>
-      </div>
+  const walkInColumns: Column<WalkInRow>[] = [
+    { key: 'donor', header: 'Donor', cell: (r) => r.donorName },
+    {
+      key: 'group',
+      header: 'Group',
+      cell: (r) => <span className="tabular-nums">{bloodGroupLabel(r.bloodGroup as never)}</span>,
+    },
+    {
+      key: 'unit',
+      header: WORDING.unitNumber,
+      cell: (r) => <span className="font-mono tabular-nums">{r.bagIdentifier}</span>,
+    },
+    { key: 'on', header: 'On', cell: (r) => <span className="tabular-nums">{r.donatedOn}</span> },
+  ];
 
-      <section className="ux4g-card ux4g-card-outline" aria-labelledby="expected">
-        <div className="ux4g-card-header">
-          <h2 className="ux4g-card-title" id="expected">
-            Expected at the counter
-          </h2>
-          <p className="ux4g-card-sub-title">
+  const settledColumns: Column<RosterRow>[] = [
+    { key: 'donor', header: 'Donor', cell: (r) => r.donorName },
+    {
+      key: 'outcome',
+      header: 'Outcome',
+      cell: (r) => OUTCOME_LABELS[r.status] ?? r.status,
+    },
+    {
+      key: 'unit',
+      header: WORDING.unitNumber,
+      cell: (r) => (
+        <span className="font-mono tabular-nums">{r.bagIdentifier ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'typed',
+      header: 'Typed as',
+      cell: (r) => (
+        <span className="tabular-nums">
+          {r.donatedBloodGroup === null
+            ? '—'
+            : bloodGroupLabel(r.donatedBloodGroup as never)}
+          {r.donatedBloodGroup !== null && r.donatedBloodGroup !== r.bloodGroup ? (
+            <span className="text-ink-subtle">
+              {' '}
+              (told us {bloodGroupLabel(r.bloodGroup as never)})
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      key: 'on',
+      header: 'On',
+      cell: (r) => <span className="tabular-nums">{r.donatedAt ?? '—'}</span>,
+    },
+  ];
+
+  return (
+    <CentreShell actor={actor} title="Roster" currentPath="/centre/demands">
+      <PageHeader
+        title={`${bloodGroupLabel(demand.bloodGroup as never)} · ${productLabel(demand.product as never)}`}
+        description={`${demand.units} ${demand.units === 1 ? 'unit' : 'units'} wanted by ${demand.dateRequired}. ${demand.completedUnits} collected from the roster${walkIns.length > 0 ? `, and ${walkIns.length} from people who simply came in` : ''}.`}
+      />
+
+      <Card title="Expected at the counter">
+        <div className="space-y-4">
+          <p className="text-sm text-ink-muted">
             {/*
               §4: the counter is the authority on who gave blood. Nothing else
               in the system can tell these three outcomes apart.
             */}
-            Mark each person once they have been seen. A no-show frees the place, and the
-            bot offers it to whoever is next on the waiting list.
+            Mark each person once they have been seen. A no-show frees the
+            place, and the bot offers it to whoever is next on the waiting
+            list.
           </p>
-        </div>
-        <div className="ux4g-card-body app-stack">
+
           {expected.length === 0 ? (
-            <p className="ux4g-body-s-default">Nobody is expected right now.</p>
+            <p className="text-sm text-ink-muted">Nobody is expected right now.</p>
           ) : (
-            expected.map((row) => (
-              <div key={row.id} className="ux4g-card ux4g-card-outline">
-                <div className="ux4g-card-header">
-                  <h3 className="ux4g-card-title">{row.donorName}</h3>
-                  <p className="ux4g-card-sub-title app-figure">
-                    {row.donorPhone} · {bloodGroupLabel(row.bloodGroup as never)} ·{' '}
-                    {row.channel}
-                  </p>
-                </div>
-                <div className="ux4g-card-body app-stack-tight">
-                  {!row.acknowledged ? (
-                    <p className="ux4g-label-m-default">
-                      {/* Nothing has been sent to them yet; do not assume they know. */}
-                      The bot has not thanked this donor yet.
+            <div className="space-y-4">
+              {expected.map((row) => (
+                <Card
+                  key={row.id}
+                  title={row.donorName}
+                  className="shadow-none"
+                >
+                  <div className="space-y-2">
+                    <p className="text-sm text-ink-muted">
+                      {row.donorPhone} · {bloodGroupLabel(row.bloodGroup as never)} ·{' '}
+                      {row.channel}
                     </p>
-                  ) : null}
-                  <RosterMarkForm confirmationId={row.id} declaredGroup={row.bloodGroup} />
-                </div>
-              </div>
-            ))
+                    {!row.acknowledged ? (
+                      <p className="text-xs text-ink-subtle">
+                        {/* Nothing has been sent to them yet; do not assume they know. */}
+                        The bot has not thanked this donor yet.
+                      </p>
+                    ) : null}
+                    <RosterMarkForm confirmationId={row.id} declaredGroup={row.bloodGroup} />
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
-      </section>
+      </Card>
 
       {open ? (
-        <section className="ux4g-card ux4g-card-outline" aria-labelledby="walk-in">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title" id="walk-in">
-              Somebody gave who is not on this list
-            </h2>
-            <p className="ux4g-card-sub-title">
+        <Card title="Somebody gave who is not on this list">
+          <div className="space-y-4">
+            <p className="text-sm text-ink-muted">
               {/*
                 §4: getting a donor's interval right matters more than tidy
                 state. Refusing the record would lose both the unit and the
                 donor.
               */}
-              Record it anyway. The donation counts towards this demand, and the person
-              is credited with having given today.
+              Record it anyway. The donation counts towards this demand, and
+              the person is credited with having given today.
             </p>
-          </div>
-          <div className="ux4g-card-body">
             <WalkInForm demandId={demand.id} />
           </div>
-        </section>
+        </Card>
       ) : null}
 
       {walkIns.length > 0 ? (
-        <section className="ux4g-card ux4g-card-outline" aria-labelledby="walk-ins">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title" id="walk-ins">
-              Walk-ins
-            </h2>
-            <p className="ux4g-card-sub-title">
+        <Card title="Walk-ins">
+          <div className="space-y-4">
+            <p className="text-sm text-ink-muted">
               {/*
                 The centre's own record, not a row in the bot's own list: it holds
                 no INSERT on that at all (§5.1). The bot reads these and stops
                 recruiting for a unit already collected.
               */}
-              Recorded here, because nobody on this list was ever asked by the bot.
-              Each one counts against what is still needed.
+              Recorded here rather than on the roster, because nobody on this
+              list was ever asked by the bot. Each one counts against what is
+              still needed.
             </p>
+            <DataTable columns={walkInColumns} rows={walkIns} getRowKey={(r) => r.id} />
           </div>
-          <div className="ux4g-card-body app-scroll-x">
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Donor</th>
-                  <th scope="col">Group</th>
-                  <th scope="col">{WORDING.unitNumber}</th>
-                  <th scope="col">On</th>
-                </tr>
-              </thead>
-              <tbody>
-                {walkIns.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.donorName}</td>
-                    <td className="app-figure">
-                      {bloodGroupLabel(row.bloodGroup as never)}
-                    </td>
-                    <td className="app-figure">{row.bagIdentifier}</td>
-                    <td className="app-figure">{row.donatedOn}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        </Card>
       ) : null}
 
       {settled.length > 0 ? (
-        <section className="ux4g-card ux4g-card-outline" aria-labelledby="settled">
-          <div className="ux4g-card-header">
-            <h2 className="ux4g-card-title" id="settled">
-              Already marked
-            </h2>
-          </div>
-          <div className="ux4g-card-body app-scroll-x">
-            <table className="ux4g-table">
-              <thead>
-                <tr>
-                  <th scope="col">Donor</th>
-                  <th scope="col">Outcome</th>
-                  <th scope="col">{WORDING.unitNumber}</th>
-                  <th scope="col">Typed as</th>
-                  <th scope="col">On</th>
-                </tr>
-              </thead>
-              <tbody>
-                {settled.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.donorName}</td>
-                    <td>{OUTCOME_LABELS[row.status] ?? row.status}</td>
-                    <td className="app-figure">{row.bagIdentifier ?? '-'}</td>
-                    <td className="app-figure">
-                      {row.donatedBloodGroup === null
-                        ? '-'
-                        : bloodGroupLabel(row.donatedBloodGroup as never)}
-                      {row.donatedBloodGroup !== null &&
-                      row.donatedBloodGroup !== row.bloodGroup ? (
-                        <span className="ux4g-label-m-default">
-                          {' '}
-                          (told us {bloodGroupLabel(row.bloodGroup as never)})
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="app-figure">{row.donatedAt ?? '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <Card title="Already marked">
+          <DataTable columns={settledColumns} rows={settled} getRowKey={(r) => r.id} />
+        </Card>
       ) : null}
 
-      <Link className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md" href="/centre/demands">
-        Back to demand
-      </Link>
+      <div>
+        <Link
+          href="/centre/demands"
+          className="text-sm font-medium text-ink-muted hover:text-ink hover:underline"
+        >
+          ← Back to demand
+        </Link>
+      </div>
     </CentreShell>
   );
 }

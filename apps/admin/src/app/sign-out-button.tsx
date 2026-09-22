@@ -2,19 +2,16 @@
 
 import { useFormStatus } from 'react-dom';
 
+import { Button } from '@blood-connect/ui';
+
 import { signOutAction } from './actions';
 
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-md app-target"
-      disabled={pending}
-      aria-disabled={pending}
-    >
+    <Button type="submit" variant="ghost" size="sm" loading={pending}>
       {pending ? 'Signing out…' : 'Sign out'}
-    </button>
+    </Button>
   );
 }
 

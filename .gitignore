@@ -14,3 +14,5 @@ Thumbs.db
 
 # saved copy of the plan, not source
 Blood Connect Backend Plan_files/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

@@ -40,9 +40,14 @@ import {
   type InvalidBag,
   type NotAuthorized,
 } from '../errors.js';
+import {
+  allowedOutcomes,
+  type ReturnOutcome,
+  type StorageBand,
+} from '../rules/returns.js';
 
-export type StorageBand = 'under_30m' | '30m_to_limit' | 'over_limit' | 'unknown';
-export type ReturnOutcome = 'restock' | 'quarantine' | 'discard';
+export type { ReturnOutcome, StorageBand } from '../rules/returns.js';
+export { allowedOutcomes, defaultOutcome } from '../rules/returns.js';
 
 export type ReturnInput = {
   readonly bagId: string;
@@ -54,23 +59,6 @@ export type ReturnInput = {
   /** Required when the outcome is a discard (§12.1). */
   readonly disposalRoute?: string | null;
 };
-
-/**
- * What the centre is *allowed* to do with a returned unit (§4).
- *
- * Pure, so the screen can grey out the impossible choice rather than offering it
- * and refusing afterwards. Restocking is a clinical judgement with a hard time
- * limit in every transfusion SOP. The threshold is configuration, and the
- * conservative reading of "we do not know" is quarantine, never the shelf.
- */
-export function allowedOutcomes(band: StorageBand): readonly ReturnOutcome[] {
-  return band === 'under_30m'
-    ? ['restock', 'quarantine', 'discard']
-    : ['quarantine', 'discard'];
-}
-
-export const defaultOutcome = (band: StorageBand): ReturnOutcome =>
-  band === 'under_30m' ? 'restock' : 'quarantine';
 
 export type ReturnResult = {
   readonly outcome: ReturnOutcome;

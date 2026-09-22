@@ -86,20 +86,23 @@ export function DateParts({
   const complete = year !== '' && month !== '' && dayValue !== '';
   const value = complete ? `${year}-${month}-${pad(Number(dayValue))}` : '';
 
+  const SELECT =
+    'h-10 w-full rounded-control border border-border-strong bg-surface px-3 pr-8 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+
   return (
-    <fieldset className="ux4g-form-group app-stack-tight app-date-parts">
-      <legend className="ux4g-label-m-strong">{label}</legend>
+    <fieldset className="space-y-1.5">
+      <legend className="block text-sm font-medium text-ink">{label}</legend>
 
       {/* One field to the server, whatever the three lists are doing. */}
       <input type="hidden" name={id} value={value} />
 
-      <div className="app-date-parts-row">
-        <div className="app-stack-tight">
-          <label className="ux4g-label-s-default" htmlFor={`${id}-year`}>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1">
+          <label className="block text-xs text-ink-subtle" htmlFor={`${id}-year`}>
             Year
           </label>
           <select
-            className="ux4g-form-select ux4g-form-select-md"
+            className={SELECT}
             id={`${id}-year`}
             value={year}
             required={required}
@@ -117,12 +120,12 @@ export function DateParts({
           </select>
         </div>
 
-        <div className="app-stack-tight">
-          <label className="ux4g-label-s-default" htmlFor={`${id}-month`}>
+        <div className="space-y-1">
+          <label className="block text-xs text-ink-subtle" htmlFor={`${id}-month`}>
             Month
           </label>
           <select
-            className="ux4g-form-select ux4g-form-select-md"
+            className={SELECT}
             id={`${id}-month`}
             value={month}
             required={required}
@@ -139,12 +142,12 @@ export function DateParts({
           </select>
         </div>
 
-        <div className="app-stack-tight">
-          <label className="ux4g-label-s-default" htmlFor={`${id}-day`}>
+        <div className="space-y-1">
+          <label className="block text-xs text-ink-subtle" htmlFor={`${id}-day`}>
             Day
           </label>
           <select
-            className="ux4g-form-select ux4g-form-select-md"
+            className={SELECT}
             id={`${id}-day`}
             value={dayValue}
             required={required}
@@ -163,7 +166,7 @@ export function DateParts({
       </div>
 
       {hint ? (
-        <p className="ux4g-label-m-default" id={`${id}-hint`}>
+        <p className="text-xs text-ink-subtle" id={`${id}-hint`}>
           {hint}
         </p>
       ) : null}

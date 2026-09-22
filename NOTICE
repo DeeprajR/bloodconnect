@@ -1,0 +1,27 @@
+Blood Connect
+Copyright 2026 The Blood Connect Contributors
+
+This product is licensed under the Apache License, Version 2.0. See the
+LICENSE file for the full text.
+
+------------------------------------------------------------------------------
+
+PLACEHOLDER COPYRIGHT HOLDER.
+
+"The Blood Connect Contributors" is a placeholder, not a confirmed legal
+name. §12.7 of docs/blood-connect-spec.md is explicit that the licence
+choice, and by extension the copyright line, needs confirming with the
+hospital or university this is built for, or with whoever else holds
+the copyright before any real deployment or public release: an
+institution may have its own policy on how software developed in its
+name is released. Replace this line (and the matching one in LICENSE's
+Appendix, if that section is ever re-applied) with the confirmed holder
+before this notice is relied on.
+
+------------------------------------------------------------------------------
+
+This distribution includes source code written against several open-source
+libraries. Their own licence texts travel with the packages published to
+npm and are not reproduced here; none of them requires a NOTICE-file entry
+beyond retaining their own licence and copyright, which the published
+packages already carry.

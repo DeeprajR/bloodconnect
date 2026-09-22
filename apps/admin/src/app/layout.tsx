@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from 'next';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 
-import 'ux4g-web-components/styles.css';
-import './theme.css';
+// `tailwind.css` `@import`s the kit token files (base, accent-admin,
+// typography, preflight) so their `@theme` blocks and preflight's global
+// resets pass through Tailwind's PostCSS pipeline. Importing them here as
+// separate `.tsx` CSS side-effect imports would bypass that pipeline —
+// Turbopack treats each one as a standalone CSS module — and Tailwind
+// would emit neither the custom properties nor the `bg-canvas` /
+// `text-ink` / `bg-primary` utilities.
+import './tailwind.css';
 
-import { Ux4gRuntime } from './ux4g-runtime';
 import { ServiceWorker } from './service-worker';
 
 export const metadata: Metadata = {
@@ -38,17 +45,38 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+/**
+ * `data-theme="light"` on `<html>` is a kit convention, not a UX4G one
+ * (ADR 0015's "Supersedes"): the design system is light-only for the same
+ * shared-workstation reason UX4G was, and any future component reads the
+ * attribute for that purpose.
+ *
+ * The Geist variables (`--font-geist-sans`, `--font-geist-mono`) are set on
+ * the html element by `next/font` and read by the kit's typography tokens
+ * (`--font-sans`, `--font-mono`) with a system fallback.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="light">
+    <html
+      lang="en"
+      data-theme="light"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+    >
       <body>
-        <a className="app-skip-link" href="#main">
+        {/*
+         * A visually-hidden link that appears on focus, letting a keyboard
+         * user skip the shell's nav and jump straight to `#main`. No kit
+         * component for this — it is one link, not a design-system concern.
+         */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-control focus:border focus:border-border-strong focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-ink"
+        >
           Skip to main content
         </a>
         {children}
-        <Ux4gRuntime />
         <ServiceWorker />
       </body>
     </html>

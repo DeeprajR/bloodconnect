@@ -4,6 +4,14 @@ import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import {
+  Button,
+  FormField,
+  Select,
+  TextArea,
+  TextInput,
+} from '@blood-connect/ui';
+
+import {
   BLOOD_GROUPS,
   PRODUCTS,
   WORDING,
@@ -25,131 +33,41 @@ const initial: FormState = { error: null };
 function Submit({
   label,
   busy,
-  tone = 'primary',
+  variant = 'primary',
 }: {
   label: string;
   busy: string;
-  tone?: 'primary' | 'outline-danger' | 'outline-primary';
+  variant?: 'primary' | 'secondary' | 'danger';
 }) {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      className={`ux4g-btn ux4g-btn-${tone} ux4g-btn-lg app-target`}
-      disabled={pending}
-      aria-disabled={pending}
-    >
+    <Button type="submit" variant={variant} loading={pending}>
       {pending ? busy : label}
-    </button>
+    </Button>
   );
 }
 
 function Problem({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="ux4g-alert ux4g-alert-error" role="alert">
-      <div className="ux4g-alert-content">
-        <p className="ux4g-alert-message">{message}</p>
-      </div>
-    </div>
+    <p
+      role="alert"
+      className="rounded-control border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {message}
+    </p>
   );
 }
 
 function Saved({ shown }: { shown: boolean }) {
   if (!shown) return null;
   return (
-    <div className="ux4g-alert ux4g-alert-success" role="status">
-      <div className="ux4g-alert-content">
-        <p className="ux4g-alert-message">Saved.</p>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  id,
-  label,
-  type = 'text',
-  hint,
-  defaultValue,
-  required = false,
-  inputMode,
-  min,
-}: {
-  id: string;
-  label: string;
-  type?: string;
-  hint?: string;
-  defaultValue?: string;
-  required?: boolean;
-  inputMode?: 'text' | 'numeric' | 'tel';
-  min?: string;
-}) {
-  return (
-    <div className="ux4g-form-group app-stack-tight">
-      <label className="ux4g-label-l-strong" htmlFor={id}>
-        {label}
-        {required ? '' : <span className="ux4g-label-m-default"> (optional)</span>}
-      </label>
-      <input
-        className="ux4g-input ux4g-input-lg"
-        id={id}
-        name={id}
-        type={type}
-        inputMode={inputMode}
-        defaultValue={defaultValue}
-        required={required}
-        min={min}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-      />
-      {hint ? (
-        <p className="ux4g-label-m-default" id={`${id}-hint`}>
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function Select({
-  id,
-  label,
-  options,
-  defaultValue,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  options: readonly { value: string; label: string }[];
-  defaultValue?: string;
-  onChange?: (value: string) => void;
-}) {
-  return (
-    <div className="ux4g-form-group app-stack-tight">
-      <label className="ux4g-label-l-strong" htmlFor={id}>
-        {label}
-      </label>
-      <select
-        className="ux4g-form-select ux4g-form-select-lg"
-        id={id}
-        name={id}
-        defaultValue={defaultValue}
-        required
-        onChange={
-          onChange
-            ? (e) => {
-                onChange(e.target.value);
-              }
-            : undefined
-        }
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
+    <p
+      role="status"
+      className="rounded-control border border-success/30 bg-success-soft px-3 py-2 text-sm text-ink"
+    >
+      Saved.
+    </p>
   );
 }
 
@@ -183,71 +101,91 @@ export function BagForm({
           .slice(0, 10);
 
   return (
-    <form action={action} className="app-stack" noValidate>
+    <form action={action} className="space-y-4" noValidate>
       <Problem message={state.error} />
 
-      <Field
-        id="unitNumber"
+      <FormField
         label={WORDING.unitNumber}
-        required
         hint="Typed, or read from the bag by a scanner acting as a keyboard."
-      />
-      <Select id="bloodGroup" label={WORDING.bloodGroupAndRh} options={groupOptions} />
-      <Select
-        id="product"
-        label={WORDING.product}
-        options={productOptions}
-        defaultValue="prbc"
-        onChange={setProduct}
-      />
+        required
+      >
+        {(p) => <TextInput {...p} name="unitNumber" required />}
+      </FormField>
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="collectedAt">
-          {WORDING.collectedOn}
-        </label>
-        <input
-          className="ux4g-input ux4g-input-lg"
-          id="collectedAt"
-          name="collectedAt"
-          type="date"
-          required
-          max={today}
-          defaultValue={today}
-          onChange={(e) => {
-            setCollectedAt(e.target.value);
-          }}
-          aria-describedby="collectedAt-hint"
-        />
-        <p className="ux4g-label-m-default" id="collectedAt-hint">
-          {/* The clock runs from collection, never from intake or a re-scan. */}
-          The expiry is counted from this day, not from today.
-        </p>
-      </div>
+      <FormField label={WORDING.bloodGroupAndRh} required>
+        {(p) => (
+          <Select {...p} name="bloodGroup" required>
+            {groupOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </FormField>
+
+      <FormField label={WORDING.product} required>
+        {(p) => (
+          <Select
+            {...p}
+            name="product"
+            defaultValue="prbc"
+            required
+            onChange={(e) => {
+              setProduct(e.target.value);
+            }}
+          >
+            {productOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </FormField>
+
+      <FormField
+        label={WORDING.collectedOn}
+        // The clock runs from collection, never from intake or a re-scan.
+        hint="The expiry is counted from this day, not from today."
+      >
+        {(p) => (
+          <TextInput
+            {...p}
+            name="collectedAt"
+            type="date"
+            required
+            max={today}
+            defaultValue={today}
+            onChange={(e) => {
+              setCollectedAt(e.target.value);
+            }}
+          />
+        )}
+      </FormField>
 
       {derived ? (
-        <div className="ux4g-alert ux4g-alert-info" role="status">
-          <div className="ux4g-alert-content">
-            <p className="ux4g-alert-message">
-              {WORDING.expiresOn}: <span className="app-figure">{derived}</span>:{' '}
-              {shelfLife} days for {productLabel(product as never)}.
-            </p>
-          </div>
-        </div>
+        <p
+          role="status"
+          className="rounded-control border border-info/30 bg-info-soft px-3 py-2 text-sm text-ink"
+        >
+          {WORDING.expiresOn}: <span className="font-medium tabular-nums">{derived}</span>:{' '}
+          {shelfLife} days for {productLabel(product as never)}.
+        </p>
       ) : null}
 
-      <Field
-        id="labelExpiry"
+      <FormField
         label="Expiry printed on the bag"
-        type="date"
         hint="Only if the bag carries one. The printed label wins, and a disagreement is flagged for you to check, not silently accepted."
-      />
-      <Field
-        id="tagUid"
-        label="Tag identifier"
-        defaultValue={tagUid}
-        hint="If this bag carries a tag."
-      />
-      <Field id="source" label="Source" hint="Camp, replacement donor, transfer in." />
+      >
+        {(p) => <TextInput {...p} name="labelExpiry" type="date" />}
+      </FormField>
+      <FormField label="Tag identifier" hint="If this bag carries a tag.">
+        {(p) => <TextInput {...p} name="tagUid" defaultValue={tagUid} />}
+      </FormField>
+      <FormField label="Source" hint="Camp, replacement donor, transfer in.">
+        {(p) => <TextInput {...p} name="source" />}
+      </FormField>
 
       <Submit label="Register the bag" busy="Registering…" />
     </form>
@@ -289,58 +227,44 @@ export function DecisionForm({
   const shortfall = Math.max(0, units - available);
 
   return (
-    <div className="app-stack">
+    <div className="space-y-4">
       <Problem message={state.error ?? declineState.error} />
 
-      <div className="ux4g-alert ux4g-alert-info" role="status">
-        <div className="ux4g-alert-content">
-          <p className="ux4g-alert-message">
-            {available >= units
-              ? `All ${units} units can be issued from stock.`
-              : `${available} of ${units} units are on the shelf.`}
-            {shortfall > 0 && recruits
-              ? ` The remaining ${shortfall} will raise a ${WORDING.donorDemand.toLowerCase()} in the same transaction.`
-              : null}
-            {shortfall > 0 && !recruits
-              ? ' This component is separated in a lab, so no donors are recruited for it.'
-              : null}
-          </p>
-        </div>
-      </div>
+      <p
+        role="status"
+        className="rounded-control border border-info/30 bg-info-soft px-3 py-2 text-sm text-ink"
+      >
+        {available >= units
+          ? `All ${units} units can be issued from stock.`
+          : `${available} of ${units} units are on the shelf.`}
+        {shortfall > 0 && recruits
+          ? ` The remaining ${shortfall} will raise a ${WORDING.donorDemand.toLowerCase()} in the same transaction.`
+          : null}
+        {shortfall > 0 && !recruits
+          ? ' This component is separated in a lab, so no donors are recruited for it.'
+          : null}
+      </p>
 
-      <form action={issue} className="app-stack">
-        <div className="ux4g-form-group app-stack-tight">
-          <label className="ux4g-label-l-strong" htmlFor="note">
-            Note <span className="ux4g-label-m-default">(optional)</span>
-          </label>
-          <textarea className="ux4g-input ux4g-input-lg" id="note" name="note" rows={2} />
-        </div>
+      <form action={issue} className="space-y-4">
+        <FormField label="Note">
+          {(p) => <TextArea {...p} name="note" rows={2} />}
+        </FormField>
         <Submit
           label={available >= units ? 'Issue the units' : 'Issue what is on the shelf'}
           busy="Answering…"
         />
       </form>
 
-      <form action={decline} className="app-stack">
-        <div className="ux4g-form-group app-stack-tight">
-          <label className="ux4g-label-l-strong" htmlFor="declineNote">
-            Reason for declining
-          </label>
-          <textarea
-            className="ux4g-input ux4g-input-lg"
-            id="declineNote"
-            name="note"
-            rows={2}
-            required
-          />
-          <p className="ux4g-label-m-default">
-            {/* Declining on the merits is not a shortfall, so it recruits nobody. */}
-            Declining answers the request without issuing anything and without
-            recruiting donors. Use it for a duplicate or a request the centre is
-            refusing, not for an empty shelf.
-          </p>
-        </div>
-        <Submit label="Decline the request" busy="Answering…" tone="outline-danger" />
+      <form action={decline} className="space-y-4">
+        <FormField
+          label="Reason for declining"
+          // Declining on the merits is not a shortfall, so it recruits nobody.
+          hint="Declining answers the request without issuing anything and without recruiting donors. Use it for a duplicate or a request the centre is refusing, not for an empty shelf."
+          required
+        >
+          {(p) => <TextArea {...p} name="note" rows={2} required />}
+        </FormField>
+        <Submit label="Decline the request" busy="Answering…" variant="danger" />
       </form>
     </div>
   );
@@ -355,40 +279,33 @@ export function CancelDemandForm({ demandId }: { demandId: string }) {
   const [open, setOpen] = useState(false);
 
   if (state.done) {
-    return <p className="ux4g-body-s-default">Withdrawn. Donors are being stood down.</p>;
+    return <p className="text-sm text-ink-muted">Withdrawn. Donors are being stood down.</p>;
   }
 
   if (!open) {
     return (
-      <button
+      <Button
         type="button"
-        className="ux4g-btn ux4g-btn-text-neutral ux4g-btn-md app-target"
+        variant="ghost"
+        size="sm"
         onClick={() => {
           setOpen(true);
         }}
       >
         Withdraw
-      </button>
+      </Button>
     );
   }
 
   return (
-    <form action={action} className="app-stack-tight">
+    <form action={action} className="space-y-2">
       <Problem message={state.error} />
-      <label className="ux4g-label-m-strong" htmlFor={`reason-${demandId}`}>
-        Why is this being withdrawn?
-      </label>
-      <input
-        className="ux4g-input ux4g-input-md"
-        id={`reason-${demandId}`}
-        name="reason"
-        required
-      />
-      <p className="ux4g-label-m-default">
+      <TextInput name="reason" placeholder="Why is this being withdrawn?" required aria-label="Why is this being withdrawn?" />
+      <p className="text-xs text-ink-subtle">
         {/* §7.6: the closure and the stand-down messages are one pass. */}
         Every donor holding a unit for this is told it has ended.
       </p>
-      <Submit label="Withdraw the demand" busy="Withdrawing…" tone="outline-danger" />
+      <Submit label="Withdraw the demand" busy="Withdrawing…" variant="danger" />
     </form>
   );
 }
@@ -397,18 +314,17 @@ export function RecruitButton({ shortGroups }: { shortGroups: number }) {
   const { pending } = useFormStatus();
 
   return (
-    <button
+    <Button
       type="submit"
-      className="ux4g-btn ux4g-btn-primary ux4g-btn-md app-target"
+      loading={pending}
       disabled={pending || shortGroups === 0}
-      aria-disabled={pending || shortGroups === 0}
     >
       {shortGroups === 0
         ? 'Every group is above the floor'
         : pending
           ? 'Raising…'
           : `Recruit for ${shortGroups} ${shortGroups === 1 ? 'group' : 'groups'} below the floor`}
-    </button>
+    </Button>
   );
 }
 
@@ -436,75 +352,76 @@ export function SettingsForm({
   const [state, action] = useActionState(updateSettingsAction, initial);
 
   return (
-    <form action={action} className="app-stack" noValidate>
+    <form action={action} className="space-y-4" noValidate>
       <Problem message={state.error} />
       <Saved shown={state.done === true} />
 
-      <Field id="hospitalName" label="Hospital name" defaultValue={hospitalName} required />
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="address">
-          Address
-        </label>
-        <textarea
-          className="ux4g-input ux4g-input-lg"
-          id="address"
-          name="address"
-          rows={3}
-          defaultValue={address}
-          required
-          aria-describedby="address-hint"
-        />
-        <p className="ux4g-label-m-default" id="address-hint">
-          {/* Snapshotted onto every new demand, never retroactively (§2.6). */}
-          Donors are told to come here. Changing it changes what the next donor is
-          told, never what the last one was told.
-        </p>
-      </div>
+      <FormField label="Hospital name" required>
+        {(p) => <TextInput {...p} name="hospitalName" defaultValue={hospitalName} required />}
+      </FormField>
 
-      <div className="ux4g-form-group app-stack-tight">
-        <label className="ux4g-label-l-strong" htmlFor="districtId">
-          District
-        </label>
-        <select
-          className="ux4g-form-select ux4g-form-select-lg"
-          id="districtId"
-          name="districtId"
-          defaultValue={districtId ?? ''}
-        >
-          <option value="">Not set</option>
-          {districts.map((district) => (
-            <option key={district.id} value={district.id}>
-              {district.name}
-            </option>
-          ))}
-        </select>
-        <p className="ux4g-label-m-default">
-          Recruitment orders donors by how near they are. Without a district, no
-          demand can be raised at all.
-        </p>
-      </div>
+      <FormField
+        label="Address"
+        // Snapshotted onto every new demand, never retroactively (§2.6).
+        hint="Donors are told to come here. Changing it changes what the next donor is told, never what the last one was told."
+        required
+      >
+        {(p) => (
+          <TextArea {...p} name="address" rows={3} defaultValue={address} required />
+        )}
+      </FormField>
+
+      <FormField
+        label="District"
+        hint="Recruitment orders donors by how near they are. Without a district, no demand can be raised at all."
+      >
+        {(p) => (
+          <Select {...p} name="districtId" defaultValue={districtId ?? ''}>
+            <option value="">Not set</option>
+            {districts.map((district) => (
+              <option key={district.id} value={district.id}>
+                {district.name}
+              </option>
+            ))}
+          </Select>
+        )}
+      </FormField>
       <input type="hidden" name="cityId" value={cityId ?? ''} />
 
-      <Field
-        id="minUnitsPerGroup"
+      <FormField
         label={WORDING.stockFloor}
-        type="number"
-        inputMode="numeric"
-        min="0"
-        defaultValue={String(minUnitsPerGroup)}
-        required
         hint="Red cells per blood group. Below this, the group is offered for recruitment."
-      />
-      <Field
-        id="returnTimeLimitMinutes"
-        label="Return time limit (minutes)"
-        type="number"
-        inputMode="numeric"
-        min="0"
-        defaultValue={String(returnTimeLimitMinutes)}
         required
+      >
+        {(p) => (
+          <TextInput
+            {...p}
+            name="minUnitsPerGroup"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            defaultValue={String(minUnitsPerGroup)}
+            required
+          />
+        )}
+      </FormField>
+      <FormField
+        label="Return time limit (minutes)"
         hint="From your own transfusion SOP. Used by the return flow, which arrives in a later phase."
-      />
+        required
+      >
+        {(p) => (
+          <TextInput
+            {...p}
+            name="returnTimeLimitMinutes"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            defaultValue={String(returnTimeLimitMinutes)}
+            required
+          />
+        )}
+      </FormField>
 
       <Submit label="Save settings" busy="Saving…" />
     </form>
@@ -515,25 +432,21 @@ export function ShelfLifeForm({ product, days }: { product: string; days: number
   const [state, action] = useActionState(setShelfLifeAction.bind(null, product), initial);
 
   return (
-    <form action={action} className="app-row">
-      <label className="app-sr-only" htmlFor={`days-${product}`}>
-        Shelf life for {productLabel(product as never)}
-      </label>
-      <input
-        className="ux4g-input ux4g-input-md"
-        id={`days-${product}`}
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <TextInput
         name="days"
         type="number"
         inputMode="numeric"
         min="1"
         defaultValue={String(days)}
         required
-        style={{ maxWidth: '8rem' }}
+        aria-label={`Shelf life for ${productLabel(product as never)}`}
+        className="w-24"
       />
-      <button type="submit" className="ux4g-btn ux4g-btn-outline-primary ux4g-btn-md app-target">
+      <Button type="submit" variant="secondary" size="sm">
         {state.done === true ? 'Saved' : 'Save'}
-      </button>
-      {state.error ? <span className="ux4g-label-m-default">{state.error}</span> : null}
+      </Button>
+      {state.error ? <span className="text-xs text-danger">{state.error}</span> : null}
     </form>
   );
 }
