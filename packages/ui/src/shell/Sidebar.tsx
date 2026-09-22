@@ -64,8 +64,22 @@ export function SidebarContent({
   signOutSlot,
   onNavigate,
 }: SidebarProps) {
-  const isActive = (match: string) =>
-    currentPath === match || currentPath.startsWith(`${match}/`);
+  /**
+   * The single nav item lit up for `currentPath`, not every item whose
+   * `match` happens to prefix it.
+   *
+   * An overview page's `match` (`/centre`) is itself a prefix of every one
+   * of its subpages' `match` (`/centre/stock`, `/centre/requests`, …), so
+   * checking each item against `currentPath` independently would light up
+   * the overview link and the actual current page at the same time. The
+   * longest matching `match` wins instead, so a subpage with its own more
+   * specific nav item always outranks the overview page it lives under.
+   */
+  const bestMatch = [...primaryNav, ...secondaryNav]
+    .map((item) => item.match)
+    .filter((match) => currentPath === match || currentPath.startsWith(`${match}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  const isActive = (match: string) => match === bestMatch;
 
   return (
     <div className="flex h-full flex-col">
