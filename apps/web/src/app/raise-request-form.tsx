@@ -171,7 +171,25 @@ export function RaiseRequestForm({
   patientName?: string | undefined;
 }) {
   const [state, action] = useActionState(raiseRequestAction, initial);
-  const [moreUnits, setMoreUnits] = useState(false);
+
+  /** Whatever came back from a rejected submit, or nothing on a first render. */
+  const was = (field: string): string => state.values?.[field] ?? '';
+
+  /**
+   * `useActionState` re-renders the same mounted `<form>` rather than
+   * remounting it, and a radio's `defaultChecked` is only applied on mount
+   * — never on a later re-render, the same rule that governs a `<select>`'s
+   * `defaultValue`. Keying each choice row to the values that came back
+   * forces a remount when — and only when — a new server response arrives,
+   * so `defaultChecked` is reapplied and a rejected submit does not present
+   * as four unanswered questions instead of one.
+   */
+  const valuesKey = JSON.stringify(state.values ?? {});
+
+  const wasUnits = was('units');
+  const [moreUnits, setMoreUnits] = useState(
+    () => wasUnits !== '' && !unitOptions.some((option) => option.value === wasUnits),
+  );
 
   return (
     <form action={action} className="space-y-5" noValidate>
@@ -180,17 +198,20 @@ export function RaiseRequestForm({
       {/* ---------------------------------------------------- the four --- */}
 
       <ChoiceRow
+        key={`bloodGroup-${valuesKey}`}
         name="bloodGroup"
         legend={WORDING.requestedBloodGroup}
         options={groupOptions}
+        defaultValue={was('bloodGroup')}
         columns={4}
       />
 
       <ChoiceRow
+        key={`product-${valuesKey}`}
         name="product"
         legend={WORDING.product}
         options={productOptions}
-        defaultValue="prbc"
+        defaultValue={was('product') === '' ? 'prbc' : was('product')}
       />
 
       <fieldset className="space-y-2">
@@ -199,18 +220,20 @@ export function RaiseRequestForm({
         </legend>
         {moreUnits ? (
           <input
+            key={`units-${valuesKey}`}
             className="h-12 w-full rounded-control border border-border-strong bg-surface px-3 text-lg font-medium text-ink tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             name="units"
             type="number"
             inputMode="numeric"
             min="1"
-            defaultValue="5"
+            defaultValue={wasUnits === '' ? '5' : wasUnits}
             autoFocus
             required
             aria-label={WORDING.units}
           />
         ) : (
           <div
+            key={`units-${valuesKey}`}
             className="grid gap-2"
             style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}
           >
@@ -223,6 +246,7 @@ export function RaiseRequestForm({
                   type="radio"
                   name="units"
                   value={option.value}
+                  defaultChecked={option.value === wasUnits}
                   required
                   className="sr-only"
                 />
@@ -246,7 +270,13 @@ export function RaiseRequestForm({
         )}
       </fieldset>
 
-      <ChoiceRow name="urgency" legend="How urgent?" options={urgencyOptions} />
+      <ChoiceRow
+        key={`urgency-${valuesKey}`}
+        name="urgency"
+        legend="How urgent?"
+        options={urgencyOptions}
+        defaultValue={was('urgency')}
+      />
 
       <Submit />
 

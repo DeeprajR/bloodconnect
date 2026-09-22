@@ -28,7 +28,36 @@ import { assertSameOrigin, currentActor } from '@/lib/session';
  * here can claim to be somebody else.
  */
 
-export type FormState = { readonly error: string | null; readonly done?: boolean };
+export type FormState = {
+  readonly error: string | null;
+  readonly done?: boolean;
+  /**
+   * What was chosen, handed back so a rejected form can put it back.
+   *
+   * `useActionState` re-renders the same form rather than reloading the
+   * page, and a radio's `defaultChecked` (like a select's `defaultValue`)
+   * is only applied on mount. Without this, a doctor who chose a group and
+   * an urgency but missed the unit count would see every one of the four
+   * buttons unchosen after the error came back, not just the one that was
+   * wrong.
+   */
+  readonly values?: Readonly<Record<string, string>>;
+};
+
+/**
+ * Every text value on the form, for echoing back on a rejection.
+ *
+ * Deliberately not the whole `FormData`: files and the framework's own action
+ * fields have no business being reflected into an input, so only strings that
+ * came from named fields survive.
+ */
+function submittedValues(form: FormData): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const [key, entry] of form.entries()) {
+    if (typeof entry === 'string' && !key.startsWith('$')) values[key] = entry;
+  }
+  return values;
+}
 
 /**
  * The single centre this deployment serves.
@@ -204,7 +233,10 @@ export async function raiseRequestAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Check the four fields.' };
+    return {
+      error: parsed.error.issues[0]?.message ?? 'Check the four fields.',
+      values: submittedValues(formData),
+    };
   }
 
   const ctx = await useCaseContext(await currentActor());
@@ -246,7 +278,9 @@ export async function raiseRequestAction(
     patient,
   });
 
-  if (!result.ok) return { error: result.error.message };
+  if (!result.ok) {
+    return { error: result.error.message, values: submittedValues(formData) };
+  }
 
   revalidatePath('/dashboard');
   // Straight to the ID. It is the only thing the doctor came for, and the
