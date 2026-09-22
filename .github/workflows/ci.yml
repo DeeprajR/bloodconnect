@@ -19,7 +19,13 @@ env:
   MIGRATION_DATABASE_URL: postgres://postgres:postgres@localhost:5432/blood_connect
   DATABASE_URL: postgres://app_web:app_web@localhost:5432/blood_connect
   BOT_DATABASE_URL: postgres://app_bot:app_bot@localhost:5432/blood_connect
-  TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/blood_connect_test
+  # The suite's own globalSetup connects with this URL's literal role (unlike
+  # db:migrate, which always substitutes `migrator` regardless of what's in
+  # MIGRATION_DATABASE_URL). Postgres's `ALTER DEFAULT PRIVILEGES FOR ROLE
+  # migrator` only fires for objects `migrator` itself creates, so migrating
+  # here as the postgres superuser silently drops the base grants app_web and
+  # app_bot depend on — this must match .env.example's convention.
+  TEST_DATABASE_URL: postgres://migrator:migrator@localhost:5432/blood_connect_test
 
 jobs:
   verify:
@@ -69,6 +75,16 @@ jobs:
       # -------------------------------------------------------------- database
       - name: Provision roles
         run: psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f db/docker/init.sql
+
+      # packages/ops/src/health.test.ts proves a health tile goes red by
+      # stopping the real container (P10), not a mock, so the suite needs
+      # Mailpit and MinIO actually running under the exact container names
+      # docker-compose.yml's `name: blood-connect` produces. Postgres is
+      # already covered by the `services:` block above.
+      - name: Start mail and storage stand-ins
+        run: |
+          docker compose up --detach --wait mailpit minio
+          docker compose up minio-init
 
       - name: Migrations apply cleanly to an empty database (§5.9)
         run: |
