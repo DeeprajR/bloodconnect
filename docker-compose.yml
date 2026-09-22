@@ -45,7 +45,10 @@ services:
   minio:
     # S3-compatible object storage for seals (§3) and, later, camera frames (§4).
     # Private bucket; objects are only ever served through an authenticated route.
-    image: minio/minio:latest
+    # quay.io, not Docker Hub: Docker Hub's minio/minio now denies anonymous
+    # pulls ("requested access to the resource is denied"), which is where
+    # MinIO itself publishes going forward.
+    image: quay.io/minio/minio:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
@@ -63,7 +66,7 @@ services:
       retries: 10
 
   minio-init:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy
