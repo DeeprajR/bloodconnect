@@ -79,11 +79,7 @@ jobs:
         run: pnpm db:migrate
 
       - name: The bot's migrations never mention the shared tables (§2.1)
-        run: |
-          if [ -d db/migrations-bot ] && grep -riE 'donor_demand' db/migrations-bot; then
-            echo "::error::db/migrations-bot references a shared contract table. Only db/migrations may create them (§2.1)."
-            exit 1
-          fi
+        run: pnpm check:bot-migrations
 
       # ------------------------------------------------------------------ test
       - name: Seed
